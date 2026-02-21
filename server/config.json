@@ -1,0 +1,109 @@
+{
+  "application": {
+    "name": "Enterprise Reserve Management System",
+    "version": "1.0.0",
+    "environment": "production"
+  },
+
+  "roles": {
+    "ASSOCIATION": {
+      "code": "AS001",
+      "displayName": "Association",
+      "permissions": [
+        "VIEW_SIMULATOR",
+        "MANAGE_RESERVE_STUDY",
+        "MANAGE_USERS",
+        "VIEW_PROFILE",
+        "VIEW_NOTIFICATIONS"
+      ],
+      "navigation": [
+        { "id": "simulators", "label": "Simulators", "route": "/simulators", "icon": "dashboard" },
+        { "id": "companies", "label": "Companies", "route": "/companies", "icon": "business" },
+        { "id": "user-manager", "label": "User Manager", "route": "/users", "icon": "group" },
+        { "id": "profile", "label": "My Profile", "route": "/profile", "icon": "person" },
+        { "id": "notifications", "label": "Notifications", "route": "/notifications", "icon": "notifications" },
+        { "id": "logout", "label": "Logout", "route": "/logout", "icon": "logout" }
+      ]
+    },
+
+    "MANAGEMENT_COMPANY": {
+      "code": "MC001",
+      "displayName": "Management Company",
+      "permissions": [
+        "VIEW_SIMULATOR",
+        "MANAGE_RESERVE_STUDY",
+        "MANAGE_USERS",
+        "VIEW_PROFILE",
+        "VIEW_NOTIFICATIONS"
+      ],
+      "navigation": [
+        { "id": "simulators", "label": "Simulators", "route": "/simulators", "icon": "dashboard" },
+        { "id": "companies", "label": "Companies", "route": "/companies", "icon": "business" },
+        { "id": "user-manager", "label": "User Manager", "route": "/users", "icon": "group" },
+        { "id": "profile", "label": "My Profile", "route": "/profile", "icon": "person" },
+        { "id": "notifications", "label": "Notifications", "route": "/notifications", "icon": "notifications" },
+        { "id": "logout", "label": "Logout", "route": "/logout", "icon": "logout" }
+      ]
+    },
+
+    "RESERVE_STUDY_COMPANY": {
+      "code": "RS001",
+      "displayName": "Reserve Study Company",
+      "permissions": [
+        "VIEW_SIMULATOR",
+        "MANAGE_RESERVE_STUDY",
+        "MANAGE_USERS",
+        "VIEW_PROFILE",
+        "VIEW_NOTIFICATIONS"
+      ],
+      "navigation": [
+        { "id": "simulators", "label": "Simulators", "route": "/simulators", "icon": "dashboard" },
+        { "id": "companies", "label": "Companies", "route": "/companies", "icon": "business" },
+        { "id": "user-manager", "label": "User Manager", "route": "/users", "icon": "group" },
+        { "id": "profile", "label": "My Profile", "route": "/profile", "icon": "person" },
+        { "id": "notifications", "label": "Notifications", "route": "/notifications", "icon": "notifications" },
+        { "id": "logout", "label": "Logout", "route": "/logout", "icon": "logout" }
+      ]
+    },
+
+    "INVESTOR_ADVISOR": {
+      "code": "IA001",
+      "displayName": "Investor Advisor",
+      "permissions": [
+        "VIEW_SIMULATOR",
+        "VIEW_RESERVE_STUDY",
+        "MANAGE_USERS",
+        "VIEW_PROFILE",
+        "VIEW_NOTIFICATIONS"
+      ],
+      "navigation": [
+        { "id": "simulators", "label": "Simulators", "route": "/simulators", "icon": "dashboard" },
+        { "id": "companies", "label": "Companies", "route": "/companies", "icon": "business" },
+        { "id": "user-manager", "label": "User Manager", "route": "/users", "icon": "group" },
+        { "id": "profile", "label": "My Profile", "route": "/profile", "icon": "person" },
+        { "id": "notifications", "label": "Notifications", "route": "/notifications", "icon": "notifications" },
+        { "id": "logout", "label": "Logout", "route": "/logout", "icon": "logout" }
+      ]
+    },
+
+    "BANKER": {
+      "code": "BK001",
+      "displayName": "Banker",
+      "permissions": [
+        "VIEW_SIMULATOR",
+        "MANAGE_BANK_OFFERS",
+        "MANAGE_USERS",
+        "VIEW_PROFILE",
+        "VIEW_NOTIFICATIONS"
+      ],
+      "navigation": [
+        { "id": "simulators", "label": "Simulators", "route": "/simulators", "icon": "dashboard" },
+        { "id": "companies", "label": "Companies", "route": "/companies", "icon": "business" },
+        { "id": "user-manager", "label": "User Manager", "route": "/users", "icon": "group" },
+        { "id": "profile", "label": "My Profile", "route": "/profile", "icon": "person" },
+        { "id": "notifications", "label": "Notifications", "route": "/notifications", "icon": "notifications" },
+        { "id": "logout", "label": "Logout", "route": "/logout", "icon": "logout" }
+      ]
+    }
+  }
+}
