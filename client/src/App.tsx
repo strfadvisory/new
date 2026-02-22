@@ -1,71 +1,108 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
 import Login from './Login';
 import CompanySelection from './CompanySelection';
 import CreateProfile from './CreateProfile';
+import OTPVerification from './OTPVerification';
+import CompanyProfile from './CompanyProfile';
 import Dashboard from './Dashboard';
+import SuperAdminLayout from './SuperAdminLayout';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState<'login' | 'company' | 'profile' | 'dashboard'>('login');
   const [user, setUser] = useState<any>(null);
   const [selectedCompanyType, setSelectedCompanyType] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string>('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     if (token && userData) {
-      setUser(JSON.parse(userData));
-      setCurrentPage('dashboard');
+      const parsedUser = JSON.parse(userData);
+      setUser(parsedUser);
+      
+      // Redirect to appropriate page if on login
+      if (window.location.pathname === '/login' || window.location.pathname === '/') {
+        if (parsedUser.isSuperAdmin) {
+          navigate('/admin/role-manager');
+        } else {
+          navigate('/dashboard');
+        }
+      }
     }
-  }, []);
+  }, [navigate]);
 
   const handleNewUser = () => {
-    setCurrentPage('company');
+    navigate('/signup');
   };
 
   const handleBackToLogin = () => {
-    setCurrentPage('login');
+    navigate('/login');
   };
 
   const handleCompanySelect = (companyType: string) => {
     setSelectedCompanyType(companyType);
-    setCurrentPage('profile');
+    navigate('/create-profile');
   };
 
   const handleBackToCompany = () => {
-    setCurrentPage('company');
+    navigate('/signup');
   };
 
   const handleLogin = (userData: any) => {
     setUser(userData);
-    setCurrentPage('dashboard');
+    localStorage.setItem('user', JSON.stringify(userData));
+    if (userData.isSuperAdmin) {
+      navigate('/admin/role-manager');
+    } else {
+      navigate('/dashboard');
+    }
   };
 
   const handleRegister = (userData: any) => {
     setUser(userData);
-    setCurrentPage('dashboard');
+    setUserEmail(userData.email || localStorage.getItem('tempEmail') || '');
+    navigate('/verify-otp');
+  };
+
+  const handleOTPVerified = () => {
+    navigate('/company-profile');
+  };
+
+  const handleBackToProfile = () => {
+    navigate('/create-profile');
+  };
+
+  const handleCompanyProfileComplete = () => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+    navigate('/dashboard');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('tempEmail');
     setUser(null);
-    setCurrentPage('login');
+    navigate('/login');
   };
 
   return (
     <div className="App">
-      {currentPage === 'login' && (
-        <Login onNewUser={handleNewUser} onLogin={handleLogin} />
-      )}
-      {currentPage === 'company' && (
-        <CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />
-      )}
-      {currentPage === 'profile' && (
-        <CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} companyType={selectedCompanyType} />
-      )}
-      {currentPage === 'dashboard' && (
-        <Dashboard user={user} onLogout={handleLogout} />
-      )}
+      <Routes>
+        <Route path="/login" element={<Login onNewUser={handleNewUser} onLogin={handleLogin} />} />
+        <Route path="/signup" element={<CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />} />
+        <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} companyType={selectedCompanyType} />} />
+        <Route path="/verify-otp" element={<OTPVerification email={userEmail} onVerify={handleOTPVerified} onBack={handleBackToProfile} />} />
+        <Route path="/company-profile" element={<CompanyProfile onComplete={handleCompanyProfileComplete} />} />
+        <Route path="/admin/*" element={user?.isSuperAdmin ? <SuperAdminLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+        <Route path="/dashboard" element={user && !user.isSuperAdmin ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
+        <Route path="/" element={<Navigate to="/login" />} />
+      </Routes>
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
     </div>
   );
 }

@@ -4,6 +4,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const itemRoutes = require('./routes/itemRoutes');
 const authRoutes = require('./routes/authRoutes');
+const validationRoutes = require('./routes/validationRoutes');
+const roleRoutes = require('./routes/roleRoutes');
 
 const app = express();
 app.use(cors());
@@ -18,6 +20,8 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('MongoDB connection error:', err));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/validate', validationRoutes);
+app.use('/api/roles', roleRoutes);
 app.use('/api', itemRoutes);
 
 app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));

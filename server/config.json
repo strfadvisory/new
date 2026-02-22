@@ -6,6 +6,26 @@
   },
 
   "roles": {
+    "SUPER_ADMIN": {
+      "code": "SA001",
+      "displayName": "Super Admin",
+      "permissions": [
+        "MANAGE_ALL_USERS",
+        "MANAGE_ALL_COMPANIES",
+        "VIEW_ANALYTICS",
+        "SYSTEM_SETTINGS",
+        "FULL_ACCESS"
+      ],
+      "navigation": [
+        { "id": "dashboard", "label": "Dashboard", "route": "/admin/dashboard", "icon": "dashboard" },
+        { "id": "all-companies", "label": "All Companies", "route": "/admin/companies", "icon": "business" },
+        { "id": "all-users", "label": "All Users", "route": "/admin/users", "icon": "group" },
+        { "id": "analytics", "label": "Analytics", "route": "/admin/analytics", "icon": "account_balance" },
+        { "id": "settings", "label": "System Settings", "route": "/admin/settings", "icon": "person" },
+        { "id": "logout", "label": "Logout", "route": "/logout", "icon": "logout" }
+      ]
+    },
+
     "ASSOCIATION": {
       "code": "AS001",
       "displayName": "Association",

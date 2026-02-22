@@ -15,7 +15,27 @@ const userSchema = new mongoose.Schema({
     address1: String,
     address2: String
   },
-  companyType: String
+  companyType: String,
+  role: { type: String, default: 'USER' },
+  isSuperAdmin: { type: Boolean, default: false },
+  otp: String,
+  otpExpiry: Date,
+  isVerified: { type: Boolean, default: false },
+  companyProfile: {
+    companyName: String,
+    description: String,
+    phone: String,
+    email: String,
+    contactPerson: String,
+    linkedinUrl: String,
+    websiteLink: String,
+    zipCode: String,
+    state: String,
+    city: String,
+    address1: String,
+    address2: String,
+    logoId: String
+  }
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

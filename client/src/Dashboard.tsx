@@ -13,6 +13,7 @@ interface DashboardProps {
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [currentPage, setCurrentPage] = useState('simulators');
+  const [sidebarVisible, setSidebarVisible] = useState(true);
   const navigation = user?.navigation || [];
   const permissions = user?.permissions || [];
   
@@ -45,6 +46,10 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     }
   };
 
+  const toggleSidebar = () => {
+    setSidebarVisible(!sidebarVisible);
+  };
+
   const renderCurrentPage = () => {
     switch (currentPage) {
       case 'simulators':
@@ -65,19 +70,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const isMainPage = ['simulators', 'companies', 'user-manager'].includes(currentPage);
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-sidebar">
+    <div className={`dashboard-container ${!sidebarVisible ? 'sidebar-hidden' : ''}`}>
+      <div className={`dashboard-sidebar ${!sidebarVisible ? 'hidden' : ''}`}>
         <div className="logo">
-          <div className="logo-icon">
-            <div className="signal-bars">
-              <div className="bar"></div>
-              <div className="bar"></div>
-              <div className="bar"></div>
-            </div>
-          </div>
+          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
           <div className="logo-text">
-            <div>RESERVE FUND</div>
-            <div>ADVISORY</div>
+            <div className="company-name">RESERVE FUND</div>
+            <div className="company-subtitle">ADVISORY LLC</div>
           </div>
         </div>
         
@@ -98,7 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       <div className="dashboard-main">
         <header className="dashboard-header">
           <div className="header-left">
-            <button className="menu-toggle">
+            <button className="menu-toggle" onClick={toggleSidebar}>
               <i className="fas fa-bars"></i>
             </button>
             <nav className="header-nav">
@@ -108,7 +107,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                   className={`nav-link ${currentPage === navItem.id ? 'active' : ''}`}
                   onClick={() => handleNavClick(navItem)}
                 >
-                  {navItem.id === 'user-manager' ? 'Role Manager' : navItem.label}
+                  {navItem.label}
                 </span>
               ))}
             </nav>

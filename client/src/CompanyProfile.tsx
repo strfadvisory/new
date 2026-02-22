@@ -2,109 +2,76 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
 
-interface CreateProfileProps {
-  onBack: () => void;
-  onRegister: (user: any) => void;
-  companyType: string;
+interface CompanyProfileProps {
+  onComplete: () => void;
 }
 
-const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, companyType }) => {
+const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete }) => {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    designation: '',
+    companyName: '',
+    description: '',
     phone: '',
-    password: '',
-    rePassword: '',
+    email: '',
+    contactPerson: '',
+    linkedinUrl: '',
+    websiteLink: '',
     zipCode: '',
     state: '',
     city: '',
     address1: '',
     address2: ''
   });
+  const [logo, setLogo] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string>('');
 
-  const [emailValidation, setEmailValidation] = useState<{ valid: boolean | null, message: string, checking: boolean }>({ valid: null, message: '', checking: false });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
 
-  const validateEmail = async (email: string) => {
-    if (!email) {
-      setEmailValidation({ valid: null, message: '', checking: false });
-      return;
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setLogo(file);
+      setLogoPreview(URL.createObjectURL(file));
     }
-
-    setEmailValidation({ valid: null, message: '', checking: true });
-    
-    try {
-      const response = await fetch('http://localhost:5000/api/validate/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await response.json();
-      
-      setEmailValidation({ 
-        valid: data.valid, 
-        message: data.message, 
-        checking: false 
-      });
-    } catch (error) {
-      setEmailValidation({ 
-        valid: false, 
-        message: 'Error validating email', 
-        checking: false 
-      });
-    }
-  };
-
-  const handleEmailBlur = () => {
-    validateEmail(formData.email);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.rePassword) {
-      toast.error('Passwords do not match');
-      return;
-    }
     
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const token = localStorage.getItem('token');
+      const formDataToSend = new FormData();
+      
+      Object.entries(formData).forEach(([key, value]) => {
+        formDataToSend.append(key, value);
+      });
+      
+      if (logo) {
+        formDataToSend.append('logo', logo);
+      }
+      
+      const response = await fetch('http://localhost:5000/api/auth/company-profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          designation: formData.designation,
-          phone: formData.phone,
-          password: formData.password,
-          address: {
-            zipCode: formData.zipCode,
-            state: formData.state,
-            city: formData.city,
-            address1: formData.address1,
-            address2: formData.address2
-          },
-          companyType
-        })
+        headers: { 
+          'Authorization': `Bearer ${token}`
+        },
+        body: formDataToSend
       });
       const data = await response.json();
+      
       if (response.ok) {
-        localStorage.setItem('token', data.token);
-        toast.success('OTP sent to your email');
-        onRegister({ ...data, email: formData.email });
+        localStorage.setItem('user', JSON.stringify(data));
+        toast.success('Company profile created successfully');
+        onComplete();
       } else {
-        toast.error(data.message || 'Registration failed');
+        toast.error(data.message);
       }
     } catch (error) {
-      toast.error('Registration failed. Please try again.');
+      toast.error('Failed to create company profile');
     }
   };
 
@@ -133,32 +100,49 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
           <span>Select Company</span>
           <i className="fas fa-chevron-right"></i>
           <span>Create Profile</span>
+          <i className="fas fa-chevron-right"></i>
+          <span>Company Profile</span>
         </div>
         
         <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto'}}>
-          <h1>Create your profile</h1>
-          <p>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
+          <div className="d-flex justify-content-between align-items-start mb-3">
+            <div>
+              <h1>Create Management Company</h1>
+              <p>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
+            </div>
+            <div 
+              className="border rounded d-flex flex-column align-items-center justify-content-center" 
+              style={{width: '150px', height: '150px', cursor: 'pointer', backgroundColor: '#f8f9fa', flexShrink: 0, marginLeft: '20px'}}
+              onClick={() => document.getElementById('logoUpload')?.click()}
+            >
+              <input
+                type="file"
+                id="logoUpload"
+                accept="image/*"
+                onChange={handleLogoChange}
+                style={{display: 'none'}}
+              />
+              {logoPreview ? (
+                <img src={logoPreview} alt="Logo" style={{maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', padding: '10px'}} />
+              ) : (
+                <>
+                  <i className="fas fa-plus fa-2x text-primary mb-2"></i>
+                  <span className="text-muted">Your Logo</span>
+                </>
+              )}
+            </div>
+          </div>
           
           <form onSubmit={handleSubmit}>
+            
             <div className="row g-4">
-              <div className="col-md-6">
-                <label className="form-label">First name *</label>
+              <div className="col-12">
+                <label className="form-label">Company Name*</label>
                 <input
                   type="text"
                   className="form-control"
-                  name="firstName"
-                  value={formData.firstName}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Last Name*</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  name="lastName"
-                  value={formData.lastName}
+                  name="companyName"
+                  value={formData.companyName}
                   onChange={handleInputChange}
                   required
                 />
@@ -167,48 +151,23 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
             
             <div className="row g-4 mt-2">
               <div className="col-12">
-                <label className="form-label">Email Address*</label>
-                <input
-                  type="email"
-                  className={`form-control ${
-                    emailValidation.valid === false ? 'is-invalid' : 
-                    emailValidation.valid === true ? 'is-valid' : ''
-                  }`}
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  onBlur={handleEmailBlur}
-                  required
-                />
-                {emailValidation.checking && (
-                  <div className="text-muted small mt-1">
-                    <i className="fas fa-spinner fa-spin me-1"></i>Checking email...
-                  </div>
-                )}
-                {emailValidation.valid === false && (
-                  <div className="invalid-feedback">{emailValidation.message}</div>
-                )}
-                {emailValidation.valid === true && (
-                  <div className="valid-feedback">{emailValidation.message}</div>
-                )}
-              </div>
-            </div>
-            
-            <div className="row g-4 mt-2">
-              <div className="col-12">
-                <label className="form-label">Designation*</label>
-                <input
-                  type="text"
+                <label className="form-label">Description</label>
+                <textarea
                   className="form-control"
-                  name="designation"
-                  value={formData.designation}
+                  name="description"
+                  rows={3}
+                  value={formData.description}
                   onChange={handleInputChange}
-                  required
                 />
               </div>
             </div>
             
-            <div className="row g-4 mt-2">
+            <div className="section-title mt-4">
+              <h3>Company contact Details</h3>
+              <p>Create a secure password to set up your account and access the system.</p>
+            </div>
+            
+            <div className="row g-4">
               <div className="col-12">
                 <label className="form-label">Phone*</label>
                 <div className="input-group">
@@ -229,42 +188,72 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="section-title mt-5">
-              <h3>Create Your Password</h3>
-              <p>Create a new password to set up your account and access the system.</p>
-            </div>
-            
-            <div className="row g-4">
+            <div className="row g-4 mt-2">
               <div className="col-12">
-                <label className="form-label">Password*</label>
+                <label className="form-label">Company contact Email</label>
                 <input
-                  type="password"
+                  type="email"
                   className="form-control"
-                  name="password"
-                  value={formData.password}
+                  name="email"
+                  value={formData.email}
                   onChange={handleInputChange}
-                  required
                 />
               </div>
             </div>
             
             <div className="row g-4 mt-2">
               <div className="col-12">
-                <label className="form-label">Re Password*</label>
+                <label className="form-label">Contact Person</label>
                 <input
-                  type="password"
+                  type="text"
                   className="form-control"
-                  name="rePassword"
-                  value={formData.rePassword}
+                  name="contactPerson"
+                  value={formData.contactPerson}
                   onChange={handleInputChange}
-                  required
                 />
               </div>
             </div>
             
-            <div className="section-title mt-5">
+            <div className="row g-4 mt-2">
+              <div className="col-12">
+                <label className="form-label">
+                  <i className="fab fa-linkedin me-2"></i>LinkedIn Page url
+                </label>
+                <input
+                  type="url"
+                  className="form-control"
+                  name="linkedinUrl"
+                  value={formData.linkedinUrl}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            
+            <div className="row g-4 mt-2">
+              <div className="col-12">
+                <label className="form-label">
+                  <i className="fas fa-globe me-2"></i>Website Link
+                </label>
+                <input
+                  type="url"
+                  className="form-control"
+                  name="websiteLink"
+                  value={formData.websiteLink}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            
+            <div className="section-title mt-4">
               <h3>Add your Address</h3>
               <p>Provide the official location details of , including street, city, state, country, and ZIP code.</p>
+            </div>
+            
+            <div className="form-check mb-3">
+              <input className="form-check-input" type="checkbox" id="useMyAddress" />
+              <label className="form-check-label" htmlFor="useMyAddress">
+                Use My Address
+              </label>
             </div>
             
             <div className="row g-4">
@@ -346,12 +335,6 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
             </div>
             
             <button type="submit" className="btn btn-primary w-100 mt-4 py-2">Continue</button>
-            
-            <div className="text-center mt-3">
-              <button type="button" onClick={onBack} className="btn btn-link text-muted p-0">
-                Change my company type
-              </button>
-            </div>
           </form>
         </div>
       </div>
@@ -359,4 +342,4 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
   );
 };
 
-export default CreateProfile;
+export default CompanyProfile;

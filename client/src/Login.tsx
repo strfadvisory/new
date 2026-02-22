@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import './Login.css';
 
 interface LoginProps {
@@ -25,10 +26,10 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
         localStorage.setItem('user', JSON.stringify(data));
         onLogin(data);
       } else {
-        alert(data.message);
+        toast.error(data.message || 'Login failed');
       }
     } catch (error) {
-      alert('Login failed');
+      toast.error('Login failed. Please try again.');
     }
   };
 
@@ -36,16 +37,10 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
     <div className="login-container">
       <div className="login-sidebar">
         <div className="logo">
-          <div className="logo-icon">
-            <div className="signal-bars">
-              <div className="bar"></div>
-              <div className="bar"></div>
-              <div className="bar"></div>
-            </div>
-          </div>
+          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
           <div className="logo-text">
-            <div>RESERVE FUND</div>
-            <div>ADVISORY</div>
+            <div className="company-name">RESERVE FUND</div>
+            <div className="company-subtitle">ADVISORY LLC</div>
           </div>
         </div>
         <div className="contact-info">

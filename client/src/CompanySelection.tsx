@@ -49,16 +49,10 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
     <div className="company-selection-container">
       <div className="company-sidebar">
         <div className="logo">
-          <div className="logo-icon">
-            <div className="signal-bars">
-              <div className="bar"></div>
-              <div className="bar"></div>
-              <div className="bar"></div>
-            </div>
-          </div>
+          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
           <div className="logo-text">
-            <div>RESERVE FUND</div>
-            <div>ADVISORY</div>
+            <div className="company-name">RESERVE FUND</div>
+            <div className="company-subtitle">ADVISORY LLC</div>
           </div>
         </div>
         <div className="contact-info">

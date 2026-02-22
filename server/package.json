@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.jsx",
   "scripts": {
-    "start": "node index.jsx"
+    "start": "node index.jsx",
+    "seed:superadmin": "node seedSuperAdmin.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -11,6 +12,9 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^8.0.0"
+    "mongoose": "^8.0.0",
+    "multer": "^1.4.5-lts.1",
+    "multer-gridfs-storage": "^5.0.2",
+    "nodemailer": "^6.9.7"
   }
 }
