@@ -216,14 +216,14 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       <div className="dashboard-main">
         <header className="dashboard-header">
           <div className="header-left">
-            <div className="logo" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="logo">
               <img src="/logo.png" alt="Reserve Fund Advisory" style={{ height: '40px' }} />
               <div className="logo-text">
-                <div className="company-name" style={{ color: 'white', fontSize: '14px', fontWeight: '700' }}>Super Admin</div>
-                <div className="company-subtitle" style={{ color: 'rgba(255,255,255,0.8)', fontSize: '12px' }}>Association name</div>
+                <div className="company-name">Super Admin</div>
+                <div className="company-subtitle">Association name</div>
               </div>
             </div>
-            <nav className="header-nav" style={{ marginLeft: '40px' }}>
+            <nav className="header-nav">
               {headerTabs.map((tab) => (
                 <span 
                   key={tab.id} 

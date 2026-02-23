@@ -55,7 +55,7 @@
   display: flex;
   height: 100vh;
   width: 100vw;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
 }
 
@@ -82,7 +82,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 30px;
+  margin-bottom: 0;
 }
 
 .logo-image {
@@ -176,21 +176,22 @@
 }
 
 .dashboard-header {
-  background: linear-gradient(135deg, #0E519B 0%, #1e40af 100%);
+  background: #0E519B;
   color: white;
-  padding: 16px 32px;
+  padding: 0 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 10px 15px -3px rgba(14, 81, 155, 0.4), 0 4px 6px -2px rgba(14, 81, 155, 0.05);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-bottom: 3px solid transparent;
+  height: 80px;
+  position: relative;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 60px;
 }
 
 .menu-toggle {
@@ -203,17 +204,42 @@
 
 .header-nav {
   display: flex;
-  gap: 32px;
+  gap: 48px;
+  align-items: center;
 }
 
 .nav-link {
   cursor: pointer;
-  padding: 8px 0;
-  border-bottom: 2px solid transparent;
+  padding: 0;
+  font-size: 16px;
+  font-weight: 400;
+  color: white;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  position: relative;
+  height: 82px;
+  display: flex;
+  align-items: center;
 }
 
 .nav-link.active {
-  border-bottom-color: white;
+  font-weight: 600;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #10b981;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.nav-link.active::after {
+  transform: scaleX(1);
 }
 
 .header-right {
@@ -488,7 +514,7 @@
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   overflow: hidden;
 }
 
