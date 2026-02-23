@@ -1,0 +1,85 @@
+{
+  "modules": [
+    {
+      "module": "SIMULATOR_MANAGEMENT",
+      "displayName": "Simulator Management",
+      "roles": {
+        "permissions": {
+          "ACCESS_SIMULATOR": false,
+          "UPLOAD_MODEL": false,
+          "CREATE_VERSION": false,
+          "EDIT_OWN_VERSION": false,
+          "EDIT_OTHER_VERSIONS": false,
+          "PUBLISH_VERSION": false,
+          "ACCESS_SIMULATOR_PLAYGROUND": false,
+          "DOWNLOAD_REPORT": false,
+          "VIEW_REPORT": false,
+          "TRANSFER_ASSOCIATION": false
+        }
+      }
+    },
+    {
+      "module": "INVITATION_ONBOARDING",
+      "displayName": "Invitation & Onboarding",
+      "roles": {
+        "permissions": {
+          "INVITE_MEMBERS": false,
+          "INVITE_PROPERTY_MANAGERS": false,
+          "INVITE_MANAGERS": false,
+          "INVITE_SUPER_ADMIN": false,
+          "VIEW_INVITED_MANAGERS_STATUS": false
+        }
+      }
+    },
+    {
+      "module": "COMPANY_CONTROL",
+      "displayName": "Company Control",
+      "roles": {
+        "permissions": {
+          "CREATE_COMPANY": false,
+          "EDIT_COMPANY": false,
+          "DELETE_COMPANY": false
+        }
+      }
+    },
+    {
+      "module": "ASSOCIATION_CONTROL",
+      "displayName": "Association Control",
+      "roles": {
+        "permissions": {
+          "CREATE_SINGLE_ASSOCIATION": false,
+          "CREATE_MULTIPLE_ASSOCIATIONS": false,
+          "EDIT_ASSOCIATION": false,
+          "DELETE_ASSOCIATION": false
+        }
+      }
+    },
+    {
+      "module": "USER_ROLE_MANAGEMENT",
+      "displayName": "User & Role Management",
+      "roles": {
+        "permissions": {
+          "ADD_MEMBER_ROLE": false,
+          "ADD_MANAGER_ROLE": false,
+          "ADD_PROPERTY_MANAGER_ROLE": false,
+          "EDIT_MEMBER_ROLE": false,
+          "EDIT_MANAGER_ROLE": false,
+          "EDIT_PROPERTY_MANAGER_ROLE": false,
+          "CHANGE_USER_STATUS": false,
+          "EDIT_MY_PROFILE": false,
+          "CHANGE_MY_PASSWORD": false
+        }
+      }
+    },
+    {
+      "module": "BANKING_SERVICES",
+      "displayName": "Banking Services",
+      "roles": {
+        "permissions": {
+          "MANAGE_CD_PLANS": false,
+          "MANAGE_LOAN_OFFERS": false
+        }
+      }
+    }
+  ]
+}

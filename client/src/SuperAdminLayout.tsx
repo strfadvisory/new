@@ -30,7 +30,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     type: 'Primary',
     description: '',
     icon: '',
-    status: true
+    status: true,
+    permissions: {} as Record<string, boolean>
   });
 
   const currentPage = location.pathname.split('/').pop() || 'role-manager';
@@ -104,15 +105,28 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       type: role.type,
       description: role.description,
       icon: role.icon || '',
-      status: role.status
+      status: role.status,
+      permissions: role.permissions || {}
     });
     setIconPreview(role.icon || '');
     setEditMode(true);
     setIsSlidebarOpen(true);
   };
 
-  const handleAddNew = () => {
-    setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true });
+  const handleAddNew = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/roles/default-permissions', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const defaultPermissions = await response.json();
+      setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, permissions: defaultPermissions });
+    } catch (error) {
+      console.error('Error fetching default permissions:', error);
+      setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, permissions: {} });
+    }
     setIconPreview('');
     setEditMode(false);
     setIsSlidebarOpen(true);
@@ -159,6 +173,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         ? `http://localhost:5000/api/roles/${formData._id}`
         : 'http://localhost:5000/api/roles';
       
+      console.log('Submitting role data:', formData);
+      
       const response = await fetch(url, {
         method: editMode ? 'PUT' : 'POST',
         headers: {
@@ -168,18 +184,24 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         body: JSON.stringify(formData)
       });
       
+      const result = await response.json();
+      console.log('Server response:', result);
+      
       if (response.ok) {
         setIsSlidebarOpen(false);
         setEditMode(false);
-        setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true });
+        setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, permissions: {} });
         setIconPreview('');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
         fetchRoles();
+      } else {
+        alert(`Error: ${result.message || 'Failed to save role'}`);
       }
     } catch (error) {
       console.error('Error saving role:', error);
+      alert('Failed to save role. Check console for details.');
     }
   };
 
@@ -240,20 +262,44 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
               </div>
               
               <div className="companies-list">
-                {roles.map((role) => (
-                  <div 
-                    key={role._id} 
-                    className={`company-item ${selectedRole?._id === role._id ? 'selected' : ''}`}
-                    onClick={() => setSelectedRole(role)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="company-info">
-                      <h4>{role.name}</h4>
-                      <p>{role.type}</p>
-                      <small>{role.description}</small>
+                {roles.map((role) => {
+                  const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
+                  return (
+                    <div 
+                      key={role._id} 
+                      className={`company-item ${selectedRole?._id === role._id ? 'selected' : ''}`}
+                      onClick={async () => {
+                        if (!isValidId) {
+                          console.error('Invalid role ID:', role._id);
+                          setSelectedRole(role);
+                          return;
+                        }
+                        try {
+                          const token = localStorage.getItem('token');
+                          const response = await fetch(`http://localhost:5000/api/roles/${role._id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                          });
+                          if (response.ok) {
+                            const freshRole = await response.json();
+                            setSelectedRole(freshRole);
+                          } else {
+                            setSelectedRole(role);
+                          }
+                        } catch (error) {
+                          console.error('Error fetching role:', error);
+                          setSelectedRole(role);
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className="company-info">
+                        <h4>{role.name}</h4>
+                        <p>{role.type}</p>
+                        <small>{role.description}</small>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             
@@ -387,7 +433,26 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                       <input 
                         type="checkbox" 
                         checked={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
+                        onChange={async (e) => {
+                          const newStatus = e.target.checked;
+                          setFormData({ ...formData, status: newStatus });
+                          
+                          if (editMode && formData._id) {
+                            try {
+                              const token = localStorage.getItem('token');
+                              await fetch(`http://localhost:5000/api/roles/${formData._id}`, {
+                                method: 'PUT',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ ...formData, status: newStatus })
+                              });
+                            } catch (error) {
+                              console.error('Error updating status:', error);
+                            }
+                          }
+                        }}
                       />
                       <span className="toggle-slider"></span>
                     </label>

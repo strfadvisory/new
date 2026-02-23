@@ -1,14 +1,18 @@
 const multer = require('multer');
-const { GridFsStorage } = require('multer-gridfs-storage');
+const path = require('path');
+const fs = require('fs');
 
-const storage = new GridFsStorage({
-  url: process.env.MONGO_URI,
-  options: { useNewUrlParser: true, useUnifiedTopology: true },
-  file: (req, file) => {
-    return {
-      filename: `${Date.now()}-${file.originalname}`,
-      bucketName: 'uploads'
-    };
+const uploadDir = path.join(__dirname, '../uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
   }
 });
 
