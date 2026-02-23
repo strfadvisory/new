@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Role = require('../models/Role');
 const jwt = require('jsonwebtoken');
 const configService = require('../services/configService');
 const { sendOTPEmail } = require('../services/emailService.jsx');
@@ -16,10 +17,8 @@ const register = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const roleKey = configService.getRoleByDisplayName(companyType);
-    const roleConfig = configService.getRoleConfig(roleKey);
-    
-    if (!roleConfig) {
+    const role = await Role.findOne({ name: companyType,  status: true });
+    if (!role) {
       return res.status(400).json({ message: 'Invalid company type' });
     }
 
@@ -34,7 +33,7 @@ const register = async (req, res) => {
       phone,
       password,
       address,
-      companyType: roleConfig.code,
+      companyType: role.name,
       otp,
       otpExpiry,
       isVerified: false
@@ -54,7 +53,6 @@ const register = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       companyType: user.companyType,
-      role: roleKey,
       token
     });
   } catch (error) {
@@ -86,8 +84,7 @@ const login = async (req, res) => {
         });
       }
       
-      const roleKey = configService.getRoleByCode(user.companyType);
-      const roleConfig = configService.getRoleConfig(roleKey);
+      const role = await Role.findOne({ name: user.companyType });
       
       res.json({
         _id: user._id,
@@ -95,10 +92,9 @@ const login = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         companyType: user.companyType,
-        role: roleKey,
         isSuperAdmin: false,
-        navigation: roleConfig?.navigation || [],
-        permissions: roleConfig?.permissions || [],
+        navigation: [],
+        permissions: role?.permissions || {},
         token
       });
     } else {
@@ -186,8 +182,7 @@ const createCompanyProfile = async (req, res) => {
     user.companyProfile = companyData;
     await user.save();
 
-    const roleKey = configService.getRoleByCode(user.companyType);
-    const roleConfig = configService.getRoleConfig(roleKey);
+    const role = await Role.findOne({ name: user.companyType });
 
     res.json({
       _id: user._id,
@@ -195,9 +190,8 @@ const createCompanyProfile = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       companyType: user.companyType,
-      role: roleKey,
-      navigation: roleConfig.navigation,
-      permissions: roleConfig.permissions,
+      navigation: [],
+      permissions: role?.permissions || {},
       companyProfile: user.companyProfile
     });
   } catch (error) {

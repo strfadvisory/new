@@ -1,5 +1,14 @@
 const mongoose = require('mongoose');
 
+const childRoleSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  type: { type: String, required: true, enum: ['Secondary', 'Members'] },
+  description: { type: String, required: true },
+  icon: { type: String },
+  status: { type: Boolean, default: true },
+  permissions: { type: mongoose.Schema.Types.Mixed, default: {} }
+}, { _id: true, timestamps: true });
+
 const roleSchema = new mongoose.Schema({
   name: { type: String, required: true },
   type: { type: String, required: true, enum: ['Primary', 'Secondary', 'Members'] },
@@ -7,6 +16,7 @@ const roleSchema = new mongoose.Schema({
   icon: { type: String },
   status: { type: Boolean, default: true },
   permissions: { type: mongoose.Schema.Types.Mixed, default: {} },
+  childRoles: [childRoleSchema],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true, strict: false });
 

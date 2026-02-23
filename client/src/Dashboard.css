@@ -268,9 +268,9 @@
 
 .dashboard-content {
   flex: 1;
-  padding: 24px;
+  padding: 0;
   background: #f8fafc;
-  height: calc(100vh - 60px);
+  height: calc(100vh - 80px);
   overflow-y: auto;
 }
 
@@ -324,32 +324,35 @@
 
 .main-content {
   display: flex;
-  gap: 24px;
-  height: calc(100vh - 200px);
+  gap: 0;
+  height: 100vh;
 }
 
 .left-panel, .right-panel {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: 0;
   overflow-y: auto;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: none;
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .right-panel {
   flex: 1;
+  padding: 24px;
 }
 
 .left-panel {
   width: 320px;
+  padding: 0;
+  background: #E3EFFC;
 }
 
 .search-filter {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-bottom: 0;
+  padding: 24px 24px 0 24px;
 }
 
 .search-input, .filter-select {
@@ -360,6 +363,7 @@
   transition: all 0.2s ease;
   background: #ffffff;
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  margin-bottom: 16px;
 }
 
 .search-input:focus, .filter-select:focus {
@@ -371,23 +375,27 @@
 .companies-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0;
+  padding: 0 24px 24px 24px;
+  margin-top: 16px;
 }
 
 .company-item {
   padding: 20px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
   cursor: pointer;
   transition: all 0.2s ease;
   background: #ffffff;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
+  margin-bottom: 0;
 }
 
 .company-item:hover {
-  border-color: #3b82f6;
-  box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.1), 0 10px 10px -5px rgba(59, 130, 246, 0.04);
-  transform: translateY(-2px);
+  background: #f8fafc;
+  box-shadow: none;
+  transform: none;
 }
 
 .company-info h4 {
@@ -395,10 +403,13 @@
   font-size: 16px;
   font-weight: 600;
   color: #1f2937;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .company-info p {
-  margin: 0 0 8px 0;
+  margin: 0;
   font-size: 14px;
   color: #6b7280;
   font-weight: 500;
@@ -731,8 +742,8 @@
 
 
 .company-item.selected {
-  border-color: #3b82f6;
   background: #eff6ff;
+  border-left: 3px solid #3b82f6;
 }
 
 
@@ -776,4 +787,129 @@
 
 .modal-icon {
   margin-bottom: 16px;
+}
+
+/* Child Role Styles */
+.child-role-item {
+  padding: 16px 20px 16px 40px;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+  box-shadow: none;
+}
+
+.child-role-item:hover {
+  background: #f1f5f9;
+  box-shadow: none;
+  transform: none;
+}
+
+.child-role-item.selected {
+  background: #e0f2fe;
+  border-left: 3px solid #0ea5e9;
+}
+
+.add-sub-user-btn {
+  padding: 12px 20px;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+  color: #3b82f6;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.companies-list > * {
+  margin-bottom: 0;
+}
+
+.companies-list .add-sub-user-btn {
+  margin-bottom: 12px;
+}
+
+.add-sub-user-btn:hover {
+  background: #f8fafc;
+}
+
+.step-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.step-card:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+.associations-section {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+  background: white;
+}
+
+.associations-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.associations-section p {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.search-filter .results-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.search-filter .results-info .results-count {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.search-filter .add-new-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.search-filter .add-new-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 10px -2px rgba(59, 130, 246, 0.4);
 }

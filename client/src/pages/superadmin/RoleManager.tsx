@@ -120,20 +120,28 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       const token = localStorage.getItem('token');
       console.log('Saving permissions for role:', selectedRole._id);
       
-      const response = await fetch(`http://localhost:5000/api/roles/${selectedRole._id}`, {
+      const updateData: any = { 
+        name: selectedRole.name,
+        type: selectedRole.type,
+        description: selectedRole.description,
+        icon: selectedRole.icon,
+        status: selectedRole.status,
+        permissions: permissionsData 
+      };
+      
+      // If this is a child role, include parent info
+      if (selectedRole.parentRoleId) {
+        updateData.parentRole = selectedRole.parentRoleId;
+        updateData.childRoleId = selectedRole._id;
+      }
+      
+      const response = await fetch(`http://localhost:5000/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
-          name: selectedRole.name,
-          type: selectedRole.type,
-          description: selectedRole.description,
-          icon: selectedRole.icon,
-          status: selectedRole.status,
-          permissions: permissionsData 
-        })
+        body: JSON.stringify(updateData)
       });
       
       if (!response.ok) {

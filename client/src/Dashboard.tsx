@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
 import './Dashboard.css';
-import Simulators from './pages/Simulators';
-import Companies from './pages/Companies';
-import UserManager from './pages/UserManager';
-import Profile from './pages/Profile';
-import Notifications from './pages/Notifications';
 
 interface DashboardProps {
   user: any;
@@ -12,104 +7,30 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
-  const [currentPage, setCurrentPage] = useState('simulators');
-  const [sidebarVisible, setSidebarVisible] = useState(true);
-  const navigation = user?.navigation || [];
-  const permissions = user?.permissions || [];
-  
-  const companies = [
-    { name: 'Company name', type: 'Management Company', members: 30, models: 30 },
-    { name: 'Company name', type: 'Management Company', members: 30, models: 30 },
-    { name: 'Company name', type: 'Management Company', members: 30, models: 30 },
-    { name: 'Company name', type: 'Management Company', members: 30, models: 30 },
-    { name: 'Company name', type: 'Management Company', members: 30, models: 30 }
-  ];
-
-  const getIconClass = (iconName: string) => {
-    const iconMap: { [key: string]: string } = {
-      'dashboard': 'fas fa-chart-bar',
-      'business': 'fas fa-building',
-      'group': 'fas fa-users',
-      'person': 'fas fa-user',
-      'notifications': 'fas fa-bell',
-      'logout': 'fas fa-sign-out-alt',
-      'account_balance': 'fas fa-university'
-    };
-    return iconMap[iconName] || 'fas fa-circle';
-  };
-
-  const handleNavClick = (navItem: any) => {
-    if (navItem.id === 'logout') {
-      onLogout();
-    } else {
-      setCurrentPage(navItem.id);
-    }
-  };
-
-  const toggleSidebar = () => {
-    setSidebarVisible(!sidebarVisible);
-  };
-
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'simulators':
-        return <Simulators />;
-      case 'companies':
-        return <Companies />;
-      case 'user-manager':
-        return <UserManager />;
-      case 'profile':
-        return <Profile user={user} />;
-      case 'notifications':
-        return <Notifications />;
-      default:
-        return <Simulators />;
-    }
-  };
-
-  const isMainPage = ['simulators', 'companies', 'user-manager'].includes(currentPage);
 
   return (
-    <div className={`dashboard-container ${!sidebarVisible ? 'sidebar-hidden' : ''}`}>
-      <div className={`dashboard-sidebar ${!sidebarVisible ? 'hidden' : ''}`}>
-        <div className="logo">
-          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-          <div className="logo-text">
-            <div className="company-name">RESERVE FUND</div>
-            <div className="company-subtitle">ADVISORY LLC</div>
-          </div>
-        </div>
-        
-        <nav className="sidebar-nav">
-          {navigation.filter((item: any) => item.id !== 'logout').map((navItem: any) => (
-            <div 
-              key={navItem.id} 
-              className={`nav-item ${currentPage === navItem.id ? 'active' : ''}`}
-              onClick={() => handleNavClick(navItem)}
-            >
-              <i className={getIconClass(navItem.icon)}></i>
-              <span>{navItem.label}</span>
-            </div>
-          ))}
-        </nav>
-      </div>
-      
+    <div className="dashboard-container-no-sidebar">
+
       <div className="dashboard-main">
         <header className="dashboard-header">
           <div className="header-left">
-            <button className="menu-toggle" onClick={toggleSidebar}>
-              <i className="fas fa-bars"></i>
-            </button>
+            <div className="logo">
+              <img src="/logo.png" alt="Reserve Fund Advisory" style={{ height: '40px' }} />
+              <div className="logo-text">
+                <div className="company-name">{user?.companyType || 'User'}</div>
+                <div className="company-subtitle">{user?.companyProfile?.companyName || 'Company name'}</div>
+              </div>
+            </div>
             <nav className="header-nav">
-              {navigation.filter((item: any) => ['simulators', 'companies', 'user-manager'].includes(item.id)).map((navItem: any) => (
-                <span 
-                  key={navItem.id} 
-                  className={`nav-link ${currentPage === navItem.id ? 'active' : ''}`}
-                  onClick={() => handleNavClick(navItem)}
-                >
-                  {navItem.label}
-                </span>
-              ))}
+              <span className="nav-link">
+                Simulators
+              </span>
+              <span className="nav-link">
+                Companies
+              </span>
+              <span className="nav-link">
+                Role Manager
+              </span>
             </nav>
           </div>
           <div className="header-right">
@@ -123,56 +44,64 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         </header>
         
         <div className="dashboard-content">
-          {isMainPage ? (
-            <>
-              <div className="content-header">
-                <div className="results-info">
-                  <span className="results-count">200 Results founded</span>
-                  {permissions.includes('MANAGE_USERS') && (
-                    <button className="add-new-btn">
-                      <i className="fas fa-plus"></i> Add New
-                    </button>
-                  )}
-                </div>
-                <div className="breadcrumb">
-                  <span>Company name</span>
-                  <i className="fas fa-chevron-right"></i>
-                  <span>{user?.firstName} {user?.lastName}</span>
-                </div>
-              </div>
-              
-              <div className="main-content">
-                <div className="left-panel">
-                  <div className="search-filter">
-                    <input type="text" placeholder="Search by name" className="search-input" />
-                    <select className="filter-select">
-                      <option>All Companies</option>
-                    </select>
-                  </div>
-                  
-                  <div className="companies-list">
-                    {companies.map((company, index) => (
-                      <div key={index} className="company-item">
-                        <div className="company-info">
-                          <h4>{company.name}</h4>
-                          <p>{company.type}</p>
-                          <small>Complete address and details Complete address and details</small>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="right-panel">
-                  {renderCurrentPage()}
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="full-page-content">
-              {renderCurrentPage()}
+          <div className="fluid-content" style={{ maxWidth: '1400px', margin: '0 auto', padding: '40px 20px' }}>
+            <div style={{ marginBottom: '40px' }}>
+              <h1 style={{ fontSize: '32px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>Welcome, {user?.firstName}</h1>
+              <p style={{ fontSize: '16px', color: '#6b7280' }}>Choose your Company type you like to signup</p>
             </div>
-          )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '60px' }}>
+              {[1, 2, 3].map((item) => (
+                <div key={item} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                  <div style={{ background: '#f3f4f6', borderRadius: '8px', height: '180px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '60px', height: '60px', background: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="fas fa-play" style={{ color: 'white', fontSize: '24px' }}></i>
+                    </div>
+                  </div>
+                  <h3 style={{ fontSize: '16px', fontWeight: '500', color: '#1f2937' }}>How to us Simulator for associations</h3>
+                </div>
+              ))}
+            </div>
+
+            <div>
+              <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#1f2937', marginBottom: '24px' }}>Choose Next Step</h2>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="step-card">
+                  <div style={{ width: '48px', height: '48px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <i className="fas fa-user" style={{ fontSize: '24px', color: '#1f2937' }}></i>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Invite Property Manager</h3>
+                    <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.</p>
+                  </div>
+                  <i className="fas fa-chevron-right" style={{ fontSize: '20px', color: '#9ca3af' }}></i>
+                </div>
+
+                <div className="step-card">
+                  <div style={{ width: '48px', height: '48px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <i className="fas fa-building" style={{ fontSize: '24px', color: '#1f2937' }}></i>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Invite a Association</h3>
+                    <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.</p>
+                  </div>
+                  <i className="fas fa-chevron-right" style={{ fontSize: '20px', color: '#9ca3af' }}></i>
+                </div>
+
+                <div className="step-card">
+                  <div style={{ width: '48px', height: '48px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <i className="fas fa-calendar" style={{ fontSize: '24px', color: '#1f2937' }}></i>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Schedule meeting with Expert</h3>
+                    <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.</p>
+                  </div>
+                  <i className="fas fa-chevron-right" style={{ fontSize: '20px', color: '#9ca3af' }}></i>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

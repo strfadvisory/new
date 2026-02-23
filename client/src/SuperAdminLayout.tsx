@@ -31,6 +31,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     description: '',
     icon: '',
     status: true,
+    parentRole: '',
     permissions: {} as Record<string, boolean>
   });
 
@@ -106,6 +107,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       description: role.description,
       icon: role.icon || '',
       status: role.status,
+      parentRole: role.parentRoleId || '',
       permissions: role.permissions || {}
     });
     setIconPreview(role.icon || '');
@@ -122,10 +124,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         }
       });
       const defaultPermissions = await response.json();
-      setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, permissions: defaultPermissions });
+      setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, parentRole: '', permissions: defaultPermissions });
     } catch (error) {
       console.error('Error fetching default permissions:', error);
-      setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, permissions: {} });
+      setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, parentRole: '', permissions: {} });
     }
     setIconPreview('');
     setEditMode(false);
@@ -141,7 +143,14 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     if (roleToDelete) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/roles/${roleToDelete}`, {
+        let url = `http://localhost:5000/api/roles/${roleToDelete}`;
+        
+        // If deleting a child role, add query params
+        if (selectedRole?.parentRoleId) {
+          url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${roleToDelete}`;
+        }
+        
+        const response = await fetch(url, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -169,19 +178,34 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const url = editMode 
-        ? `http://localhost:5000/api/roles/${formData._id}`
-        : 'http://localhost:5000/api/roles';
       
-      console.log('Submitting role data:', formData);
+      // Determine if editing or creating
+      let url = 'http://localhost:5000/api/roles';
+      let method = 'POST';
+      const submitData: any = { ...formData };
+      
+      if (editMode && formData._id) {
+        // If editing a child role
+        if (formData.parentRole) {
+          url = `http://localhost:5000/api/roles/${formData.parentRole}`;
+          method = 'PUT';
+          submitData.childRoleId = formData._id;
+        } else {
+          // Editing a parent role
+          url = `http://localhost:5000/api/roles/${formData._id}`;
+          method = 'PUT';
+        }
+      }
+      
+      console.log('Submitting role data:', submitData);
       
       const response = await fetch(url, {
-        method: editMode ? 'PUT' : 'POST',
+        method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
       
       const result = await response.json();
@@ -190,7 +214,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       if (response.ok) {
         setIsSlidebarOpen(false);
         setEditMode(false);
-        setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, permissions: {} });
+        setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, parentRole: '', permissions: {} });
         setIconPreview('');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -246,18 +270,15 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         </header>
         
         <div className="dashboard-content">
-          <div className="content-header">
-            <div className="results-info">
-              <span className="results-count">{roles.length} Results founded</span>
-              <button className="add-new-btn" onClick={handleAddNew}>
-                <i className="fas fa-plus"></i> Add New
-              </button>
-            </div>
-          </div>
-          
           <div className="main-content">
             <div className="left-panel">
               <div className="search-filter">
+                <div className="results-info">
+                  <span className="results-count">{roles.length} Results founded</span>
+                  <button className="add-new-btn" onClick={handleAddNew}>
+                    <i className="fas fa-plus"></i> Add New
+                  </button>
+                </div>
                 <input type="text" placeholder="Search by name" className="search-input" />
               </div>
               
@@ -265,39 +286,96 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 {roles.map((role) => {
                   const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
                   return (
-                    <div 
-                      key={role._id} 
-                      className={`company-item ${selectedRole?._id === role._id ? 'selected' : ''}`}
-                      onClick={async () => {
-                        if (!isValidId) {
-                          console.error('Invalid role ID:', role._id);
-                          setSelectedRole(role);
-                          return;
-                        }
-                        try {
-                          const token = localStorage.getItem('token');
-                          const response = await fetch(`http://localhost:5000/api/roles/${role._id}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                          });
-                          if (response.ok) {
-                            const freshRole = await response.json();
-                            setSelectedRole(freshRole);
-                          } else {
+                    <React.Fragment key={role._id}>
+                     
+                      <div 
+                        className={`company-item ${selectedRole?._id === role._id ? 'selected' : ''}`}
+                        onClick={async () => {
+                          if (!isValidId) {
+                            console.error('Invalid role ID:', role._id);
+                            setSelectedRole(role);
+                            return;
+                          }
+                          try {
+                            const token = localStorage.getItem('token');
+                            const response = await fetch(`http://localhost:5000/api/roles/${role._id}`, {
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (response.ok) {
+                              const freshRole = await response.json();
+                              setSelectedRole(freshRole);
+                            } else {
+                              setSelectedRole(role);
+                            }
+                          } catch (error) {
+                            console.error('Error fetching role:', error);
                             setSelectedRole(role);
                           }
-                        } catch (error) {
-                          console.error('Error fetching role:', error);
-                          setSelectedRole(role);
-                        }
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div className="company-info">
-                        <h4>{role.name}</h4>
-                        <p>{role.type}</p>
-                        <small>{role.description}</small>
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="company-info">
+                          <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ color: '#3b82f6' }}>{role.name}</span>
+                          </h4>
+                          <p style={{ color: '#000', margin: '4px 0 0 0' }}>{role.description}</p>
+                        </div>
                       </div>
-                    </div>
+                      {role.childRoles && role.childRoles.length > 0 && role.childRoles.map((childRole: any) => (
+                        <div 
+                          key={childRole._id}
+                          className={`child-role-item ${selectedRole?._id === childRole._id ? 'selected' : ''}`}
+                          onClick={() => setSelectedRole({ ...childRole, parentRoleId: role._id })}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <div className="company-info">
+                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontSize: '18px' }}>L</span>
+                              {childRole.name}
+                            </h4>
+                          </div>
+                        </div>
+                      ))}
+                      <button 
+                        className="add-sub-user-btn"
+                        onClick={async () => {
+                          try {
+                            const token = localStorage.getItem('token');
+                            const response = await fetch('http://localhost:5000/api/roles/default-permissions', {
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            const defaultPermissions = await response.json();
+                            setFormData({ 
+                              _id: '', 
+                              name: '', 
+                              type: 'Secondary', 
+                              description: '', 
+                              icon: '', 
+                              status: true, 
+                              parentRole: role._id,
+                              permissions: defaultPermissions 
+                            });
+                          } catch (error) {
+                            console.error('Error fetching default permissions:', error);
+                            setFormData({ 
+                              _id: '', 
+                              name: '', 
+                              type: 'Secondary', 
+                              description: '', 
+                              icon: '', 
+                              status: true, 
+                              parentRole: role._id,
+                              permissions: {} 
+                            });
+                          }
+                          setIconPreview('');
+                          setEditMode(false);
+                          setIsSlidebarOpen(true);
+                        }}
+                      >
+                        <i className="fas fa-plus"></i> Add Sub-role
+                      </button>
+                    </React.Fragment>
                   );
                 })}
               </div>
@@ -331,9 +409,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
             </div>
             <form onSubmit={handleSubmit}>
               <div className="slidebar-content">
-                <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px' }}>
-                  Grants permission-based access to the Simulator
-                </p>
+                
                 
                 <div className="form-group">
                   <input 

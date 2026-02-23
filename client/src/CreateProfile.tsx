@@ -132,6 +132,8 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
         <div className="breadcrumb">
           <span>Select Company</span>
           <i className="fas fa-chevron-right"></i>
+          <span className="active">{companyType}</span>
+          <i className="fas fa-chevron-right"></i>
           <span>Create Profile</span>
         </div>
         

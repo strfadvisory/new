@@ -1,5 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './CompanySelection.css';
+
+interface CompanyType {
+  _id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
 
 interface CompanySelectionProps {
   onBack: () => void;
@@ -7,39 +14,24 @@ interface CompanySelectionProps {
 }
 
 const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect }) => {
-  const companyTypes = [
-    {
-      id: 1,
-      icon: 'fas fa-users',
-      title: 'Association',
-      description: 'Set up a new organizational entity to manage members, modules.',
-      selected: true
-    },
-    {
-      id: 2,
-      icon: 'fas fa-building',
-      title: 'Management Company',
-      description: 'Set up a new organizational entity to manage members, modules.'
-    },
-    {
-      id: 3,
-      icon: 'fas fa-chart-line',
-      title: 'Reserve Study Company',
-      description: 'Set up a new organizational entity to manage members, modules.'
-    },
-    {
-      id: 4,
-      icon: 'fas fa-user-tie',
-      title: 'Investor Advisor',
-      description: 'Set up a new organizational entity to manage members, modules.'
-    },
-    {
-      id: 5,
-      icon: 'fas fa-university',
-      title: 'Banker',
-      description: 'Set up a new organizational entity to manage members, modules.'
-    }
-  ];
+  const [companyTypes, setCompanyTypes] = useState<CompanyType[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCompanyTypes = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/roles/company-types');
+        const data = await response.json();
+        setCompanyTypes(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error fetching company types:', error);
+        setCompanyTypes([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCompanyTypes();
+  }, []);
 
   const handleCompanySelect = (companyType: string) => {
     onSelect(companyType);
@@ -78,19 +70,23 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
         </div>
         
         <div className="company-grid">
-          {companyTypes.map((company) => (
-            <div 
-              key={company.id} 
-              className={`company-card ${company.selected ? 'selected' : ''}`}
-              onClick={() => handleCompanySelect(company.title)}
-            >
-              <div className="company-icon"><i className={company.icon}></i></div>
-              <div className="company-info">
-                <h3>{company.title}</h3>
-                <p>{company.description}</p>
+          {loading ? (
+            <p>Loading...</p>
+          ) : (
+            companyTypes.map((company) => (
+              <div 
+                key={company._id} 
+                className="company-card"
+                onClick={() => handleCompanySelect(company.name)}
+              >
+                <div className="company-icon"><i className={company.icon}></i></div>
+                <div className="company-info">
+                  <h3>{company.name}</h3>
+                  <p>{company.description}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
         
         <div className="company-footer">
