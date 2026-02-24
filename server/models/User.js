@@ -16,6 +16,7 @@ const userSchema = new mongoose.Schema({
     address2: String
   },
   companyType: String,
+  roleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
   role: { type: String, default: 'USER' },
   isSuperAdmin: { type: Boolean, default: false },
   otp: String,

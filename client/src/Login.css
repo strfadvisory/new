@@ -111,10 +111,9 @@ body {
   background: white;
   padding: 48px;
   border-radius: 12px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.05);
   width: 100%;
   max-width: 420px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid #e5e7eb;
 }
 
 .login-form h1 {
@@ -151,13 +150,11 @@ body {
   font-size: 14px;
   transition: all 0.2s ease;
   background: #ffffff;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
 }
 
 .form-group input:focus {
   outline: none;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   background: #ffffff;
 }
 
@@ -206,13 +203,11 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: 24px;
-  box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4), 0 4px 6px -2px rgba(59, 130, 246, 0.05);
 }
 
 .login-button:hover {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   transform: translateY(-2px);
-  box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4), 0 10px 10px -5px rgba(59, 130, 246, 0.04);
 }
 
 .login-button:active {

@@ -10,7 +10,7 @@ interface CompanyType {
 
 interface CompanySelectionProps {
   onBack: () => void;
-  onSelect: (companyType: string) => void;
+  onSelect: (roleId: string, roleName: string) => void;
 }
 
 const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect }) => {
@@ -33,8 +33,8 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
     fetchCompanyTypes();
   }, []);
 
-  const handleCompanySelect = (companyType: string) => {
-    onSelect(companyType);
+  const handleCompanySelect = (roleId: string, roleName: string) => {
+    onSelect(roleId, roleName);
   };
 
   return (
@@ -77,7 +77,7 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
               <div 
                 key={company._id} 
                 className="company-card"
-                onClick={() => handleCompanySelect(company.name)}
+                onClick={() => handleCompanySelect(company._id, company.name)}
               >
                 <div className="company-icon"><i className={company.icon}></i></div>
                 <div className="company-info">

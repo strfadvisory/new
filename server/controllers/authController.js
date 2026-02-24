@@ -10,16 +10,16 @@ const generateToken = (id) => {
 
 const register = async (req, res) => {
   try {
-    const { firstName, lastName, email, designation, phone, password, address, companyType } = req.body;
+    const { firstName, lastName, email, designation, phone, password, address, roleId } = req.body;
     
     const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const role = await Role.findOne({ name: companyType,  status: true });
-    if (!role) {
-      return res.status(400).json({ message: 'Invalid company type' });
+    const role = await Role.findById(roleId);
+    if (!role || !role.status) {
+      return res.status(400).json({ message: 'Invalid role' });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -34,6 +34,7 @@ const register = async (req, res) => {
       password,
       address,
       companyType: role.name,
+      roleId: role._id,
       otp,
       otpExpiry,
       isVerified: false
@@ -84,7 +85,16 @@ const login = async (req, res) => {
         });
       }
       
-      const role = await Role.findOne({ name: user.companyType });
+      const role = await Role.findById(user.roleId);
+      
+      const navigation = [];
+      if (role?.permissions) {
+        Object.keys(role.permissions).forEach(key => {
+          if (role.permissions[key]) {
+            navigation.push(key);
+          }
+        });
+      }
       
       res.json({
         _id: user._id,
@@ -93,7 +103,7 @@ const login = async (req, res) => {
         email: user.email,
         companyType: user.companyType,
         isSuperAdmin: false,
-        navigation: [],
+        navigation,
         permissions: role?.permissions || {},
         token
       });
@@ -182,7 +192,16 @@ const createCompanyProfile = async (req, res) => {
     user.companyProfile = companyData;
     await user.save();
 
-    const role = await Role.findOne({ name: user.companyType });
+    const role = await Role.findById(user.roleId);
+
+    const navigation = [];
+    if (role?.permissions) {
+      Object.keys(role.permissions).forEach(key => {
+        if (role.permissions[key]) {
+          navigation.push(key);
+        }
+      });
+    }
 
     res.json({
       _id: user._id,
@@ -190,7 +209,7 @@ const createCompanyProfile = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       companyType: user.companyType,
-      navigation: [],
+      navigation,
       permissions: role?.permissions || {},
       companyProfile: user.companyProfile
     });

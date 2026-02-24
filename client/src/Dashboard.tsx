@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 
 interface DashboardProps {
@@ -7,6 +7,28 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
+  const [navigation, setNavigation] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/roles/user-permissions', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setNavigation(data.navigation || []);
+        }
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
+    };
+
+    fetchPermissions();
+  }, []);
 
   return (
     <div className="dashboard-container-no-sidebar">
@@ -22,15 +44,11 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               </div>
             </div>
             <nav className="header-nav">
-              <span className="nav-link">
-                Simulators
-              </span>
-              <span className="nav-link">
-                Companies
-              </span>
-              <span className="nav-link">
-                Role Manager
-              </span>
+              {navigation.map((navItem: string) => (
+                <span key={navItem} className="nav-link">
+                  {navItem}
+                </span>
+              ))}
             </nav>
           </div>
           <div className="header-right">
