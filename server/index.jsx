@@ -7,6 +7,7 @@ const authRoutes = require('./routes/authRoutes');
 const validationRoutes = require('./routes/validationRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const menuRoutes = require('./routes/menuRoutes');
+const videoRoutes = require('./routes/videoRoutes');
 
 const app = express();
 app.use(cors());
@@ -31,6 +32,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/validate', validationRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/menu', menuRoutes);
+app.use('/api', videoRoutes);
 app.use('/api', itemRoutes);
 
 app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));

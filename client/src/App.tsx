@@ -7,10 +7,18 @@ import CreateProfile from './CreateProfile';
 import OTPVerification from './OTPVerification';
 import CompanyProfile from './CompanyProfile';
 import Dashboard from './Dashboard';
+import DashboardLayout from './DashboardLayout';
 import SuperAdminLayout from './SuperAdminLayout';
+import Simulator from './pages/Simulator';
+import Invitations from './pages/Invitations';
+import Companies from './pages/Companies';
+import Associations from './pages/Associations';
+import Users from './pages/Users';
+import Banking from './pages/Banking';
 
 function App() {
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [selectedCompanyType, setSelectedCompanyType] = useState<string>('');
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
   const [selectedRoleName, setSelectedRoleName] = useState<string>('');
@@ -20,25 +28,12 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
-    const currentPath = window.location.pathname;
     
     if (token && userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      
-      // Only redirect if on login or root page
-      if (currentPath === '/login' || currentPath === '/') {
-        if (parsedUser.isSuperAdmin) {
-          navigate('/admin/companies');
-        } else {
-          navigate('/dashboard');
-        }
-      }
-    } else if (currentPath !== '/login' && currentPath !== '/' && !currentPath.startsWith('/signup') && !currentPath.startsWith('/create-profile') && !currentPath.startsWith('/verify-otp') && !currentPath.startsWith('/company-profile')) {
-      // Redirect to login if token expired and not on public pages
-      navigate('/login');
+      setUser(JSON.parse(userData));
     }
-  }, [navigate]);
+    setLoading(false);
+  }, []);
 
   const handleNewUser = () => {
     navigate('/signup');
@@ -61,11 +56,7 @@ function App() {
   const handleLogin = (userData: any) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    if (userData.isSuperAdmin) {
-      navigate('/admin/companies');
-    } else {
-      navigate('/dashboard');
-    }
+    navigate(userData.isSuperAdmin ? '/admin/companies' : '/dashboard');
   };
 
   const handleRegister = (userData: any) => {
@@ -98,17 +89,27 @@ function App() {
     navigate('/login');
   };
 
+  if (loading) return null;
+
   return (
     <div className="App">
       <Routes>
-        <Route path="/login" element={<Login onNewUser={handleNewUser} onLogin={handleLogin} />} />
+        <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/companies' : '/dashboard'} replace />} />
         <Route path="/signup" element={<CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />} />
         <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} roleId={selectedRoleId} roleName={selectedRoleName} />} />
         <Route path="/verify-otp" element={<OTPVerification email={userEmail} onVerify={handleOTPVerified} onBack={handleBackToProfile} />} />
         <Route path="/company-profile" element={<CompanyProfile onComplete={handleCompanyProfileComplete} />} />
-        <Route path="/admin/*" element={user?.isSuperAdmin ? <SuperAdminLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
-        <Route path="/dashboard" element={user && !user.isSuperAdmin ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} />
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/admin/*" element={user?.isSuperAdmin ? <SuperAdminLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
+        <Route path="/dashboard" element={user && !user.isSuperAdmin ? <DashboardLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}>
+          <Route index element={<Dashboard user={user} onLogout={handleLogout} />} />
+          <Route path="simulator" element={<Simulator />} />
+          <Route path="invitations" element={<Invitations />} />
+          <Route path="companies" element={<Companies />} />
+          <Route path="associations" element={<Associations />} />
+          <Route path="users" element={<Users />} />
+          <Route path="banking" element={<Banking />} />
+        </Route>
+        <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/companies' : '/dashboard') : '/login'} replace />} />
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
     </div>

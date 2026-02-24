@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node index.jsx",
     "seed:superadmin": "node seedSuperAdmin.js",
-    "dev": "nodemon index.jsx"
+    "dev": "nodemon index.jsx",
+    "delete:users": "node deleteUsers.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

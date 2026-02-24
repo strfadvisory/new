@@ -174,6 +174,7 @@ const updateRole = async (req, res) => {
       if (status !== undefined) grandChildRole.status = status;
       if (permissions) grandChildRole.permissions = permissions;
       if (nextSteps) grandChildRole.nextSteps = nextSteps;
+      if (req.body.video !== undefined) grandChildRole.video = req.body.video;
       
       await parent.save();
       return res.json(grandChildRole);
@@ -197,6 +198,7 @@ const updateRole = async (req, res) => {
       if (status !== undefined) childRole.status = status;
       if (permissions) childRole.permissions = permissions;
       if (nextSteps) childRole.nextSteps = nextSteps;
+      if (req.body.video !== undefined) childRole.video = req.body.video;
       
       await parent.save();
       return res.json(childRole);
@@ -219,6 +221,10 @@ const updateRole = async (req, res) => {
     if (nextSteps) {
       role.nextSteps = nextSteps;
       role.markModified('nextSteps');
+    }
+    if (req.body.video !== undefined) {
+      role.video = req.body.video;
+      role.markModified('video');
     }
     
     const savedRole = await role.save();
@@ -304,15 +310,36 @@ const getUserPermissions = async (req, res) => {
     }
 
     const navigation = [];
+    const menu = [];
+    
     if (role.permissions) {
       Object.keys(role.permissions).forEach(key => {
         if (role.permissions[key]) {
           navigation.push(key);
         }
       });
+      
+      // Build dynamic menu based on permissions
+      const menuMapping = {
+        'SIMULATOR_MANAGEMENT.TRANSFER_ASSOCIATION': { level: 'Simulator', path: '/dashboard/simulator' },
+        'SIMULATOR_MANAGEMENT.ACCESS_SIMULATOR': { level: 'Simulator', path: '/dashboard/simulator' },
+        'INVITATION_ONBOARDING.INVITE_MEMBERS': { level: 'Invitations', path: '/dashboard/invitations' },
+        'COMPANY_CONTROL.CREATE_COMPANY': { level: 'Companies', path: '/dashboard/companies' },
+        'ASSOCIATION_CONTROL.CREATE_SINGLE_ASSOCIATION': { level: 'Associations', path: '/dashboard/associations' },
+        'USER_ROLE_MANAGEMENT.ADD_MEMBER_ROLE': { level: 'Users', path: '/dashboard/users' },
+        'BANKING_SERVICES.MANAGE_CD_PLANS': { level: 'Banking', path: '/dashboard/banking' }
+      };
+      
+      const addedPaths = new Set();
+      navigation.forEach(perm => {
+        if (menuMapping[perm] && !addedPaths.has(menuMapping[perm].path)) {
+          menu.push(menuMapping[perm]);
+          addedPaths.add(menuMapping[perm].path);
+        }
+      });
     }
 
-    res.json({ navigation, permissions: role.permissions });
+    res.json({ navigation, permissions: role.permissions, menu });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -341,4 +368,25 @@ const getUserNextSteps = async (req, res) => {
   }
 };
 
-module.exports = { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getDefaultPermissions, getFirstLevelRoles, getUserPermissions, getUserNextSteps };
+const getUserVideos = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const User = require('../models/User');
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const role = await Role.findById(user.roleId);
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+
+    res.json({ videos: role.video || [] });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports = { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getDefaultPermissions, getFirstLevelRoles, getUserPermissions, getUserNextSteps, getUserVideos };

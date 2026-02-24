@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 
 interface Permission {
   code: string;
@@ -12,6 +13,7 @@ interface Module {
   displayName: string;
   permissions: Permission[];
   enabled: boolean;
+  expanded?: boolean;
 }
 
 interface RoleManagerProps {
@@ -20,8 +22,21 @@ interface RoleManagerProps {
   onDelete: (roleId: string) => void;
 }
 
+interface Video {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  videoUrl: string;
+  category: string;
+  isActive: boolean;
+}
+
 const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelete }) => {
   const [modules, setModules] = useState<Module[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [selectedVideos, setSelectedVideos] = useState<Video[]>([]);
   const [nextSteps, setNextSteps] = useState<any[]>([
     { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'user', completed: false },
     { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'building', completed: false },
@@ -30,12 +45,20 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   ]);
 
   useEffect(() => {
+    fetch('http://localhost:5000/api/videos')
+      .then(response => response.json())
+      .then(data => setVideos(data))
+      .catch(error => console.error('Error fetching videos:', error));
+  }, []);
+
+  useEffect(() => {
     fetch('http://localhost:5000/api/menu/menu-master')
       .then(response => response.json())
       .then(data => {
         const modulesWithState = data.modules.map((mod: any) => ({
           ...mod,
           enabled: false,
+          expanded: false,
           permissions: mod.permissions.map((perm: any) => ({ ...perm, enabled: false }))
         }));
         setModules(modulesWithState);
@@ -54,6 +77,11 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'calendar', completed: false }
       ]);
     }
+    if (selectedRole?.video && selectedRole.video.length > 0) {
+      setSelectedVideos(selectedRole.video);
+    } else {
+      setSelectedVideos([]);
+    }
   }, [selectedRole]);
 
   useEffect(() => {
@@ -70,12 +98,64 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         return {
           ...mod,
           enabled: moduleEnabled,
+          expanded: moduleEnabled,
           permissions: modulePermissions
         };
       });
       setModules(updatedModules);
+      setHasChanges(false);
     }
-  }, [selectedRole]);
+  }, [selectedRole, selectedRole?.permissions]);
+
+  const handleSave = async () => {
+    if (!selectedRole?._id) return;
+    
+    const permissionsData: any = {};
+    modules.forEach(mod => {
+      mod.permissions.forEach(perm => {
+        permissionsData[`${mod.module}.${perm.code}`] = perm.enabled;
+      });
+    });
+
+    try {
+      const token = localStorage.getItem('token');
+      const updateData: any = { 
+        name: selectedRole.name,
+        type: selectedRole.type,
+        description: selectedRole.description,
+        icon: selectedRole.icon,
+        status: selectedRole.status,
+        permissions: permissionsData,
+        nextSteps: nextSteps,
+        video: selectedVideos
+      };
+      
+      if (selectedRole.parentRoleId) {
+        updateData.parentRole = selectedRole.parentRoleId;
+        updateData.childRoleId = selectedRole._id;
+      }
+      
+      const response = await fetch(`http://localhost:5000/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(updateData)
+      });
+      
+      if (response.ok) {
+        toast.success('Successfully updated!');
+        setHasChanges(false);
+      } else {
+        const error = await response.json();
+        toast.error('Failed to save: ' + error.message);
+      }
+    } catch (error) {
+      console.error('Error saving:', error);
+      toast.error('Failed to save changes');
+    }
+  };
 
   const handleEdit = () => {
     const permissionsData: any = {};
@@ -87,6 +167,13 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     onEdit({ ...selectedRole, permissions: permissionsData });
   };
 
+  const toggleModuleExpand = (index: number) => {
+    const updatedModules = modules.map((mod, i) => 
+      i === index ? { ...mod, expanded: !mod.expanded } : mod
+    );
+    setModules(updatedModules);
+  };
+
   const toggleModule = (index: number) => {
     const updatedModules = modules.map((mod, i) => {
       if (i === index) {
@@ -94,13 +181,14 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         return {
           ...mod,
           enabled: newEnabled,
+          expanded: newEnabled,
           permissions: mod.permissions.map(p => ({ ...p, enabled: newEnabled }))
         };
       }
       return mod;
     });
     setModules(updatedModules);
-    savePermissionsToDatabase(updatedModules);
+    setHasChanges(true);
   };
 
   const togglePermission = (moduleIndex: number, permCode: string) => {
@@ -119,7 +207,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       return mod;
     });
     setModules(updatedModules);
-    savePermissionsToDatabase(updatedModules);
+    setHasChanges(true);
   };
 
   const toggleNextStep = async (index: number) => {
@@ -127,7 +215,17 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       i === index ? { ...step, completed: !step.completed } : step
     );
     setNextSteps(updatedSteps);
-    await saveNextStepsToDatabase(updatedSteps);
+    setHasChanges(true);
+  };
+
+  const toggleVideoSelection = (video: Video) => {
+    const isSelected = selectedVideos.some(v => v.id === video.id);
+    if (isSelected) {
+      setSelectedVideos(selectedVideos.filter(v => v.id !== video.id));
+    } else {
+      setSelectedVideos([...selectedVideos, video]);
+    }
+    setHasChanges(true);
   };
 
   const saveNextStepsToDatabase = async (steps: any[]) => {
@@ -225,12 +323,21 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
               >
                 Remove this
               </button>
-              <button 
-                onClick={handleEdit}
-                style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer', fontSize: '14px' }}
-              >
-                Edit
-              </button>
+              {hasChanges ? (
+                <button 
+                  onClick={handleSave}
+                  style={{ padding: '8px 16px', border: 'none', borderRadius: '6px', background: '#3b82f6', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}
+                >
+                  Save
+                </button>
+              ) : (
+                <button 
+                  onClick={handleEdit}
+                  style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer', fontSize: '14px' }}
+                >
+                  Edit
+                </button>
+              )}
             </div>
           </div>
           
@@ -240,14 +347,26 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
 
           {modules.map((module, moduleIndex) => (
             <div key={module.module} style={{ marginBottom: '16px', padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: module.enabled ? '16px' : '0' }}>
-                <span style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{module.displayName}</span>
-                <label className="toggle-switch">
-                  <input type="checkbox" checked={module.enabled} onChange={() => toggleModule(moduleIndex)} />
-                  <span className="toggle-slider"></span>
-                </label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: module.expanded ? '16px' : '0' }}>
+                <span 
+                  style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', cursor: 'pointer', flex: 1 }}
+                  onClick={() => toggleModuleExpand(moduleIndex)}
+                >
+                  {module.displayName}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" checked={module.enabled} onChange={() => toggleModule(moduleIndex)} />
+                    <span className="toggle-slider"></span>
+                  </label>
+                  <i 
+                    className={`fas fa-${module.expanded ? 'minus' : 'plus'}`} 
+                    style={{ fontSize: '14px', color: '#6b7280', cursor: 'pointer' }}
+                    onClick={() => toggleModuleExpand(moduleIndex)}
+                  ></i>
+                </div>
               </div>
-              {module.enabled && (
+              {module.expanded && (
                 <div style={{ paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>
                   {module.permissions.map((permission) => (
                     <div key={permission.code} style={{ padding: '12px 0', borderBottom: '1px solid #f3f4f6' }}>
@@ -287,6 +406,31 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                 />
               </div>
             ))}
+          </div>
+
+          <div style={{ marginTop: '24px', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>Videos</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+              {videos.map((video) => (
+                <div key={video.id} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <img src={video.image} alt={video.title} style={{ width: '100%', height: '140px', borderRadius: '6px', objectFit: 'cover' }} />
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{video.title}</h4>
+                    <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#6b7280' }}>{video.description}</p>
+                    <span style={{ fontSize: '12px', color: '#3b82f6', background: '#eff6ff', padding: '2px 8px', borderRadius: '4px' }}>{video.category}</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #e5e7eb' }}>
+                    <span style={{ fontSize: '13px', color: '#6b7280' }}>Select</span>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedVideos.some(v => v.id === video.id)} 
+                      onChange={() => toggleVideoSelection(video)}
+                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </>
       ) : (

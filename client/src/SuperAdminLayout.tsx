@@ -7,6 +7,7 @@ import AllUsers from './pages/superadmin/AllUsers';
 import Analytics from './pages/superadmin/Analytics';
 import SystemSettings from './pages/superadmin/SystemSettings';
 import RoleManager from './pages/superadmin/RoleManager';
+import { API_BASE_URL } from './config';
 
 interface SuperAdminLayoutProps {
   user: any;
@@ -38,22 +39,32 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const currentPage = location.pathname.split('/').pop() || 'role-manager';
 
   React.useEffect(() => {
-    fetchRoles();
-  }, []);
+    if (currentPage === 'role-manager') {
+      fetchRoles();
+    }
+  }, [currentPage]);
 
   const fetchRoles = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/roles', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const response = await fetch(`${API_BASE_URL}/api/roles`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
       if (response.ok) {
         setRoles(data);
-        if (data.length > 0 && !selectedRole) {
-          setSelectedRole(data[0]);
+        if (currentPage === 'role-manager' && data.length > 0) {
+          const firstRole = data[0];
+          const isValidId = firstRole._id && firstRole._id.match(/^[0-9a-fA-F]{24}$/);
+          if (isValidId) {
+            const roleResponse = await fetch(`${API_BASE_URL}/api/roles/${firstRole._id}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const freshRole = roleResponse.ok ? await roleResponse.json() : firstRole;
+            setSelectedRole(freshRole);
+          } else {
+            setSelectedRole(firstRole);
+          }
         }
       }
     } catch (error) {
@@ -234,7 +245,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   ];
 
   return (
-    <div className="dashboard-container-no-sidebar">
+    <div  >
       <div className="dashboard-main">
         <header className="dashboard-header">
           <div className="header-left">
