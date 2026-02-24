@@ -22,6 +22,12 @@ interface RoleManagerProps {
 
 const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelete }) => {
   const [modules, setModules] = useState<Module[]>([]);
+  const [nextSteps, setNextSteps] = useState<any[]>([
+    { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'user', completed: false },
+    { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'building', completed: false },
+    { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'file', completed: false },
+    { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'calendar', completed: false }
+  ]);
 
   useEffect(() => {
     fetch('http://localhost:5000/api/menu/menu-master')
@@ -36,6 +42,19 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       })
       .catch(error => console.error('Error fetching menu data:', error));
   }, []);
+
+  useEffect(() => {
+    if (selectedRole?.nextSteps && selectedRole.nextSteps.length > 0) {
+      setNextSteps(selectedRole.nextSteps);
+    } else {
+      setNextSteps([
+        { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'user', completed: false },
+        { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'building', completed: false },
+        { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'file', completed: false },
+        { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'calendar', completed: false }
+      ]);
+    }
+  }, [selectedRole]);
 
   useEffect(() => {
     if (selectedRole?.permissions && modules.length > 0) {
@@ -103,6 +122,41 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     savePermissionsToDatabase(updatedModules);
   };
 
+  const toggleNextStep = async (index: number) => {
+    const updatedSteps = nextSteps.map((step, i) => 
+      i === index ? { ...step, completed: !step.completed } : step
+    );
+    setNextSteps(updatedSteps);
+    await saveNextStepsToDatabase(updatedSteps);
+  };
+
+  const saveNextStepsToDatabase = async (steps: any[]) => {
+    if (!selectedRole?._id) return;
+    try {
+      const token = localStorage.getItem('token');
+      const updateData: any = { 
+        name: selectedRole.name,
+        type: selectedRole.type,
+        description: selectedRole.description,
+        icon: selectedRole.icon,
+        status: selectedRole.status,
+        permissions: selectedRole.permissions,
+        nextSteps: steps
+      };
+      if (selectedRole.parentRoleId) {
+        updateData.parentRole = selectedRole.parentRoleId;
+        updateData.childRoleId = selectedRole._id;
+      }
+      await fetch(`http://localhost:5000/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(updateData)
+      });
+    } catch (error) {
+      console.error('Error saving next steps:', error);
+    }
+  };
+
   const savePermissionsToDatabase = async (updatedModules: Module[]) => {
     if (!selectedRole?._id) {
       console.error('No role selected');
@@ -156,7 +210,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   };
 
   return (
-    <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px', paddingBottom: '50px' }}>
       {selectedRole ? (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -164,12 +218,20 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
               <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '600', color: '#1f2937' }}>{selectedRole.name}</h2>
               <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>{selectedRole.type}</p>
             </div>
-            <button 
-              onClick={handleEdit}
-              style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer', fontSize: '14px' }}
-            >
-              Edit
-            </button>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                onClick={() => onDelete(selectedRole._id)}
+                style={{ padding: '8px 16px', border: '1px solid #ef4444', borderRadius: '6px', background: 'white', color: '#ef4444', cursor: 'pointer', fontSize: '14px' }}
+              >
+                Remove this
+              </button>
+              <button 
+                onClick={handleEdit}
+                style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer', fontSize: '14px' }}
+              >
+                Edit
+              </button>
+            </div>
           </div>
           
           <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '32px' }}>
@@ -206,13 +268,25 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
             </div>
           ))}
 
-          <div style={{ marginTop: '16px', padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: '#f9fafb' }}>
-            <button 
-              onClick={() => onDelete(selectedRole._id)}
-              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '14px', fontWeight: '500' }}
-            >
-              Remove this
-            </button>
+          <div style={{ marginTop: '24px', marginBottom: '16px' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>Next Steps</h3>
+            {nextSteps.map((step, index) => (
+              <div key={index} style={{ marginBottom: '12px', padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                <div style={{ width: '48px', height: '48px', background: '#eff6ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <i className={`fas fa-${step.icon}`} style={{ fontSize: '20px', color: '#3b82f6' }}></i>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{step.title}</h4>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{step.description}</p>
+                </div>
+                <input 
+                  type="checkbox" 
+                  checked={step.completed} 
+                  onChange={() => toggleNextStep(index)}
+                  style={{ width: '20px', height: '20px', cursor: 'pointer', marginTop: '4px' }}
+                />
+              </div>
+            ))}
           </div>
         </>
       ) : (

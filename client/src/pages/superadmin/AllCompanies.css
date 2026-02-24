@@ -1,0 +1,189 @@
+.companies-container {
+  display: flex;
+  height: calc(100vh - 60px);
+  background: #f9fafb;
+}
+
+.companies-left-panel {
+  width: 280px;
+  background: white;
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+
+.companies-header {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.companies-search {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.add-new-btn {
+  width: 100%;
+  padding: 8px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.results-count {
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.companies-list {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.company-item {
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.company-item:hover {
+  background: #f9fafb;
+}
+
+.company-item.active {
+  background: #eff6ff;
+  border-left: 3px solid #3b82f6;
+}
+
+.company-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.company-type {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.company-desc {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.companies-right-panel {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  background: white;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-label {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: #111827;
+}
+
+.admin-card, .advisor-card, .association-card {
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.advisor-card, .association-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.admin-name, .advisor-name, .assoc-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.admin-info, .advisor-info, .assoc-address {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.admin-contact, .advisor-contact {
+  font-size: 12px;
+  color: #3b82f6;
+  margin-bottom: 4px;
+}
+
+.advisor-role {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.inline-search, .inline-select {
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.assoc-stats {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.view-all {
+  text-align: center;
+  color: #3b82f6;
+  font-size: 13px;
+  cursor: pointer;
+  margin-top: 8px;
+}

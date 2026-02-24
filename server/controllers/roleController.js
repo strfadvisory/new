@@ -13,27 +13,68 @@ const initializeDefaultPermissions = () => {
 
 const createRole = async (req, res) => {
   try {
-    const { name, type, description, icon, status, permissions, parentRole } = req.body;
+    const { name, description, icon, status, permissions, parentRole, childRoleId } = req.body;
     
     const defaultPerms = initializeDefaultPermissions();
     const finalPermissions = permissions || defaultPerms;
     
-    console.log('Permissions to save:', JSON.stringify(finalPermissions, null, 2));
+    // If adding grandchild (3rd level)
+    if (parentRole && childRoleId) {
+      const parent = await Role.findById(parentRole);
+      if (!parent) {
+        return res.status(404).json({ message: 'Parent role not found' });
+      }
+      
+      const childRole = parent.childRoles.id(childRoleId);
+      if (!childRole) {
+        return res.status(404).json({ message: 'Child role not found' });
+      }
+      
+      const activeParentPerms = {};
+      Object.keys(childRole.permissions).forEach(key => {
+        if (childRole.permissions[key] === true) {
+          activeParentPerms[key] = false;
+        }
+      });
+      
+      const grandChildRole = {
+        name,
+        type: 'Members',
+        description,
+        icon,
+        status,
+        permissions: activeParentPerms
+      };
+      
+      if (!childRole.childRoles) childRole.childRoles = [];
+      childRole.childRoles.push(grandChildRole);
+      await parent.save();
+      
+      return res.status(201).json(grandChildRole);
+    }
     
-    // If parentRole is provided, add as child role to parent
+    // If adding child (2nd level)
     if (parentRole) {
       const parent = await Role.findById(parentRole);
       if (!parent) {
         return res.status(404).json({ message: 'Parent role not found' });
       }
       
+      const activeParentPerms = {};
+      Object.keys(parent.permissions).forEach(key => {
+        if (parent.permissions[key] === true) {
+          activeParentPerms[key] = false;
+        }
+      });
+      
       const childRole = {
         name,
-        type,
+        type: 'Secondary',
         description,
         icon,
         status,
-        permissions: finalPermissions
+        permissions: activeParentPerms,
+        childRoles: []
       };
       
       parent.childRoles.push(childRole);
@@ -43,10 +84,10 @@ const createRole = async (req, res) => {
       return res.status(201).json(addedChild);
     }
     
-    // Create parent role
+    // Create parent role (1st level)
     const role = new Role({
       name,
-      type,
+      type: 'Primary',
       description,
       icon,
       status,
@@ -57,7 +98,6 @@ const createRole = async (req, res) => {
     role.markModified('permissions');
     
     const savedRole = await role.save();
-    console.log('Saved role permissions:', JSON.stringify(savedRole.permissions, null, 2));
     
     res.status(201).json(savedRole);
   } catch (error) {
@@ -105,16 +145,41 @@ const getRoleById = async (req, res) => {
 const updateRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, type, description, icon, status, permissions, parentRole, childRoleId } = req.body;
+    const { name, description, icon, status, permissions, parentRole, childRoleId, grandChildRoleId, nextSteps } = req.body;
     
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ message: 'Invalid role ID format' });
     }
     
-    console.log('Updating role:', id);
-    console.log('New permissions:', JSON.stringify(permissions, null, 2));
+    // If updating a grandchild role (3rd level)
+    if (parentRole && childRoleId && grandChildRoleId) {
+      const parent = await Role.findById(parentRole);
+      if (!parent) {
+        return res.status(404).json({ message: 'Parent role not found' });
+      }
+      
+      const childRole = parent.childRoles.id(childRoleId);
+      if (!childRole) {
+        return res.status(404).json({ message: 'Child role not found' });
+      }
+      
+      const grandChildRole = childRole.childRoles.id(grandChildRoleId);
+      if (!grandChildRole) {
+        return res.status(404).json({ message: 'Grandchild role not found' });
+      }
+      
+      if (name) grandChildRole.name = name;
+      if (description) grandChildRole.description = description;
+      if (icon !== undefined) grandChildRole.icon = icon;
+      if (status !== undefined) grandChildRole.status = status;
+      if (permissions) grandChildRole.permissions = permissions;
+      if (nextSteps) grandChildRole.nextSteps = nextSteps;
+      
+      await parent.save();
+      return res.json(grandChildRole);
+    }
     
-    // If updating a child role
+    // If updating a child role (2nd level)
     if (parentRole && childRoleId) {
       const parent = await Role.findById(parentRole);
       if (!parent) {
@@ -127,24 +192,23 @@ const updateRole = async (req, res) => {
       }
       
       if (name) childRole.name = name;
-      if (type) childRole.type = type;
       if (description) childRole.description = description;
       if (icon !== undefined) childRole.icon = icon;
       if (status !== undefined) childRole.status = status;
       if (permissions) childRole.permissions = permissions;
+      if (nextSteps) childRole.nextSteps = nextSteps;
       
       await parent.save();
       return res.json(childRole);
     }
     
-    // Update parent role
+    // Update parent role (1st level)
     const role = await Role.findById(id);
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
     
     if (name) role.name = name;
-    if (type) role.type = type;
     if (description) role.description = description;
     if (icon !== undefined) role.icon = icon;
     if (status !== undefined) role.status = status;
@@ -152,9 +216,12 @@ const updateRole = async (req, res) => {
       role.permissions = permissions;
       role.markModified('permissions');
     }
+    if (nextSteps) {
+      role.nextSteps = nextSteps;
+      role.markModified('nextSteps');
+    }
     
     const savedRole = await role.save();
-    console.log('Updated role permissions:', JSON.stringify(savedRole.permissions, null, 2));
 
     res.json(savedRole);
   } catch (error) {
@@ -166,9 +233,27 @@ const updateRole = async (req, res) => {
 const deleteRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const { parentRole, childRoleId } = req.query;
+    const { parentRole, childRoleId, grandChildRoleId } = req.query;
     
-    // If deleting a child role
+    // If deleting a grandchild role (3rd level)
+    if (parentRole && childRoleId && grandChildRoleId) {
+      const parent = await Role.findById(parentRole);
+      if (!parent) {
+        return res.status(404).json({ message: 'Parent role not found' });
+      }
+      
+      const childRole = parent.childRoles.id(childRoleId);
+      if (!childRole) {
+        return res.status(404).json({ message: 'Child role not found' });
+      }
+      
+      childRole.childRoles.id(grandChildRoleId).remove();
+      await parent.save();
+      
+      return res.json({ message: 'Grandchild role deleted successfully' });
+    }
+    
+    // If deleting a child role (2nd level)
     if (parentRole && childRoleId) {
       const parent = await Role.findById(parentRole);
       if (!parent) {
@@ -181,7 +266,7 @@ const deleteRole = async (req, res) => {
       return res.json({ message: 'Child role deleted successfully' });
     }
     
-    // Delete parent role (and all its child roles)
+    // Delete parent role (1st level - and all its children)
     const role = await Role.findById(id);
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
@@ -233,4 +318,27 @@ const getUserPermissions = async (req, res) => {
   }
 };
 
-module.exports = { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getDefaultPermissions, getFirstLevelRoles, getUserPermissions };
+const getUserNextSteps = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const User = require('../models/User');
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const role = await Role.findById(user.roleId);
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+
+    const completedNextSteps = (role.nextSteps || []).filter(step => step.completed === true);
+
+    res.json({ nextSteps: completedNextSteps });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports = { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getDefaultPermissions, getFirstLevelRoles, getUserPermissions, getUserNextSteps };

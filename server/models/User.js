@@ -5,8 +5,8 @@ const userSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  designation: { type: String, required: true },
-  phone: { type: String, required: true },
+  designation: { type: String },
+  phone: { type: String },
   password: { type: String, required: true },
   address: {
     zipCode: String,
@@ -22,6 +22,7 @@ const userSchema = new mongoose.Schema({
   otp: String,
   otpExpiry: Date,
   isVerified: { type: Boolean, default: false },
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   companyProfile: {
     companyName: String,
     description: String,

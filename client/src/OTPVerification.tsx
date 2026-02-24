@@ -10,6 +10,8 @@ interface OTPVerificationProps {
 
 const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBack }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const handleChange = (index: number, value: string) => {
     if (value.length > 1) return;
@@ -31,6 +33,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
   };
 
   const handleResend = async () => {
+    setResending(true);
     try {
       const response = await fetch('http://localhost:5000/api/auth/resend-otp', {
         method: 'POST',
@@ -45,6 +48,8 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
       }
     } catch (error) {
       toast.error('Failed to resend OTP');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -57,6 +62,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
       return;
     }
 
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
         method: 'POST',
@@ -73,6 +79,8 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
       }
     } catch (error) {
       toast.error('OTP verification failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,8 +119,8 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
             <div className="mt-4 mb-4">
               <label className="form-label d-flex justify-content-between align-items-center">
                 <span>Enter OTP</span>
-                <button type="button" onClick={handleResend} className="btn btn-link p-0 text-decoration-none">
-                  Resend Code
+                <button type="button" onClick={handleResend} className="btn btn-link p-0 text-decoration-none" disabled={resending}>
+                  {resending ? <><i className="fas fa-spinner fa-spin"></i> Sending...</> : 'Resend Code'}
                 </button>
               </label>
               <div className="d-flex justify-content-center gap-2">
@@ -132,7 +140,9 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
               </div>
             </div>
             
-            <button type="submit" className="btn btn-primary w-100 mt-4 py-2">Continue</button>
+            <button type="submit" className="btn btn-primary w-100 mt-4 py-2" disabled={loading}>
+              {loading ? <><i className="fas fa-spinner fa-spin"></i> Verifying...</> : 'Continue'}
+            </button>
             
             <div className="text-center mt-3">
               <button type="button" onClick={onBack} className="btn btn-link text-muted p-0">

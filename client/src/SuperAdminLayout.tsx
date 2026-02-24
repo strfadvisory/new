@@ -27,11 +27,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const [formData, setFormData] = useState({
     _id: '',
     name: '',
-    type: 'Primary',
     description: '',
     icon: '',
     status: true,
     parentRole: '',
+    childRoleId: '',
     permissions: {} as Record<string, boolean>
   });
 
@@ -64,19 +64,16 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         alert('Please upload an image file');
         return;
       }
       
-      // Validate file size (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
         alert('File size must be less than 2MB');
         return;
       }
 
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
@@ -103,11 +100,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     setFormData({
       _id: role._id,
       name: role.name,
-      type: role.type,
       description: role.description,
       icon: role.icon || '',
       status: role.status,
       parentRole: role.parentRoleId || '',
+      childRoleId: role.childRoleId || '',
       permissions: role.permissions || {}
     });
     setIconPreview(role.icon || '');
@@ -124,10 +121,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         }
       });
       const defaultPermissions = await response.json();
-      setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, parentRole: '', permissions: defaultPermissions });
+      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: defaultPermissions });
     } catch (error) {
       console.error('Error fetching default permissions:', error);
-      setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, parentRole: '', permissions: {} });
+      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {} });
     }
     setIconPreview('');
     setEditMode(false);
@@ -145,8 +142,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         const token = localStorage.getItem('token');
         let url = `http://localhost:5000/api/roles/${roleToDelete}`;
         
-        // If deleting a child role, add query params
-        if (selectedRole?.parentRoleId) {
+        if (selectedRole?.parentRoleId && selectedRole?.childRoleId) {
+          url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${selectedRole.childRoleId}&grandChildRoleId=${roleToDelete}`;
+        }
+        else if (selectedRole?.parentRoleId) {
           url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${roleToDelete}`;
         }
         
@@ -179,25 +178,25 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     try {
       const token = localStorage.getItem('token');
       
-      // Determine if editing or creating
       let url = 'http://localhost:5000/api/roles';
       let method = 'POST';
       const submitData: any = { ...formData };
       
       if (editMode && formData._id) {
-        // If editing a child role
-        if (formData.parentRole) {
+        if (formData.parentRole && formData.childRoleId) {
+          url = `http://localhost:5000/api/roles/${formData.parentRole}`;
+          method = 'PUT';
+          submitData.grandChildRoleId = formData._id;
+        }
+        else if (formData.parentRole) {
           url = `http://localhost:5000/api/roles/${formData.parentRole}`;
           method = 'PUT';
           submitData.childRoleId = formData._id;
         } else {
-          // Editing a parent role
           url = `http://localhost:5000/api/roles/${formData._id}`;
           method = 'PUT';
         }
       }
-      
-      console.log('Submitting role data:', submitData);
       
       const response = await fetch(url, {
         method,
@@ -209,12 +208,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       });
       
       const result = await response.json();
-      console.log('Server response:', result);
       
       if (response.ok) {
         setIsSlidebarOpen(false);
         setEditMode(false);
-        setFormData({ _id: '', name: '', type: 'Primary', description: '', icon: '', status: true, parentRole: '', permissions: {} });
+        setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {} });
         setIconPreview('');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -271,7 +269,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         
         <div className="dashboard-content">
           <div className="main-content">
-            <div className="left-panel">
+            {currentPage !== 'companies' && <div className="left-panel">
               <div className="search-filter">
                 <div className="results-info">
                   <span className="results-count">{roles.length} Results founded</span>
@@ -322,19 +320,56 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                         </div>
                       </div>
                       {role.childRoles && role.childRoles.length > 0 && role.childRoles.map((childRole: any) => (
-                        <div 
-                          key={childRole._id}
-                          className={`child-role-item ${selectedRole?._id === childRole._id ? 'selected' : ''}`}
-                          onClick={() => setSelectedRole({ ...childRole, parentRoleId: role._id })}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <div className="company-info">
-                            <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontSize: '18px' }}>L</span>
-                              {childRole.name}
-                            </h4>
+                        <React.Fragment key={childRole._id}>
+                          <div 
+                            className={`child-role-item ${selectedRole?._id === childRole._id ? 'selected' : ''}`}
+                            onClick={() => setSelectedRole({ ...childRole, parentRoleId: role._id })}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <div className="company-info">
+                              <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontSize: '18px' }}>L</span>
+                                {childRole.name}
+                              </h4>
+                            </div>
                           </div>
-                        </div>
+                          {childRole.childRoles && childRole.childRoles.length > 0 && childRole.childRoles.map((grandChildRole: any) => (
+                            <div 
+                              key={grandChildRole._id}
+                              className={`grandchild-role-item ${selectedRole?._id === grandChildRole._id ? 'selected' : ''}`}
+                              onClick={() => setSelectedRole({ ...grandChildRole, parentRoleId: role._id, childRoleId: childRole._id })}
+                              style={{ cursor: 'pointer', paddingLeft: '40px' }}
+                            >
+                              <div className="company-info">
+                                <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span style={{ fontSize: '14px' }}>└─</span>
+                                  {grandChildRole.name}
+                                </h4>
+                              </div>
+                            </div>
+                          ))}
+                          <button 
+                            className="add-sub-user-btn"
+                            style={{ marginLeft: '20px', fontSize: '12px' }}
+                            onClick={() => {
+                              setFormData({ 
+                                _id: '', 
+                                name: '', 
+                                description: '', 
+                                icon: '', 
+                                status: true, 
+                                parentRole: role._id,
+                                childRoleId: childRole._id,
+                                permissions: {} 
+                              });
+                              setIconPreview('');
+                              setEditMode(false);
+                              setIsSlidebarOpen(true);
+                            }}
+                          >
+                            <i className="fas fa-plus"></i> Add Member Role
+                          </button>
+                        </React.Fragment>
                       ))}
                       <button 
                         className="add-sub-user-btn"
@@ -348,11 +383,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                             setFormData({ 
                               _id: '', 
                               name: '', 
-                              type: 'Secondary', 
                               description: '', 
                               icon: '', 
                               status: true, 
                               parentRole: role._id,
+                              childRoleId: '',
                               permissions: defaultPermissions 
                             });
                           } catch (error) {
@@ -360,11 +395,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                             setFormData({ 
                               _id: '', 
                               name: '', 
-                              type: 'Secondary', 
                               description: '', 
                               icon: '', 
                               status: true, 
                               parentRole: role._id,
+                              childRoleId: '',
                               permissions: {} 
                             });
                           }
@@ -379,11 +414,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   );
                 })}
               </div>
-            </div>
+            </div>}
             
-            <div className="right-panel">
+            <div className="right-panel" style={currentPage === 'companies' ? { marginLeft: 0, width: '100%' } : {}}>
               <Routes>
-                <Route path="/" element={<Navigate to="/admin/role-manager" />} />
                 <Route path="simulators" element={<SuperAdminDashboard />} />
                 <Route path="companies" element={<AllCompanies />} />
                 <Route path="users" element={<AllUsers />} />
@@ -402,7 +436,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
           <div className="slidebar-overlay" onClick={() => setIsSlidebarOpen(false)}></div>
           <div className="right-slidebar">
             <div className="slidebar-header">
-              <h3>{editMode ? 'Edit Role' : 'Basic Details'}</h3>
+              <h3>{editMode ? 'Edit Role' : 'Add New Role'}</h3>
               <button className="close-btn" onClick={() => setIsSlidebarOpen(false)}>
                 <i className="fas fa-times"></i>
               </button>
@@ -463,18 +497,6 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                     )}
                     <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Icon</span>
                   </div>
-                </div>
-
-                <div className="form-group">
-                  <select 
-                    className="form-select"
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                  >
-                    <option>Primary</option>
-                    <option>Secondary</option>
-                    <option>Members</option>
-                  </select>
                 </div>
 
                 <div className="form-group">

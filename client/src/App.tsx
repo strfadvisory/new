@@ -20,18 +20,23 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
+    const currentPath = window.location.pathname;
+    
     if (token && userData) {
       const parsedUser = JSON.parse(userData);
       setUser(parsedUser);
       
-      // Redirect to appropriate page if on login
-      if (window.location.pathname === '/login' || window.location.pathname === '/') {
+      // Only redirect if on login or root page
+      if (currentPath === '/login' || currentPath === '/') {
         if (parsedUser.isSuperAdmin) {
-          navigate('/admin/role-manager');
+          navigate('/admin/companies');
         } else {
           navigate('/dashboard');
         }
       }
+    } else if (currentPath !== '/login' && currentPath !== '/' && !currentPath.startsWith('/signup') && !currentPath.startsWith('/create-profile') && !currentPath.startsWith('/verify-otp') && !currentPath.startsWith('/company-profile')) {
+      // Redirect to login if token expired and not on public pages
+      navigate('/login');
     }
   }, [navigate]);
 
@@ -57,7 +62,7 @@ function App() {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     if (userData.isSuperAdmin) {
-      navigate('/admin/role-manager');
+      navigate('/admin/companies');
     } else {
       navigate('/dashboard');
     }

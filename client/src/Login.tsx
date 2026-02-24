@@ -11,9 +11,11 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
         method: 'POST',
@@ -30,6 +32,8 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
       }
     } catch (error) {
       toast.error('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,7 +95,9 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
               <a href="#" className="forgot-password">Forgot Password?</a>
             </div>
             
-            <button type="submit" className="login-button">Login</button>
+            <button type="submit" className="login-button" disabled={loading}>
+              {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Login'}
+            </button>
             
             <div className="new-user">
               <button type="button" onClick={onNewUser} className="new-user-link">

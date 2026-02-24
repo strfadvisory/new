@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import './CreateProfile.css';
 
 interface CreateProfileProps {
@@ -11,6 +12,7 @@ interface CreateProfileProps {
 }
 
 const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, companyType, roleId, roleName }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -27,6 +29,13 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
   });
 
   const [emailValidation, setEmailValidation] = useState<{ valid: boolean | null, message: string, checking: boolean }>({ valid: null, message: '', checking: false });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!companyType && !roleName) {
+      navigate('/');
+    }
+  }, [companyType, roleName, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -76,6 +85,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
       return;
     }
     
+    setLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/auth/register', {
         method: 'POST',
@@ -107,6 +117,8 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
       }
     } catch (error) {
       toast.error('Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -359,7 +371,9 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               <p className="text-muted small">Please note that fields marked with * are mandatory.</p>
             </div>
             
-            <button type="submit" className="continue-button">Continue</button>
+            <button type="submit" className="continue-button" disabled={loading}>
+              {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Continue'}
+            </button>
             
             <div className="change-company">
               <button type="button" onClick={onBack} className="change-company-link">

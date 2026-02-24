@@ -23,6 +23,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete }) => {
   });
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>('');
+  const [loading, setLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -42,6 +43,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
       const formDataToSend = new FormData();
@@ -72,6 +74,8 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete }) => {
       }
     } catch (error) {
       toast.error('Failed to create company profile');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -334,7 +338,9 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete }) => {
               <p className="text-muted small">Please note that fields marked with * are mandatory.</p>
             </div>
             
-            <button type="submit" className="btn btn-primary w-100 mt-4 py-2">Continue</button>
+            <button type="submit" className="btn btn-primary w-100 mt-4 py-2" disabled={loading}>
+              {loading ? <><i className="fas fa-spinner fa-spin"></i> Saving...</> : 'Continue'}
+            </button>
           </form>
         </div>
       </div>

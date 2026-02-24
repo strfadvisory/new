@@ -1,5 +1,5 @@
 const express = require('express');
-const { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getDefaultPermissions, getFirstLevelRoles, getUserPermissions } = require('../controllers/roleController');
+const { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getDefaultPermissions, getFirstLevelRoles, getUserPermissions, getUserNextSteps } = require('../controllers/roleController');
 const { protect } = require('../middleware/authMiddleware.jsx');
 const { superAdminOnly } = require('../middleware/superAdminMiddleware');
 
@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get('/company-types', getFirstLevelRoles);
 router.get('/user-permissions', protect, getUserPermissions);
+router.get('/user-nextsteps', protect, getUserNextSteps);
 router.post('/', protect, superAdminOnly, createRole);
 router.get('/', protect, superAdminOnly, getAllRoles);
 router.get('/default-permissions', protect, superAdminOnly, getDefaultPermissions);
