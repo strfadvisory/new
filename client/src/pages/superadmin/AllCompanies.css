@@ -1,6 +1,7 @@
 .companies-container {
   display: flex; 
-  background: white
+  background: white;
+  min-height: calc(100vh - 50px);
 }
 
 .companies-left-panel {

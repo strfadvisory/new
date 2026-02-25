@@ -304,7 +304,33 @@ const getUserPermissions = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const role = await Role.findById(user.roleId);
+    let role = await Role.findById(user.roleId);
+    
+    // If role not found, search in childRoles
+    if (!role) {
+      const allRoles = await Role.find();
+      for (const parentRole of allRoles) {
+        if (parentRole.childRoles && parentRole.childRoles.length > 0) {
+          const foundChild = parentRole.childRoles.find(child => child._id.toString() === user.roleId.toString());
+          if (foundChild) {
+            role = foundChild;
+            break;
+          }
+          // Check in grandchild roles
+          for (const childRole of parentRole.childRoles) {
+            if (childRole.childRoles && childRole.childRoles.length > 0) {
+              const foundGrandChild = childRole.childRoles.find(grandChild => grandChild._id.toString() === user.roleId.toString());
+              if (foundGrandChild) {
+                role = foundGrandChild;
+                break;
+              }
+            }
+          }
+          if (role) break;
+        }
+      }
+    }
+    
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
@@ -355,7 +381,33 @@ const getUserNextSteps = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const role = await Role.findById(user.roleId);
+    let role = await Role.findById(user.roleId);
+    
+    // If role not found, search in childRoles
+    if (!role) {
+      const allRoles = await Role.find();
+      for (const parentRole of allRoles) {
+        if (parentRole.childRoles && parentRole.childRoles.length > 0) {
+          const foundChild = parentRole.childRoles.find(child => child._id.toString() === user.roleId.toString());
+          if (foundChild) {
+            role = foundChild;
+            break;
+          }
+          // Check in grandchild roles
+          for (const childRole of parentRole.childRoles) {
+            if (childRole.childRoles && childRole.childRoles.length > 0) {
+              const foundGrandChild = childRole.childRoles.find(grandChild => grandChild._id.toString() === user.roleId.toString());
+              if (foundGrandChild) {
+                role = foundGrandChild;
+                break;
+              }
+            }
+          }
+          if (role) break;
+        }
+      }
+    }
+    
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
@@ -378,7 +430,33 @@ const getUserVideos = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const role = await Role.findById(user.roleId);
+    let role = await Role.findById(user.roleId);
+    
+    // If role not found, search in childRoles
+    if (!role) {
+      const allRoles = await Role.find();
+      for (const parentRole of allRoles) {
+        if (parentRole.childRoles && parentRole.childRoles.length > 0) {
+          const foundChild = parentRole.childRoles.find(child => child._id.toString() === user.roleId.toString());
+          if (foundChild) {
+            role = foundChild;
+            break;
+          }
+          // Check in grandchild roles
+          for (const childRole of parentRole.childRoles) {
+            if (childRole.childRoles && childRole.childRoles.length > 0) {
+              const foundGrandChild = childRole.childRoles.find(grandChild => grandChild._id.toString() === user.roleId.toString());
+              if (foundGrandChild) {
+                role = foundGrandChild;
+                break;
+              }
+            }
+          }
+          if (role) break;
+        }
+      }
+    }
+    
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
@@ -399,7 +477,33 @@ const getChildRoles = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const role = await Role.findById(user.roleId);
+    let role = await Role.findById(user.roleId);
+    
+    // If role not found, search in childRoles
+    if (!role) {
+      const allRoles = await Role.find();
+      for (const parentRole of allRoles) {
+        if (parentRole.childRoles && parentRole.childRoles.length > 0) {
+          const foundChild = parentRole.childRoles.find(child => child._id.toString() === user.roleId.toString());
+          if (foundChild) {
+            role = foundChild;
+            break;
+          }
+          // Check in grandchild roles
+          for (const childRole of parentRole.childRoles) {
+            if (childRole.childRoles && childRole.childRoles.length > 0) {
+              const foundGrandChild = childRole.childRoles.find(grandChild => grandChild._id.toString() === user.roleId.toString());
+              if (foundGrandChild) {
+                role = foundGrandChild;
+                break;
+              }
+            }
+          }
+          if (role) break;
+        }
+      }
+    }
+    
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }

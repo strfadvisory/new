@@ -78,7 +78,20 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
                 className="company-card"
                 onClick={() => handleCompanySelect(company._id, company.name)}
               >
-                <div className="company-icon"><i className={company.icon}></i></div>
+                <div className="company-icon">
+                  
+                  <img
+  src={company.icon}
+  alt="Company Icon"
+  style={{
+    width: "70px",
+ 
+    objectFit: "contain",
+    verticalAlign: "middle"
+  }}
+/>
+                
+                </div>
                 <div className="company-info">
                   <h3>{company.name}</h3>
                   <p>{company.description}</p>

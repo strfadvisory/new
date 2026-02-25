@@ -329,7 +329,7 @@ display: flex;
 .main-content {
   display: flex;
   gap: 0;
- 
+  min-height: calc(100vh - 50px);
 }
 
 .left-panel, .right-panel {

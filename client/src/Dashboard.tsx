@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import './Dashboard.css';
 import { API_BASE_URL } from './config';
 
@@ -12,6 +13,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [videos, setVideos] = useState<any[]>([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteTitle, setInviteTitle] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteData, setInviteData] = useState({
     selectedRole: '',
     firstName: '',
@@ -80,6 +82,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setInviteLoading(true);
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/auth/invite-advisory`, {
@@ -90,17 +93,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         },
         body: JSON.stringify(inviteData)
       });
+      const data = await response.json();
       if (response.ok) {
-        alert('Invitation sent successfully!');
+        toast.success('Invitation sent successfully!');
         setShowInviteModal(false);
         setInviteData({ selectedRole: '', firstName: '', lastName: '', adminEmail: '', designation: '' });
       } else {
-        const error = await response.json();
-        alert(error.message || 'Failed to send invitation');
+        toast.error(data.message || 'Failed to send invitation');
       }
     } catch (error) {
       console.error('Error sending invitation:', error);
-      alert('Failed to send invitation');
+      toast.error('Failed to send invitation');
+    } finally {
+      setInviteLoading(false);
     }
   };
 
@@ -179,7 +184,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
               </div>
               <input type="email" placeholder="Email Address" value={inviteData.adminEmail} onChange={(e) => setInviteData({...inviteData, adminEmail: e.target.value})} required style={{ width: '100%', padding: '10px', marginBottom: '12px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               <input type="text" placeholder="Designation" value={inviteData.designation} onChange={(e) => setInviteData({...inviteData, designation: e.target.value})} required style={{ width: '100%', padding: '10px', marginBottom: '20px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-              <button type="submit" style={{ width: '100%', padding: '12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}>Invite</button>
+              <button type="submit" disabled={inviteLoading} style={{ width: '100%', padding: '12px', background: inviteLoading ? '#9ca3af' : '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: '600', cursor: inviteLoading ? 'not-allowed' : 'pointer' }}>
+                {inviteLoading ? <><i className="fas fa-spinner fa-spin"></i> Sending...</> : 'Invite'}
+              </button>
             </form>
           </div>
         </>

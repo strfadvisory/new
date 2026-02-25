@@ -31,6 +31,48 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
 
   const [emailValidation, setEmailValidation] = useState<{ valid: boolean | null, message: string, checking: boolean }>({ valid: null, message: '', checking: false });
   const [loading, setLoading] = useState(false);
+  const [cities, setCities] = useState<string[]>([]);
+  const [loadingZip, setLoadingZip] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState('US');
+
+  const countries = [
+    { code: 'US', name: 'United States', dialCode: '+1', flag: 'us' },
+    { code: 'CA', name: 'Canada', dialCode: '+1', flag: 'ca' },
+    { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: 'gb' },
+    { code: 'AU', name: 'Australia', dialCode: '+61', flag: 'au' },
+    { code: 'IN', name: 'India', dialCode: '+91', flag: 'in' },
+    { code: 'MX', name: 'Mexico', dialCode: '+52', flag: 'mx' },
+    { code: 'DE', name: 'Germany', dialCode: '+49', flag: 'de' },
+    { code: 'FR', name: 'France', dialCode: '+33', flag: 'fr' },
+    { code: 'IT', name: 'Italy', dialCode: '+39', flag: 'it' },
+    { code: 'ES', name: 'Spain', dialCode: '+34', flag: 'es' },
+    { code: 'BR', name: 'Brazil', dialCode: '+55', flag: 'br' },
+    { code: 'JP', name: 'Japan', dialCode: '+81', flag: 'jp' },
+    { code: 'CN', name: 'China', dialCode: '+86', flag: 'cn' },
+    { code: 'KR', name: 'South Korea', dialCode: '+82', flag: 'kr' },
+  ];
+
+  const currentCountry = countries.find(c => c.code === selectedCountry) || countries[0];
+
+  const usStates = [
+    { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
+    { code: 'AR', name: 'Arkansas' }, { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
+    { code: 'CT', name: 'Connecticut' }, { code: 'DE', name: 'Delaware' }, { code: 'FL', name: 'Florida' },
+    { code: 'GA', name: 'Georgia' }, { code: 'HI', name: 'Hawaii' }, { code: 'ID', name: 'Idaho' },
+    { code: 'IL', name: 'Illinois' }, { code: 'IN', name: 'Indiana' }, { code: 'IA', name: 'Iowa' },
+    { code: 'KS', name: 'Kansas' }, { code: 'KY', name: 'Kentucky' }, { code: 'LA', name: 'Louisiana' },
+    { code: 'ME', name: 'Maine' }, { code: 'MD', name: 'Maryland' }, { code: 'MA', name: 'Massachusetts' },
+    { code: 'MI', name: 'Michigan' }, { code: 'MN', name: 'Minnesota' }, { code: 'MS', name: 'Mississippi' },
+    { code: 'MO', name: 'Missouri' }, { code: 'MT', name: 'Montana' }, { code: 'NE', name: 'Nebraska' },
+    { code: 'NV', name: 'Nevada' }, { code: 'NH', name: 'New Hampshire' }, { code: 'NJ', name: 'New Jersey' },
+    { code: 'NM', name: 'New Mexico' }, { code: 'NY', name: 'New York' }, { code: 'NC', name: 'North Carolina' },
+    { code: 'ND', name: 'North Dakota' }, { code: 'OH', name: 'Ohio' }, { code: 'OK', name: 'Oklahoma' },
+    { code: 'OR', name: 'Oregon' }, { code: 'PA', name: 'Pennsylvania' }, { code: 'RI', name: 'Rhode Island' },
+    { code: 'SC', name: 'South Carolina' }, { code: 'SD', name: 'South Dakota' }, { code: 'TN', name: 'Tennessee' },
+    { code: 'TX', name: 'Texas' }, { code: 'UT', name: 'Utah' }, { code: 'VT', name: 'Vermont' },
+    { code: 'VA', name: 'Virginia' }, { code: 'WA', name: 'Washington' }, { code: 'WV', name: 'West Virginia' },
+    { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' }
+  ];
 
   useEffect(() => {
     if (!companyType && !roleName) {
@@ -39,10 +81,49 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
   }, [companyType, roleName, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === 'phone') {
+      // Detect country code from phone number
+      if (value.startsWith('+')) {
+        const dialCode = value.match(/^\+\d{1,3}/);
+        if (dialCode) {
+          const matchedCountry = countries.find(c => c.dialCode === dialCode[0]);
+          if (matchedCountry) {
+            setSelectedCountry(matchedCountry.code);
+          }
+        }
+      }
+    }
+    
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+
+    if (name === 'zipCode' && value.length === 5) {
+      fetchLocationByZip(value);
+    }
+  };
+
+  const fetchLocationByZip = async (zipCode: string) => {
+    setLoadingZip(true);
+    try {
+      const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+      if (response.ok) {
+        const data = await response.json();
+        const place = data.places[0];
+        setFormData(prev => ({
+          ...prev,
+          state: place['state abbreviation'],
+          city: place['place name']
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching location:', error);
+    } finally {
+      setLoadingZip(false);
+    }
   };
 
   const validateEmail = async (email: string) => {
@@ -229,14 +310,34 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
                 <div className="form-group phone-group">
                   <label>Phone*</label>
                   <div className="phone-input">
-                    <span className="country-code">
-                      <img src="https://flagcdn.com/w20/us.png" alt="US" />
-                      +1
+                    <span className="country-code" onClick={() => document.getElementById('country-select')?.click()}>
+                      <img src={`https://flagcdn.com/w20/${currentCountry.flag}.png`} alt={currentCountry.name} />
+                      {currentCountry.dialCode}
                     </span>
+                    <select 
+                      id="country-select"
+                      value={selectedCountry}
+                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        width: '100px',
+                        height: '100%',
+                        opacity: 0,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {countries.map(country => (
+                        <option key={country.code} value={country.code}>
+                          {country.name}
+                        </option>
+                      ))}
+                    </select>
                     <input
                       type="tel"
                       name="phone"
-                      placeholder="99999 99999"
+                      placeholder="Enter phone number"
                       value={formData.phone}
                       onChange={handleInputChange}
                       required
@@ -295,8 +396,12 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
                     name="zipCode"
                     value={formData.zipCode}
                     onChange={handleInputChange}
+                    maxLength={5}
+                    pattern="[0-9]{5}"
+                    placeholder="Enter 5-digit ZIP code"
                     required
                   />
+                  {loadingZip && <div className="text-muted small mt-1"><i className="fas fa-spinner fa-spin"></i> Loading...</div>}
                 </div>
               </div>
               <div className="col-md-6">
@@ -309,9 +414,9 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
                     required
                   >
                     <option value="">Select State</option>
-                    <option value="FL">Florida</option>
-                    <option value="CA">California</option>
-                    <option value="NY">New York</option>
+                    {usStates.map(state => (
+                      <option key={state.code} value={state.code}>{state.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>
@@ -321,16 +426,14 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               <div className="col-12">
                 <div className="form-group">
                   <label>City*</label>
-                  <select
+                  <input
+                    type="text"
                     name="city"
                     value={formData.city}
                     onChange={handleInputChange}
+                    placeholder="City will auto-fill from ZIP code"
                     required
-                  >
-                    <option value="">Select City</option>
-                    <option value="miami">Miami</option>
-                    <option value="tampa">Tampa</option>
-                  </select>
+                  />
                 </div>
               </div>
             </div>

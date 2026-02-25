@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { API_BASE_URL } from './config';
 
 const AdvisoryVerification: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [submitLoading, setSubmitLoading] = useState(false);
   const [formData, setFormData] = useState({
     companyName: '',
     description: '',
@@ -18,7 +20,8 @@ const AdvisoryVerification: React.FC = () => {
     state: '',
     city: '',
     address1: '',
-    address2: ''
+    address2: '',
+    password: ''
   });
 
   useEffect(() => {
@@ -33,11 +36,11 @@ const AdvisoryVerification: React.FC = () => {
             companyName: data.companyName
           }));
         } else {
-          alert(data.message || 'Invalid verification link');
+          toast.error(data.message || 'Invalid verification link');
           navigate('/login');
         }
       } catch (error) {
-        alert('Failed to verify link');
+        toast.error('Failed to verify link');
         navigate('/login');
       } finally {
         setLoading(false);
@@ -49,6 +52,7 @@ const AdvisoryVerification: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/complete-advisory-profile/${token}`, {
         method: 'POST',
@@ -59,13 +63,15 @@ const AdvisoryVerification: React.FC = () => {
       if (response.ok) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        alert('Profile completed successfully!');
+        toast.success('Profile completed successfully!');
         navigate('/dashboard');
       } else {
-        alert(data.message || 'Failed to complete profile');
+        toast.error(data.message || 'Failed to complete profile');
       }
     } catch (error) {
-      alert('Failed to submit profile');
+      toast.error('Failed to submit profile');
+    } finally {
+      setSubmitLoading(false);
     }
   };
 
@@ -78,6 +84,7 @@ const AdvisoryVerification: React.FC = () => {
         <input type="text" placeholder="Company Name" value={formData.companyName} onChange={(e) => setFormData({...formData, companyName: e.target.value})} required style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} disabled />
         <textarea placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px', minHeight: '80px' }} />
         <input type="tel" placeholder="Phone" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} required style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
+        <input type="password" placeholder="Password *" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
         <input type="email" placeholder="Company Email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} disabled />
         <input type="text" placeholder="Contact Person" value={formData.contactPerson} onChange={(e) => setFormData({...formData, contactPerson: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
         <input type="text" placeholder="LinkedIn URL" value={formData.linkedinUrl} onChange={(e) => setFormData({...formData, linkedinUrl: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
@@ -89,7 +96,9 @@ const AdvisoryVerification: React.FC = () => {
         <input type="text" placeholder="City" value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
         <input type="text" placeholder="Address 1" value={formData.address1} onChange={(e) => setFormData({...formData, address1: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
         <input type="text" placeholder="Address 2" value={formData.address2} onChange={(e) => setFormData({...formData, address2: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '24px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-        <button type="submit" style={{ width: '100%', padding: '12px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: '600', cursor: 'pointer' }}>Complete Profile</button>
+        <button type="submit" disabled={submitLoading} style={{ width: '100%', padding: '12px', background: submitLoading ? '#9ca3af' : '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: '600', cursor: submitLoading ? 'not-allowed' : 'pointer' }}>
+          {submitLoading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Complete Profile'}
+        </button>
       </form>
     </div>
   );
