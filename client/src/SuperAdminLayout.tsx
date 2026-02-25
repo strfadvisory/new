@@ -270,9 +270,9 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
           </div>
           <div className="header-right">
             <div className="user-menu">
-              <i className="fas fa-user-circle"></i>
+            
               <button onClick={onLogout} className="logout-btn">
-                <i className="fas fa-sign-out-alt"></i>
+                Logout 
               </button>
             </div>
           </div>

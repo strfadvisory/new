@@ -1,21 +1,32 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const mongoose = require('mongoose');
+const { Readable } = require('stream');
 
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const upload = multer({ storage: multer.memoryStorage() });
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
+const uploadToGridFS = async (req, res, next) => {
+  if (!req.file) return next();
+  
+  try {
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'uploads' });
+    const readableStream = Readable.from(req.file.buffer);
+    const uploadStream = bucket.openUploadStream(`${Date.now()}-${req.file.originalname}`);
+    
+    readableStream.pipe(uploadStream);
+    
+    uploadStream.on('finish', () => {
+      req.file.id = uploadStream.id;
+      next();
+    });
+    
+    uploadStream.on('error', (error) => {
+      next(error);
+    });
+  } catch (error) {
+    next(error);
   }
-});
-
-const upload = multer({ storage });
+};
 
 module.exports = upload;
+module.exports.uploadToGridFS = uploadToGridFS;

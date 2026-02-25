@@ -91,23 +91,27 @@
 }
 
 .logo-text {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+display: flex;
+    flex-direction: row;
+    line-height: 1.2;
+    align-content: space-between;
+    justify-content: center;
+    gap: 12px;
 }
 
 .company-name {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 16px;
   color: white;
   letter-spacing: 0.5px;
 }
 
 .company-subtitle {
   font-weight: 500;
-  font-size: 12px;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.8);
   letter-spacing: 0.3px;
+  opacity: .7;
 }
 
 .sidebar-nav {
@@ -184,7 +188,7 @@
   align-items: center;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   border-bottom: 3px solid transparent;
-  height: 80px;
+  height: 50px;
   position: relative;
 }
 
@@ -217,7 +221,7 @@
   transition: all 0.2s ease;
   white-space: nowrap;
   position: relative;
-  height: 82px;
+  height: 52px;
   display: flex;
   align-items: center;
 }
@@ -271,7 +275,7 @@
   padding: 0;
   background: #f8fafc;
   height: calc(100vh - 80px);
-  overflow-y: auto;
+ 
 }
 
 .content-header {
@@ -330,15 +334,14 @@
 
 .left-panel, .right-panel {
   background: white;
-  border-radius: 0;
-  overflow-y: auto;
+  border-radius: 0; 
   box-shadow: none;
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .right-panel {
   flex: 1;
-  padding: 24px;
+ 
 }
 
 .left-panel {
@@ -376,7 +379,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 0 24px 24px 24px;
+ 
   margin-top: 16px;
 }
 
