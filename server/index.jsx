@@ -10,24 +10,38 @@ const menuRoutes = require('./routes/menuRoutes');
 const videoRoutes = require('./routes/videoRoutes');
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 5000;
+
+// CORS configuration
+app.use(cors({
+  origin: '*',
+  credentials: true
+}));
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// MongoDB connection
 mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
 })
   .then(() => {
-    console.log('MongoDB connected successfully');
-    console.log(`Database: ${mongoose.connection.db.databaseName}`);
-    console.log(`Host: ${mongoose.connection.host}`);
+    console.log('✅ MongoDB connected successfully');
+    console.log(`📊 Database: ${mongoose.connection.db.databaseName}`);
+    console.log(`🌐 Host: ${mongoose.connection.host}`);
   })
   .catch(err => {
-    console.error('MongoDB connection error:', err.message);
-    process.exit(1);
+    console.error('❌ MongoDB connection error:', err.message);
+    console.error('Stack:', err.stack);
   });
 
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/validate', validationRoutes);
 app.use('/api/roles', roleRoutes);
@@ -35,4 +49,14 @@ app.use('/api/menu', menuRoutes);
 app.use('/api', videoRoutes);
 app.use('/api', itemRoutes);
 
-app.listen(process.env.PORT, () => console.log(`Server running on port ${process.env.PORT}`));
+// Error handling
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ message: 'Internal server error', error: err.message });
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+});

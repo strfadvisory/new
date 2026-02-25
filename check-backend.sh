@@ -7,9 +7,15 @@ echo "📊 Container Status:"
 docker ps -a | grep strf
 
 echo ""
-echo "📝 Backend Logs (last 50 lines):"
-docker logs strf-server --tail 50
+echo "📝 Backend Logs (last 100 lines):"
+docker logs strf-server --tail 100
 
 echo ""
-echo "🌐 Testing backend directly:"
-curl -v http://localhost:5000/api/auth/login 2>&1 | head -20
+echo "🌐 Testing backend health:"
+curl -s http://localhost:5000/health || echo "Health check failed"
+
+echo ""
+echo "🌐 Testing backend API:"
+curl -s -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"test"}' || echo "API test failed"
