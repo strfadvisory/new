@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
+import { API_BASE_URL } from './config';
 
 interface DashboardProps {
   user: any;
@@ -22,7 +23,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     const fetchNextSteps = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/roles/user-nextsteps', {
+        const response = await fetch(`${API_BASE_URL}/api/roles/user-nextsteps`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -39,7 +40,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     const fetchVideos = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/roles/user-videos', {
+        const response = await fetch(`${API_BASE_URL}/api/roles/user-videos`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -61,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/invite-advisory', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/invite-advisory`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

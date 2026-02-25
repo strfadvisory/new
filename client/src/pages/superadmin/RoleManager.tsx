@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { API_BASE_URL } from '../../config';
 
 interface Permission {
   code: string;
@@ -45,14 +46,14 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   ]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/videos')
+    fetch(`${API_BASE_URL}/api/videos`)
       .then(response => response.json())
       .then(data => setVideos(data))
       .catch(error => console.error('Error fetching videos:', error));
   }, []);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/menu/menu-master')
+    fetch(`${API_BASE_URL}/api/menu/menu-master`)
       .then(response => response.json())
       .then(data => {
         const modulesWithState = data.modules.map((mod: any) => ({
@@ -135,7 +136,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         updateData.childRoleId = selectedRole._id;
       }
       
-      const response = await fetch(`http://localhost:5000/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +246,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         updateData.parentRole = selectedRole.parentRoleId;
         updateData.childRoleId = selectedRole._id;
       }
-      await fetch(`http://localhost:5000/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
+      await fetch(`${API_BASE_URL}/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(updateData)
@@ -287,7 +288,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         updateData.childRoleId = selectedRole._id;
       }
       
-      const response = await fetch(`http://localhost:5000/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './AllCompanies.css';
+import { API_BASE_URL } from '../../config';
 
 interface User {
   _id: string;
@@ -37,7 +38,7 @@ const AllCompanies: React.FC = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/users', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {

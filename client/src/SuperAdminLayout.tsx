@@ -126,7 +126,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const handleAddNew = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/roles/default-permissions', {
+      const response = await fetch(`${API_BASE_URL}/api/roles/default-permissions`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -151,7 +151,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     if (roleToDelete) {
       try {
         const token = localStorage.getItem('token');
-        let url = `http://localhost:5000/api/roles/${roleToDelete}`;
+        let url = `${API_BASE_URL}/api/roles/${roleToDelete}`;
         
         if (selectedRole?.parentRoleId && selectedRole?.childRoleId) {
           url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${selectedRole.childRoleId}&grandChildRoleId=${roleToDelete}`;
@@ -189,22 +189,22 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     try {
       const token = localStorage.getItem('token');
       
-      let url = 'http://localhost:5000/api/roles';
+      let url = `${API_BASE_URL}/api/roles`;
       let method = 'POST';
       const submitData: any = { ...formData };
       
       if (editMode && formData._id) {
         if (formData.parentRole && formData.childRoleId) {
-          url = `http://localhost:5000/api/roles/${formData.parentRole}`;
+          url = `${API_BASE_URL}/api/roles/${formData.parentRole}`;
           method = 'PUT';
           submitData.grandChildRoleId = formData._id;
         }
         else if (formData.parentRole) {
-          url = `http://localhost:5000/api/roles/${formData.parentRole}`;
+          url = `${API_BASE_URL}/api/roles/${formData.parentRole}`;
           method = 'PUT';
           submitData.childRoleId = formData._id;
         } else {
-          url = `http://localhost:5000/api/roles/${formData._id}`;
+          url = `${API_BASE_URL}/api/roles/${formData._id}`;
           method = 'PUT';
         }
       }
@@ -307,7 +307,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                           }
                           try {
                             const token = localStorage.getItem('token');
-                            const response = await fetch(`http://localhost:5000/api/roles/${role._id}`, {
+                            const response = await fetch(`${API_BASE_URL}/api/roles/${role._id}`, {
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             if (response.ok) {
@@ -387,7 +387,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                         onClick={async () => {
                           try {
                             const token = localStorage.getItem('token');
-                            const response = await fetch('http://localhost:5000/api/roles/default-permissions', {
+                            const response = await fetch(`${API_BASE_URL}/api/roles/default-permissions`, {
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             const defaultPermissions = await response.json();
@@ -549,7 +549,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                           if (editMode && formData._id) {
                             try {
                               const token = localStorage.getItem('token');
-                              await fetch(`http://localhost:5000/api/roles/${formData._id}`, {
+                              await fetch(`${API_BASE_URL}/api/roles/${formData._id}`, {
                                 method: 'PUT',
                                 headers: {
                                   'Content-Type': 'application/json',
