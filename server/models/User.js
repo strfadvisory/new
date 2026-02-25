@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema({
   roleType: { type: String },
   isSuperAdmin: { type: Boolean, default: false },
   orgId: { type: String },
+  level: { type: String },
   verificationToken: String,
   verificationTokenExpiry: Date,
   otp: String,

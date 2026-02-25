@@ -10,7 +10,7 @@ const generateToken = (id) => {
 
 const register = async (req, res) => {
   try {
-    const { firstName, lastName, email, designation, phone, password, address, roleId } = req.body;
+    const { firstName, lastName, email, designation, phone, password, address, roleId, level } = req.body;
     
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -44,6 +44,7 @@ const register = async (req, res) => {
       companyType: role.name,
       roleId: role._id,
       orgId,
+      level,
       otp,
       otpExpiry,
       isVerified: false

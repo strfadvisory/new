@@ -10,6 +10,7 @@ interface User {
   phone: string;
   designation: string;
   companyType: string;
+  isVerified?: boolean;
   address?: {
     address1?: string;
     address2?: string;
@@ -90,11 +91,15 @@ const Users: React.FC = () => {
       </div>
 
       <div className="companies-right-panel">
+         <div  style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto' }}> 
         {selectedUser && (
           <>
             <div className="detail-section">
               <div className="detail-label">Full Name</div>
-              <div className="detail-value">{selectedUser.firstName} {selectedUser.lastName}</div>
+              <div className="detail-value">
+                {selectedUser.firstName} {selectedUser.lastName}
+                <i className="fas fa-check" style={{ color: selectedUser.isVerified ? '#10b981' : '#9ca3af', marginLeft: '8px', fontSize: '14px' }}></i>
+              </div>
             </div>
             <div className="detail-section">
               <div className="detail-label">Email</div>
@@ -118,6 +123,8 @@ const Users: React.FC = () => {
             </div>
           </>
         )}
+</div>
+
       </div>
     </div>
   );

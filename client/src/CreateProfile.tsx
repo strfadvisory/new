@@ -186,7 +186,8 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
             address1: formData.address1,
             address2: formData.address2
           },
-          roleId
+          roleId,
+          level: 'l1'
         })
       });
       const data = await response.json();
