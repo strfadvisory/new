@@ -2,10 +2,9 @@
 
 echo "🚀 Starting deployment..."
 
-# Create .env file if it doesn't exist
-if [ ! -f .env ]; then
-    echo "📝 Creating .env file..."
-    cat > .env << 'EOF'
+# Always create/overwrite .env file with production settings
+echo "📝 Creating .env file..."
+cat > .env << 'EOF'
 # MongoDB Configuration
 MONGO_URI=mongodb+srv://anupamurl:Espl%40123@strf.liiptbb.mongodb.net/simulator
 
@@ -31,8 +30,7 @@ MAIL_FROM_NAME="Reserve Fund Advisors"
 PORT=5000
 NODE_ENV=production
 EOF
-    echo "✅ .env file created"
-fi
+echo "✅ .env file created with MongoDB Atlas URI"
 
 # Stop nginx if running
 echo "🛑 Stopping nginx service..."
@@ -73,6 +71,7 @@ echo ""
 echo "🎉 Deployment complete!"
 echo "📱 Frontend: http://187.77.185.135"
 echo "🔌 Backend API: http://187.77.185.135/api"
+echo "🗄️  Database: MongoDB Atlas (simulator)"
 echo ""
 echo "📊 View logs: npm run logs"
 echo "🔄 Restart: npm run restart"
