@@ -310,13 +310,7 @@ display: flex;
   font-size: 14px;
   transition: all 0.2s ease;
   box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.4), 0 4px 6px -2px rgba(59, 130, 246, 0.05);
-}
-
-.add-new-btn:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 20px 25px -5px rgba(59, 130, 246, 0.4), 0 10px 10px -5px rgba(59, 130, 246, 0.04);
-}
+} 
 
 .breadcrumb {
   display: flex;
@@ -726,7 +720,7 @@ display: flex;
 .submit-btn {
   width: 100%;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #0e519b;
   color: white;
   border: none;
   border-radius: 8px;
@@ -738,9 +732,9 @@ display: flex;
 }
 
 .submit-btn:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: #0e519b;
   transform: translateY(-2px);
-  box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 10px 20px rgba(14, 81, 155, 0.3);
 }
 
 

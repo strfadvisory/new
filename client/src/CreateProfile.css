@@ -206,7 +206,7 @@
 
 .continue-button {
   width: 100%;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: #0e519b;
   color: white;
   border: none;
   padding: 14px 24px;
@@ -219,7 +219,7 @@
 }
 
 .continue-button:hover {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: #0e519b;
   transform: translateY(-2px);
 }
 
