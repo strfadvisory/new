@@ -1,16 +1,6 @@
 version: '3.8'
 
 services:
-  mongo:
-    image: mongo:latest
-    restart: always
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - app-network
-    environment:
-      - MONGO_INITDB_DATABASE=strf
-
   server:
     build:
       context: ./server
@@ -20,8 +10,6 @@ services:
       - "5000"
     env_file:
       - .env
-    depends_on:
-      - mongo
     networks:
       - app-network
 
@@ -36,9 +24,6 @@ services:
       - server
     networks:
       - app-network
-
-volumes:
-  mongo-data:
 
 networks:
   app-network:
