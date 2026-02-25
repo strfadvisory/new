@@ -14,7 +14,7 @@ JWT_SECRET=9f8c2d4a6e7b8c1d3f5a7b9c2d4e6f8a9b1c3d5e7f9a2b4c6d8e0f1a3b5c7d9e
 
 # Client Configuration
 CLIENT_URL=http://187.77.185.135
-REACT_APP_API_URL=/api
+REACT_APP_API_URL=
 
 # Email Configuration
 EMAIL_USER=strfadvisory@gmail.com
