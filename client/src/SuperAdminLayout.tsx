@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard.css';
+import './pages/superadmin/AllCompanies.css';
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
 import AllCompanies from './pages/superadmin/AllCompanies';
 import AllUsers from './pages/superadmin/AllUsers';
@@ -280,16 +281,12 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         
         <div className="dashboard-content">
           <div className="main-content">
-            {currentPage !== 'companies' && <div className="left-panel">
-              <div className="search-filter">
-                <div className="results-info">
-                  <span className="results-count">{roles.length} Results founded</span>
-                  <button className="add-new-btn" onClick={handleAddNew}>
-                    <i className="fas fa-plus"></i> Add New
-                  </button>
-                </div>
-                <input type="text" placeholder="Search by name" className="search-input" />
+            {currentPage !== 'companies' && currentPage !== 'simulators' && <div className="companies-left-panel">
+              <div className="companies-header">
+                <button className="add-new-btn" onClick={handleAddNew}>+ Add New</button>
+                <input type="text" placeholder="Search by name" className="companies-search" />
               </div>
+              <div className="results-count">{roles.length} Results founded</div>
               
               <div className="companies-list">
                 {roles.map((role) => {
@@ -298,7 +295,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                     <React.Fragment key={role._id}>
                      
                       <div 
-                        className={`company-item ${selectedRole?._id === role._id ? 'selected' : ''}`}
+                        className={`company-item ${selectedRole?._id === role._id ? 'active' : ''}`}
                         onClick={async () => {
                           if (!isValidId) {
                             console.error('Invalid role ID:', role._id);
@@ -323,45 +320,31 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                         }}
                         style={{ cursor: 'pointer' }}
                       >
-                        <div className="company-info">
-                          <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ color: '#3b82f6' }}>{role.name}</span>
-                          </h4>
-                          <p style={{ color: '#000', margin: '4px 0 0 0' }}>{role.description}</p>
-                        </div>
+                        <div className="company-name">{role.name}</div>
+                        <div className="company-desc">{role.description}</div>
                       </div>
                       {role.childRoles && role.childRoles.length > 0 && role.childRoles.map((childRole: any) => (
                         <React.Fragment key={childRole._id}>
                           <div 
-                            className={`child-role-item ${selectedRole?._id === childRole._id ? 'selected' : ''}`}
+                            className={`company-item ${selectedRole?._id === childRole._id ? 'active' : ''}`}
                             onClick={() => setSelectedRole({ ...childRole, parentRoleId: role._id })}
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: 'pointer', paddingLeft: '40px' }}
                           >
-                            <div className="company-info">
-                              <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontSize: '18px' }}>L</span>
-                                {childRole.name}
-                              </h4>
-                            </div>
+                            <div className="company-name">└ {childRole.name}</div>
                           </div>
                           {childRole.childRoles && childRole.childRoles.length > 0 && childRole.childRoles.map((grandChildRole: any) => (
                             <div 
                               key={grandChildRole._id}
-                              className={`grandchild-role-item ${selectedRole?._id === grandChildRole._id ? 'selected' : ''}`}
+                              className={`company-item ${selectedRole?._id === grandChildRole._id ? 'active' : ''}`}
                               onClick={() => setSelectedRole({ ...grandChildRole, parentRoleId: role._id, childRoleId: childRole._id })}
-                              style={{ cursor: 'pointer', paddingLeft: '40px' }}
+                              style={{ cursor: 'pointer', paddingLeft: '60px' }}
                             >
-                              <div className="company-info">
-                                <h4 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                  <span style={{ fontSize: '14px' }}>└─</span>
-                                  {grandChildRole.name}
-                                </h4>
-                              </div>
+                              <div className="company-name">└─ {grandChildRole.name}</div>
                             </div>
                           ))}
                           <button 
                             className="add-sub-user-btn"
-                            style={{ marginLeft: '20px', fontSize: '12px' }}
+                            style={{ marginLeft: '20px', fontSize: '16px' }}
                             onClick={() => {
                               setFormData({ 
                                 _id: '', 
@@ -384,6 +367,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                       ))}
                       <button 
                         className="add-sub-user-btn"
+                           style={{   fontSize: '16px' }}
                         onClick={async () => {
                           try {
                             const token = localStorage.getItem('token');
@@ -427,7 +411,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
               </div>
             </div>}
             
-            <div className="right-panel" style={currentPage === 'companies' ? { marginLeft: 0, width: '100%' } : {}}>
+            <div className="companies-right-panel" style={currentPage === 'companies' || currentPage === 'simulators' ? { marginLeft: 0, width: '100%', flex: 1 } : { flex: 1 }}>
               <Routes>
                 <Route path="simulators" element={<SuperAdminDashboard />} />
                 <Route path="companies" element={<AllCompanies />} />

@@ -85,10 +85,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete }) => {
       <div className="profile-sidebar">
         <div className="logo">
           <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-          <div className="logo-text">
-            <div className="company-name">RESERVE FUND</div>
-            <div className="company-subtitle">ADVISORY LLC</div>
-          </div>
+          
         </div>
         <div className="contact-info">
           <div className="contact-item">

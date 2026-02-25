@@ -9,6 +9,8 @@
   border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
+  font-size: 16px;
+ 
 }
 
 .companies-header {
@@ -20,7 +22,7 @@
   padding: 8px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: 16px;
   margin-top: 30px;
 }
 
@@ -32,7 +34,7 @@
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 16px;
   text-align: center;
   display: flex;
   align-items: center;
@@ -41,14 +43,14 @@
 
 .results-count {
   padding: 12px 16px;
-  font-size: 12px;
+  font-size: 16px;
   color: #6b7280;
    
 }
 
 .companies-list {
   flex: 1;
-  overflow-y: auto;
+ 
 }
 
 .company-item {
@@ -82,21 +84,20 @@
 }
 
 .company-type {
-  font-size: 12px; 
+  font-size: 16px; 
   margin-bottom: 4px;
 }
 
 .company-desc {
-  font-size: 12px;
+  font-size: 16px;
   color: #9ca3af;
 }
 
 .companies-right-panel {
   flex: 1;
-  padding: 24px; 
+ 
   background: white;
-  max-width: 800px;
-  margin:0px auto;
+   
 }
 
 .detail-section {

@@ -128,10 +128,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
       <div className="profile-sidebar">
         <div className="logo">
           <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-          <div className="logo-text">
-            <div className="company-name">RESERVE FUND</div>
-            <div className="company-subtitle">ADVISORY LLC</div>
-          </div>
+         
         </div>
         <div className="contact-info">
           <div className="contact-item">
@@ -184,7 +181,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4 mt-2">
+            <div className="row g-4  ">
               <div className="col-12">
                 <div className="form-group">
                   <label>Email Address*</label>
@@ -212,7 +209,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4 mt-2">
+            <div className="row g-4  ">
               <div className="col-12">
                 <div className="form-group">
                   <label>Designation*</label>
@@ -227,7 +224,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4 mt-2">
+            <div className="row g-4  ">
               <div className="col-12">
                 <div className="form-group phone-group">
                   <label>Phone*</label>
@@ -269,7 +266,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4 mt-2">
+            <div className="row g-4  ">
               <div className="col-12">
                 <div className="form-group">
                   <label>Re Password*</label>
@@ -320,7 +317,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4 mt-2">
+            <div className="row g-4  ">
               <div className="col-12">
                 <div className="form-group">
                   <label>City*</label>
@@ -338,7 +335,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4 mt-2">
+            <div className="row g-4  ">
               <div className="col-12">
                 <div className="form-group">
                   <label>Address 1*</label>
@@ -353,7 +350,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4 mt-2">
+            <div className="row g-4  ">
               <div className="col-12">
                 <div className="form-group">
                   <label>Address 2*</label>

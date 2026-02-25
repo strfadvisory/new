@@ -273,7 +273,7 @@ display: flex;
 .dashboard-content {
   flex: 1;
   padding: 0;
-  background: #f8fafc;
+  background: white;
   height: calc(100vh - 80px);
  
 }
@@ -329,7 +329,7 @@ display: flex;
 .main-content {
   display: flex;
   gap: 0;
-  height: 100vh;
+ 
 }
 
 .left-panel, .right-panel {

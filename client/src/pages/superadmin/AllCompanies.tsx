@@ -145,7 +145,8 @@ const AllCompanies: React.FC = () => {
       </div>
 
       <div className="companies-right-panel">
-        {selectedUser && (
+        <div  style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto' }}> 
+  {selectedUser && (
           <>
             <div className="detail-section" style={{position: 'relative'}}>
             <div className='logobox'>
@@ -204,6 +205,9 @@ const AllCompanies: React.FC = () => {
             </div>
           </>
         )}
+
+        </div>
+      
       </div>
       {confirmOpen && (
         <div style={{

@@ -43,10 +43,7 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
       <div className="company-sidebar">
         <div className="logo">
           <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-          <div className="logo-text">
-            <div className="company-name">RESERVE FUND</div>
-            <div className="company-subtitle">ADVISORY LLC</div>
-          </div>
+           
         </div>
         <div className="contact-info">
           <div className="contact-item">
@@ -59,6 +56,7 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
       </div>
       
       <div className="company-content">
+                <div  style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto' }}> 
         <div className="company-header">
           <div className="header-top">
             <span className="select-company">Select Company</span>
@@ -93,6 +91,11 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
         <div className="company-footer">
           <a href="#" className="company-not-listed">Company type not listed ?</a>
         </div>
+
+
+
+</div>
+
       </div>
     </div>
   );

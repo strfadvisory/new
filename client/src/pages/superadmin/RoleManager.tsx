@@ -309,7 +309,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   };
 
   return (
-    <div style={{ padding: '24px', paddingBottom: '50px' }}>
+    <div style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto' }}>
       {selectedRole ? (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>

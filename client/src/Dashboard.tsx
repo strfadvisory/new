@@ -162,7 +162,9 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         <>
           <div className="modal-overlay" onClick={() => setShowInviteModal(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000 }}></div>
           <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', borderRadius: '12px', padding: '24px', width: '90%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto', zIndex: 1001 }}>
-            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px' }}>{inviteTitle}</h2>
+            <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px' }}> Invite Member 
+              {/* {inviteTitle} */}
+              </h2>
             <form onSubmit={handleInviteSubmit}>
               <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Invite Super Admin</h3>
               <select value={inviteData.selectedRole} onChange={(e) => setInviteData({...inviteData, selectedRole: e.target.value})} required style={{ width: '100%', padding: '10px', marginBottom: '12px', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
