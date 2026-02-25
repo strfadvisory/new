@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
+import { API_BASE_URL } from './config';
 
 interface CompanyProfileProps {
   onComplete: () => void;
@@ -56,7 +57,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete }) => {
         formDataToSend.append('logo', logo);
       }
       
-      const response = await fetch('http://localhost:5000/api/auth/company-profile', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/company-profile`, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`

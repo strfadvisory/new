@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './CompanySelection.css';
+import { API_BASE_URL } from './config';
 
 interface CompanyType {
   _id: string;
@@ -20,7 +21,7 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
   useEffect(() => {
     const fetchCompanyTypes = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/roles/company-types');
+        const response = await fetch(`${API_BASE_URL}/api/roles/company-types`);
         const data = await response.json();
         setCompanyTypes(Array.isArray(data) ? data : []);
       } catch (error) {

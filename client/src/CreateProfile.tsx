@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import './CreateProfile.css';
+import { API_BASE_URL } from './config';
 
 interface CreateProfileProps {
   onBack: () => void;
@@ -53,7 +54,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
     setEmailValidation({ valid: null, message: '', checking: true });
     
     try {
-      const response = await fetch('http://localhost:5000/api/validate/email', {
+      const response = await fetch(`${API_BASE_URL}/api/validate/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -87,7 +88,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
     
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

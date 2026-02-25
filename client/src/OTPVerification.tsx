@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
+import { API_BASE_URL } from './config';
 
 interface OTPVerificationProps {
   email: string;
@@ -35,7 +36,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
   const handleResend = async () => {
     setResending(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/resend-otp', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/resend-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -64,7 +65,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/verify-otp', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp: otpCode })

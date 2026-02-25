@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { API_BASE_URL } from './config';
 
 const AdvisoryVerification: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -23,7 +24,7 @@ const AdvisoryVerification: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/auth/verify-advisory/${token}`);
+        const response = await fetch(`${API_BASE_URL}/api/auth/verify-advisory/${token}`);
         const data = await response.json();
         if (response.ok) {
           setFormData(prev => ({
@@ -49,7 +50,7 @@ const AdvisoryVerification: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch(`http://localhost:5000/api/auth/complete-advisory-profile/${token}`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/complete-advisory-profile/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
