@@ -244,7 +244,7 @@ const inviteAdvisory = async (req, res) => {
       return res.status(404).json({ message: 'Current user not found' });
     }
 
-    const { firstName, lastName, adminEmail, designation } = req.body;
+    const { selectedRole, firstName, lastName, adminEmail, designation } = req.body;
     
     const existingUser = await User.findOne({ email: adminEmail });
     if (existingUser) {
@@ -264,6 +264,7 @@ const inviteAdvisory = async (req, res) => {
       password: tempPassword,
       companyType: 'Advisory',
       roleType: 'ADVISORY_CHILD',
+      roleId: selectedRole,
       orgId: currentUser.orgId,
       verificationToken,
       verificationTokenExpiry,

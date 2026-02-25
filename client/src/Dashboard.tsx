@@ -13,11 +13,13 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteTitle, setInviteTitle] = useState('');
   const [inviteData, setInviteData] = useState({
+    selectedRole: '',
     firstName: '',
     lastName: '',
     adminEmail: '',
     designation: ''
   });
+  const [childRoles, setChildRoles] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchNextSteps = async () => {
@@ -54,8 +56,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       }
     };
 
+    const fetchChildRoles = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/roles/child-roles`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setChildRoles(data.childRoles || []);
+        }
+      } catch (error) {
+        console.error('Error fetching child roles:', error);
+      }
+    };
+
     fetchNextSteps();
     fetchVideos();
+    fetchChildRoles();
   }, []);
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
@@ -73,7 +93,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       if (response.ok) {
         alert('Invitation sent successfully!');
         setShowInviteModal(false);
-        setInviteData({ firstName: '', lastName: '', adminEmail: '', designation: '' });
+        setInviteData({ selectedRole: '', firstName: '', lastName: '', adminEmail: '', designation: '' });
       } else {
         const error = await response.json();
         alert(error.message || 'Failed to send invitation');
@@ -145,6 +165,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '20px' }}>{inviteTitle}</h2>
             <form onSubmit={handleInviteSubmit}>
               <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Invite Super Admin</h3>
+              <select value={inviteData.selectedRole} onChange={(e) => setInviteData({...inviteData, selectedRole: e.target.value})} required style={{ width: '100%', padding: '10px', marginBottom: '12px', border: '1px solid #e5e7eb', borderRadius: '6px' }}>
+                <option value="">Select Role</option>
+                {childRoles.map((role) => (
+                  <option key={role._id} value={role._id}>{role.name}</option>
+                ))}
+              </select>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <input type="text" placeholder="First Name" value={inviteData.firstName} onChange={(e) => setInviteData({...inviteData, firstName: e.target.value})} required style={{ padding: '10px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
                 <input type="text" placeholder="Last Name" value={inviteData.lastName} onChange={(e) => setInviteData({...inviteData, lastName: e.target.value})} required style={{ padding: '10px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
