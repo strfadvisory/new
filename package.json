@@ -1,0 +1,15 @@
+{
+  "name": "strf",
+  "version": "1.0.0",
+  "description": "Full-stack MERN application with Docker deployment",
+  "scripts": {
+    "deploy:prod": "chmod +x deploy.sh && ./deploy.sh",
+    "stop": "docker-compose -f docker-compose.prod.yml down",
+    "logs": "docker-compose -f docker-compose.prod.yml logs -f",
+    "restart": "docker-compose -f docker-compose.prod.yml restart",
+    "status": "docker-compose -f docker-compose.prod.yml ps"
+  },
+  "keywords": ["react", "express", "mongodb", "docker"],
+  "author": "",
+  "license": "ISC"
+}

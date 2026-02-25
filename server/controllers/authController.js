@@ -2,7 +2,7 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const jwt = require('jsonwebtoken');
 const configService = require('../services/configService');
-const { sendOTPEmail } = require('../services/emailService.jsx');
+const { sendOTPEmail, sendVerificationEmail } = require('../services/emailService.jsx');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', { expiresIn: '30d' });
@@ -25,6 +25,14 @@ const register = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
+    // Generate orgId
+    const lastUser = await User.findOne({ orgId: { $exists: true } }).sort({ orgId: -1 }).limit(1);
+    let orgId = 'ORG-0001';
+    if (lastUser && lastUser.orgId) {
+      const lastNumber = parseInt(lastUser.orgId.split('-')[1]);
+      orgId = `ORG-${String(lastNumber + 1).padStart(4, '0')}`;
+    }
+
     const user = await User.create({
       firstName,
       lastName,
@@ -35,6 +43,7 @@ const register = async (req, res) => {
       address,
       companyType: role.name,
       roleId: role._id,
+      orgId,
       otp,
       otpExpiry,
       isVerified: false
@@ -54,6 +63,7 @@ const register = async (req, res) => {
       lastName: user.lastName,
       email: user.email,
       companyType: user.companyType,
+      orgId: user.orgId,
       token
     });
   } catch (error) {
@@ -227,9 +237,13 @@ const createCompanyProfile = async (req, res) => {
   }
 };
 
-const inviteAssociation = async (req, res) => {
+const inviteAdvisory = async (req, res) => {
   try {
-    const createdBy = req.user._id;
+    const currentUser = await User.findById(req.user._id);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'Current user not found' });
+    }
+
     const { firstName, lastName, adminEmail, designation } = req.body;
     
     const existingUser = await User.findOne({ email: adminEmail });
@@ -238,8 +252,8 @@ const inviteAssociation = async (req, res) => {
     }
 
     const tempPassword = Math.random().toString(36).slice(-8);
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    const verificationToken = jwt.sign({ email: adminEmail }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+    const verificationTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const newUser = await User.create({
       firstName,
@@ -248,24 +262,92 @@ const inviteAssociation = async (req, res) => {
       designation,
       phone: '',
       password: tempPassword,
-      companyType: 'Association',
-      otp,
-      otpExpiry,
+      companyType: 'Advisory',
+      roleType: 'ADVISORY_CHILD',
+      orgId: currentUser.orgId,
+      verificationToken,
+      verificationTokenExpiry,
       isVerified: false,
-      createdBy
+      createdBy: currentUser._id
     });
 
+    const verificationLink = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-advisory/${verificationToken}`;
+    
     try {
-      await sendOTPEmail(adminEmail, otp);
+      await sendVerificationEmail(adminEmail, verificationLink, firstName);
     } catch (emailError) {
-      console.log('Email send failed. OTP:', otp, 'Password:', tempPassword);
+      console.log('Email send failed. Link:', verificationLink, 'Password:', tempPassword);
     }
 
-    res.status(201).json({ message: 'Invitation sent successfully', userId: newUser._id });
+    res.status(201).json({ message: 'Invitation sent successfully', userId: newUser._id, verificationLink });
   } catch (error) {
     console.error('Invite error:', error);
     res.status(400).json({ message: error.message });
   }
 };
 
-module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile, inviteAssociation };
+const verifyAdvisoryToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    const user = await User.findOne({ 
+      verificationToken: token,
+      verificationTokenExpiry: { $gt: new Date() }
+    }).populate('createdBy');
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification link' });
+    }
+
+    const parentCompanyName = user.createdBy?.companyProfile?.companyName || '';
+
+    res.json({
+      email: user.email,
+      companyName: parentCompanyName,
+      firstName: user.firstName,
+      lastName: user.lastName
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const completeAdvisoryProfile = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const profileData = req.body;
+    
+    const user = await User.findOne({ 
+      verificationToken: token,
+      verificationTokenExpiry: { $gt: new Date() }
+    });
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification link' });
+    }
+
+    user.companyProfile = profileData;
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    user.verificationTokenExpiry = undefined;
+    await user.save();
+
+    const authToken = generateToken(user._id);
+
+    res.json({
+      message: 'Profile completed successfully',
+      token: authToken,
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        companyType: user.companyType
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile };

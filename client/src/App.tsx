@@ -6,6 +6,7 @@ import CompanySelection from './CompanySelection';
 import CreateProfile from './CreateProfile';
 import OTPVerification from './OTPVerification';
 import CompanyProfile from './CompanyProfile';
+import AdvisoryVerification from './AdvisoryVerification';
 import Dashboard from './Dashboard';
 import DashboardLayout from './DashboardLayout';
 import SuperAdminLayout from './SuperAdminLayout';
@@ -99,6 +100,7 @@ function App() {
         <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} roleId={selectedRoleId} roleName={selectedRoleName} />} />
         <Route path="/verify-otp" element={<OTPVerification email={userEmail} onVerify={handleOTPVerified} onBack={handleBackToProfile} />} />
         <Route path="/company-profile" element={<CompanyProfile onComplete={handleCompanyProfileComplete} />} />
+        <Route path="/verify-advisory/:token" element={<AdvisoryVerification />} />
         <Route path="/admin/*" element={user?.isSuperAdmin ? <SuperAdminLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
         <Route path="/dashboard" element={user && !user.isSuperAdmin ? <DashboardLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}>
           <Route index element={<Dashboard user={user} onLogout={handleLogout} />} />
