@@ -38,6 +38,10 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
   const [loadingZip, setLoadingZip] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('US');
   const [countries, setCountries] = useState<any[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRePassword, setShowRePassword] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [useMyAddress, setUseMyAddress] = useState(false);
 
   const currentCountry = countries.find(c => c.code === selectedCountry) || { code: 'US', name: 'United States', dialCode: '+1', flag: 'us', prefix: '1' };
 
@@ -282,7 +286,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4  ">
+            <div className="row g-4">
               <div className="col-12">
                 <div className="form-group">
                   <label>Email Address*</label>
@@ -310,7 +314,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4  ">
+            <div className="row g-4">
               <div className="col-12">
                 <div className="form-group">
                   <label>Designation*</label>
@@ -325,7 +329,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4  ">
+            <div className="row g-4">
               <div className="col-12">
                 <div className="form-group phone-group">
                   <label>Phone*</label>
@@ -381,8 +385,24 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
             </div>
             
             <div className="section-title mt-5">
-              <h3>Create Your Password</h3>
-              <p>Create a new password to set up your account and access the system.</p>
+              <h3>Add your Address</h3>
+              <p>Provide the official location details of , including street, city, state, country, and ZIP code.</p>
+            </div>
+            
+            <div className="row g-4">
+              <div className="col-12">
+                <div className="form-group">
+                  <div className="checkbox-group">
+                    <input
+                      type="checkbox"
+                      id="useMyAddress"
+                      checked={useMyAddress}
+                      onChange={(e) => setUseMyAddress(e.target.checked)}
+                    />
+                    <label htmlFor="useMyAddress">Use your address</label>
+                  </div>
+                </div>
+              </div>
             </div>
             
             <div className="row g-4">
@@ -455,7 +475,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4  ">
+            <div className="row g-4">
               <div className="col-12">
                 <div className="form-group">
                   <label>City*</label>
@@ -471,7 +491,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4  ">
+            <div className="row g-4">
               <div className="col-12">
                 <div className="form-group">
                   <label>Address 1*</label>
@@ -486,7 +506,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="row g-4  ">
+            <div className="row g-4">
               <div className="col-12">
                 <div className="form-group">
                   <label>Address 2*</label>
@@ -501,17 +521,111 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
+            <div className="section-title mt-5">
+              <h3>Create Your Password</h3>
+              <p>Create a new password to set up your account and access the system.</p>
+            </div>
+            
+            <div className="row g-4">
+              <div className="col-12">
+                <div className="form-group">
+                  <label>Password*</label>
+                  <div className="password-input">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="row g-4">
+              <div className="col-12">
+                <div className="form-group">
+                  <label>Re Password*</label>
+                  <div className="password-input">
+                    <input
+                      type={showRePassword ? "text" : "password"}
+                      name="rePassword"
+                      value={formData.rePassword}
+                      onChange={handleInputChange}
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle"
+                      onClick={() => setShowRePassword(!showRePassword)}
+                    >
+                      <i className={`fas ${showRePassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="row g-4">
+              <div className="col-12">
+                <div className="form-group">
+                  <div className="checkbox-group">
+                    <input
+                      type="checkbox"
+                      id="agreeToTerms"
+                      checked={agreeToTerms}
+                      onChange={(e) => setAgreeToTerms(e.target.checked)}
+                      required
+                    />
+                    <label htmlFor="agreeToTerms">I agree to the Terms and Conditions*</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div className="form-note mt-4">
               <p className="text-muted small">Please note that fields marked with * are mandatory.</p>
             </div>
             
-            <button type="submit" className="continue-button" disabled={loading}>
+            <button type="submit" className="continue-button" disabled={loading || !agreeToTerms}>
               {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Continue'}
             </button>
             
             <div className="change-company">
-              <button type="button" onClick={onBack} className="change-company-link">
-                Change my company type
+              <button 
+                type="button" 
+                onClick={onBack} 
+                style={{
+                  background: 'white',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  width: '100%'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                  e.currentTarget.style.borderColor = '#9ca3af';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                }}
+              >
+                Choose other Profile
               </button>
             </div>
           </form>

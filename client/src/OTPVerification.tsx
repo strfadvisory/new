@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
 import { API_BASE_URL } from './config';
@@ -15,9 +15,24 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
+  const [timer, setTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
+
+  useEffect(() => {
+    if (timer > 0) {
+      const interval = setInterval(() => {
+        setTimer(prev => prev - 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setCanResend(true);
+    }
+  }, [timer]);
 
   const handleChange = (index: number, value: string) => {
     if (value.length > 1) return;
+    if (!/^[0-9]*$/.test(value)) return;
+    
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
@@ -36,6 +51,8 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
   };
 
   const handleResend = async () => {
+    if (!canResend) return;
+    
     setResending(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/resend-otp`, {
@@ -46,6 +63,9 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
       const data = await response.json();
       if (response.ok) {
         toast.success('OTP resent successfully');
+        setTimer(30);
+        setCanResend(false);
+        setOtp(['', '', '', '', '', '']);
       } else {
         toast.error(data.message);
       }
@@ -54,6 +74,14 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
     } finally {
       setResending(false);
     }
+  };
+
+  const maskEmail = (email: string) => {
+    const [localPart, domain] = email.split('@');
+    if (localPart.length <= 3) {
+      return `${localPart[0]}***@${domain}`;
+    }
+    return `${localPart.slice(0, 3)}***@${domain}`;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,7 +120,6 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
       <div className="profile-sidebar">
         <div className="logo">
           <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-        
         </div>
         <div className="contact-info">
           <div className="contact-item">
@@ -111,44 +138,100 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
           { label: 'OTP Verification', active: true }
         ]} />
         
-        <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto', textAlign: 'center'}}>
-          <h1>OTP Verification</h1>
-          <p>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
+        <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto'}}>
+          <h1 style={{fontSize: '32px', fontWeight: '700', marginBottom: '8px', textAlign: 'left'}}>OTP Verification</h1>
+          <p style={{fontSize: '16px', color: '#6b7280', marginBottom: '8px', textAlign: 'left'}}>Verify your email address {maskEmail(email)}</p>
+          <p style={{fontSize: '16px', color: '#6b7280', marginBottom: '40px', textAlign: 'left'}}>Enter the OTP sent to your registered contact to verify and access the system.</p>
           
           <form onSubmit={handleSubmit}>
-            <div className="mt-4 mb-4">
-              <label className="form-label d-flex justify-content-between align-items-center">
-                <span>Enter OTP</span>
-                <button type="button" onClick={handleResend} className="btn btn-link p-0 text-decoration-none" disabled={resending}>
-                  {resending ? <><i className="fas fa-spinner fa-spin"></i> Sending...</> : 'Resend Code'}
-                </button>
-              </label>
-              <div className="d-flex justify-content-center gap-2">
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    id={`otp-${index}`}
-                    type="text"
-                    maxLength={1}
-                    className="form-control text-center"
-                    style={{width: '50px', height: '50px', fontSize: '20px'}}
-                    value={digit}
-                    onChange={(e) => handleChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                  />
-                ))}
-              </div>
+            <div style={{display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '32px'}}>
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  id={`otp-${index}`}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  style={{
+                    width: 'calc((100% - 40px) / 6)',
+                    height: '50px',
+                    fontSize: '20px',
+                    fontWeight: '600',
+                    textAlign: 'center',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    outline: 'none',
+                    backgroundColor: '#ffffff',
+                    color: '#1f2937'
+                  }}
+                  value={digit}
+                  onChange={(e) => handleChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
+                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
+                />
+              ))}
             </div>
             
-            <button type="submit" className="btn btn-primary w-100 mt-4 py-2" disabled={loading}>
-              {loading ? <><i className="fas fa-spinner fa-spin"></i> Verifying...</> : 'Continue'}
-            </button>
-            
-            <div className="text-center mt-3">
-              <button type="button" onClick={onBack} className="btn btn-link text-muted p-0">
-                Back to Profile
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: '32px', fontSize: '16px'}}>
+              <span style={{color: '#1f2937', fontWeight: '500', marginRight: '16px'}}>
+                {timer > 0 ? `${timer} Second` : ''}
+              </span>
+              <button 
+                type="button" 
+                onClick={handleResend} 
+                disabled={!canResend || resending}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: canResend ? '#3b82f6' : '#9ca3af',
+                  fontSize: '16px',
+                  cursor: canResend ? 'pointer' : 'not-allowed',
+                  textDecoration: 'underline',
+                  fontWeight: '500'
+                }}
+              >
+                {resending ? 'Sending...' : 'Resend Code'}
               </button>
             </div>
+            
+            <button 
+              type="submit" 
+              disabled={loading || otp.join('').length !== 6}
+              style={{
+                width: '100%',
+                backgroundColor: '#1e40af',
+                color: 'white',
+                border: 'none',
+                padding: '16px 24px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: loading || otp.join('').length !== 6 ? 'not-allowed' : 'pointer',
+                marginBottom: '16px',
+                opacity: loading || otp.join('').length !== 6 ? 0.6 : 1
+              }}
+            >
+              {loading ? 'Verifying...' : 'Continue'}
+            </button>
+            
+            <button 
+              type="button" 
+              onClick={onBack} 
+              style={{
+                width: '100%',
+                backgroundColor: 'transparent',
+                color: '#6b7280',
+                border: '1px solid #d1d5db',
+                padding: '16px 24px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: 'pointer'
+              }}
+            >
+              Back to Profile
+            </button>
           </form>
         </div>
       </div>

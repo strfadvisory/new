@@ -102,7 +102,31 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
         </div>
         
         <div className="company-footer">
-          <a href="#" className="company-not-listed">Company type not listed ?</a>
+          <button 
+            className="company-not-listed-btn"
+            style={{
+              background: 'white',
+              color: '#374151',
+              border: '1px solid #d1d5db',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              fontSize: '16px',
+              fontWeight: '500',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#f9fafb';
+              e.currentTarget.style.borderColor = '#9ca3af';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'white';
+              e.currentTarget.style.borderColor = '#d1d5db';
+            }}
+          >
+            Company type not listed ?
+          </button>
         </div>
 
 

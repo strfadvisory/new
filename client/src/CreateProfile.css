@@ -268,22 +268,58 @@
   gap: 12px;
 }
 
-.logo-text {
+.password-input {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  line-height: 1.2;
+  align-items: center;
 }
 
-.company-name {
-  font-weight: 700;
+.password-input input {
+  width: 100%;
+  padding-right: 45px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
   font-size: 16px;
-  color: white;
-  letter-spacing: 0.5px;
 }
 
-.company-subtitle {
-  font-weight: 500;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  letter-spacing: 0.3px;
+.password-toggle:hover {
+  color: #3b82f6;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.checkbox-group label {
+  margin: 0;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+* {
+  font-size: 16px;
+}
+
+.form-group input,
+.form-group select {
+  font-size: 16px;
+}
+
+.form-group label {
+  font-size: 16px;
 }
