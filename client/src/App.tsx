@@ -24,6 +24,7 @@ function App() {
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
   const [selectedRoleName, setSelectedRoleName] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
+  const [formState, setFormState] = useState<any>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -63,6 +64,7 @@ function App() {
   const handleRegister = (userData: any) => {
     setUser(userData);
     setUserEmail(userData.email || localStorage.getItem('tempEmail') || '');
+    setFormState({ ...formState, profile: userData });
     navigate('/verify-otp');
   };
 
@@ -97,9 +99,9 @@ function App() {
       <Routes>
         <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/companies' : '/dashboard'} replace />} />
         <Route path="/signup" element={<CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />} />
-        <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} roleId={selectedRoleId} roleName={selectedRoleName} />} />
-        <Route path="/verify-otp" element={<OTPVerification email={userEmail} onVerify={handleOTPVerified} onBack={handleBackToProfile} />} />
-        <Route path="/company-profile" element={<CompanyProfile onComplete={handleCompanyProfileComplete} />} />
+        <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} roleId={selectedRoleId} roleName={selectedRoleName} savedData={formState.profile} onNavigate={(step) => navigate(step)} />} />
+        <Route path="/verify-otp" element={<OTPVerification email={userEmail} onVerify={handleOTPVerified} onBack={handleBackToProfile} onNavigate={(step) => navigate(step)} />} />
+        <Route path="/company-profile" element={<CompanyProfile onComplete={handleCompanyProfileComplete} onNavigate={(step) => navigate(step)} />} />
         <Route path="/verify-advisory/:token" element={<AdvisoryVerification />} />
         <Route path="/admin/*" element={user?.isSuperAdmin ? <SuperAdminLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
         <Route path="/dashboard" element={user && !user.isSuperAdmin ? <DashboardLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}>

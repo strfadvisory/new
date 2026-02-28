@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
 import { API_BASE_URL } from './config';
+import Breadcrumb from './components/Breadcrumb';
 
 interface CompanyProfileProps {
   onComplete: () => void;
+  onNavigate?: (step: string) => void;
 }
 
-const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete }) => {
+const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate }) => {
   const [formData, setFormData] = useState({
     companyName: '',
     description: '',
@@ -98,13 +100,12 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete }) => {
       </div>
       
       <div className="profile-content">
-        <div className="breadcrumb">
-          <span>Select Company</span>
-          <i className="fas fa-chevron-right"></i>
-          <span>Create Profile</span>
-          <i className="fas fa-chevron-right"></i>
-          <span>Company Profile</span>
-        </div>
+        <Breadcrumb items={[
+          { label: 'Select Company', onClick: () => onNavigate?.('/signup') },
+          { label: 'Create Profile', onClick: () => onNavigate?.('/create-profile') },
+          { label: 'OTP Verification', onClick: () => onNavigate?.('/verify-otp') },
+          { label: 'Company Profile', active: true }
+        ]} />
         
         <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto'}}>
           <div className="d-flex justify-content-between align-items-start mb-3">

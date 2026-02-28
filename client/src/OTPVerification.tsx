@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
 import { API_BASE_URL } from './config';
+import Breadcrumb from './components/Breadcrumb';
 
 interface OTPVerificationProps {
   email: string;
   onVerify: () => void;
   onBack: () => void;
+  onNavigate?: (step: string) => void;
 }
 
-const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBack }) => {
+const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBack, onNavigate }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -103,11 +105,11 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
       </div>
       
       <div className="profile-content">
-        <div className="breadcrumb">
-          <span>Select Company</span>
-          <i className="fas fa-chevron-right"></i>
-          <span>Create Profile</span>
-        </div>
+        <Breadcrumb items={[
+          { label: 'Select Company', onClick: () => onNavigate?.('/signup') },
+          { label: 'Create Profile', onClick: () => onNavigate?.('/create-profile') },
+          { label: 'OTP Verification', active: true }
+        ]} />
         
         <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto', textAlign: 'center'}}>
           <h1>OTP Verification</h1>

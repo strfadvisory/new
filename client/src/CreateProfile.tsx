@@ -3,6 +3,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import './CreateProfile.css';
 import { API_BASE_URL } from './config';
+import Breadcrumb from './components/Breadcrumb';
 
 interface CreateProfileProps {
   onBack: () => void;
@@ -10,11 +11,13 @@ interface CreateProfileProps {
   companyType?: string;
   roleId?: string;
   roleName?: string;
+  savedData?: any;
+  onNavigate?: (step: string) => void;
 }
 
-const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, companyType, roleId, roleName }) => {
+const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, companyType, roleId, roleName, savedData, onNavigate }) => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(savedData || {
     firstName: '',
     lastName: '',
     email: '',
@@ -34,25 +37,9 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
   const [cities, setCities] = useState<string[]>([]);
   const [loadingZip, setLoadingZip] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('US');
+  const [countries, setCountries] = useState<any[]>([]);
 
-  const countries = [
-    { code: 'US', name: 'United States', dialCode: '+1', flag: 'us' },
-    { code: 'CA', name: 'Canada', dialCode: '+1', flag: 'ca' },
-    { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: 'gb' },
-    { code: 'AU', name: 'Australia', dialCode: '+61', flag: 'au' },
-    { code: 'IN', name: 'India', dialCode: '+91', flag: 'in' },
-    { code: 'MX', name: 'Mexico', dialCode: '+52', flag: 'mx' },
-    { code: 'DE', name: 'Germany', dialCode: '+49', flag: 'de' },
-    { code: 'FR', name: 'France', dialCode: '+33', flag: 'fr' },
-    { code: 'IT', name: 'Italy', dialCode: '+39', flag: 'it' },
-    { code: 'ES', name: 'Spain', dialCode: '+34', flag: 'es' },
-    { code: 'BR', name: 'Brazil', dialCode: '+55', flag: 'br' },
-    { code: 'JP', name: 'Japan', dialCode: '+81', flag: 'jp' },
-    { code: 'CN', name: 'China', dialCode: '+86', flag: 'cn' },
-    { code: 'KR', name: 'South Korea', dialCode: '+82', flag: 'kr' },
-  ];
-
-  const currentCountry = countries.find(c => c.code === selectedCountry) || countries[0];
+  const currentCountry = countries.find(c => c.code === selectedCountry) || { code: 'US', name: 'United States', dialCode: '+1', flag: 'us', prefix: '1' };
 
   const usStates = [
     { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
@@ -78,28 +65,63 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
     if (!companyType && !roleName) {
       navigate('/');
     }
+    
+    // Load countries from JSON
+    fetch('/countrylist.json')
+      .then(res => res.json())
+      .then(data => {
+        const formattedCountries = data.map((country: any) => ({
+          code: country.iso2,
+          name: country.name,
+          dialCode: country.phoneCode,
+          flag: country.iso2.toLowerCase(),
+          prefix: country.phoneCode.replace('+', '')
+        }));
+        setCountries(formattedCountries);
+      })
+      .catch(err => console.error('Error loading countries:', err));
   }, [companyType, roleName, navigate]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    
-    if (name === 'phone') {
-      // Detect country code from phone number
-      if (value.startsWith('+')) {
-        const dialCode = value.match(/^\+\d{1,3}/);
-        if (dialCode) {
-          const matchedCountry = countries.find(c => c.dialCode === dialCode[0]);
-          if (matchedCountry) {
-            setSelectedCountry(matchedCountry.code);
-          }
+  // Update phone number format when country changes
+  useEffect(() => {
+    if (selectedCountry && countries.length > 0) {
+      const country = countries.find(c => c.code === selectedCountry);
+      if (country && formData.phone && !formData.phone.startsWith(country.dialCode)) {
+        // Only update if phone doesn't already have the correct country code
+        const cleanPhone = formData.phone.replace(/^\+?\d{1,4}\s?/, ''); // Remove existing country code
+        if (cleanPhone) {
+          setFormData((prev: any) => ({
+            ...prev,
+            phone: `${country.dialCode} ${cleanPhone}`
+          }));
         }
       }
     }
+  }, [selectedCountry, countries]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
     
     setFormData({
       ...formData,
       [name]: value
     });
+
+    if (name === 'phone') {
+      // Auto-detect country from phone number
+      const phoneNumber = value.replace(/\D/g, '');
+      if (phoneNumber.length >= 1 && countries.length > 0) {
+        // Sort by prefix length (longest first) to match more specific codes first
+        const sortedCountries = [...countries].sort((a, b) => b.prefix.length - a.prefix.length);
+        
+        for (const country of sortedCountries) {
+          if (phoneNumber.startsWith(country.prefix)) {
+            setSelectedCountry(country.code);
+            break;
+          }
+        }
+      }
+    }
 
     if (name === 'zipCode' && value.length === 5) {
       fetchLocationByZip(value);
@@ -113,7 +135,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
       if (response.ok) {
         const data = await response.json();
         const place = data.places[0];
-        setFormData(prev => ({
+        setFormData((prev: any) => ({
           ...prev,
           state: place['state abbreviation'],
           city: place['place name']
@@ -223,13 +245,10 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
       </div>
       
       <div className="profile-content">
-        <div className="breadcrumb">
-          <span>Select Company</span>
-          <i className="fas fa-chevron-right"></i>
-          <span className="active">{roleName || companyType}</span>
-          <i className="fas fa-chevron-right"></i>
-          <span>Create Profile</span>
-        </div>
+        <Breadcrumb items={[
+          { label: 'Select Company', onClick: () => onNavigate?.('/signup') },
+          { label: 'Create Profile', active: true }
+        ]} />
         
         <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto'}}>
           <h1>Create your profile</h1>
@@ -318,7 +337,20 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
                     <select 
                       id="country-select"
                       value={selectedCountry}
-                      onChange={(e) => setSelectedCountry(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedCountry(e.target.value);
+                        // Update phone number with new country code if phone exists
+                        const newCountry = countries.find(c => c.code === e.target.value);
+                        if (newCountry && formData.phone) {
+                          const cleanPhone = formData.phone.replace(/^\+?\d{1,4}\s?/, ''); // Remove existing country code
+                          if (cleanPhone) {
+                            setFormData((prev: any) => ({
+                              ...prev,
+                              phone: `${newCountry.dialCode} ${cleanPhone}`
+                            }));
+                          }
+                        }
+                      }}
                       style={{
                         position: 'absolute',
                         left: 0,
