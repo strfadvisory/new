@@ -182,32 +182,9 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
         ]} />
         
         <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto'}}>
-          <div className="d-flex justify-content-between align-items-start mb-3">
-            <div>
-              <h1>Create Management Company</h1>
-              <p>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
-            </div>
-            <div 
-              className="border rounded d-flex flex-column align-items-center justify-content-center" 
-              style={{width: '150px', height: '150px', cursor: 'pointer', backgroundColor: '#f8f9fa', flexShrink: 0, marginLeft: '20px'}}
-              onClick={() => document.getElementById('logoUpload')?.click()}
-            >
-              <input
-                type="file"
-                id="logoUpload"
-                accept="image/*"
-                onChange={handleLogoChange}
-                style={{display: 'none'}}
-              />
-              {logoPreview ? (
-                <img src={logoPreview} alt="Logo" style={{maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', padding: '10px'}} />
-              ) : (
-                <>
-                  <i className="fas fa-plus fa-2x text-primary mb-2"></i>
-                  <span className="text-muted">Your Logo</span>
-                </>
-              )}
-            </div>
+          <div>
+            <h1>Create Management Company</h1>
+            <p>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
           </div>
           
           <form onSubmit={handleSubmit}>
@@ -241,6 +218,53 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
                 value={formData.description}
                 onChange={handleInputChange}
               />
+            </div>
+            
+            <div className="form-group">
+              <label>Your Logo</label>
+              <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                <div 
+                  className="border rounded d-flex flex-column align-items-center justify-content-center" 
+                  style={{
+                    width: '60px', 
+                    height: '60px', 
+                    cursor: 'pointer', 
+                    backgroundColor: '#f8f9fa',
+                    border: '2px dashed #d1d5db',
+                    borderRadius: '8px'
+                  }}
+                  onClick={() => document.getElementById('logoUpload')?.click()}
+                >
+                  <input
+                    type="file"
+                    id="logoUpload"
+                    accept="image/*"
+                    onChange={handleLogoChange}
+                    style={{display: 'none'}}
+                  />
+                  {logoPreview ? (
+                    <img src={logoPreview} alt="Logo" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px'}} />
+                  ) : (
+                    <i className="fas fa-camera" style={{fontSize: '20px', color: '#6b7280'}}></i>
+                  )}
+                </div>
+                <div 
+                  style={{
+                    flex: 1,
+                    padding: '16px 20px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: '8px',
+                    backgroundColor: '#f9fafb',
+                    cursor: 'pointer',
+                    textAlign: 'center',
+                    color: '#6b7280',
+                    fontSize: '16px'
+                  }}
+                  onClick={() => document.getElementById('logoUpload')?.click()}
+                >
+                  Upload Logo
+                </div>
+              </div>
             </div>
             
             <div className="section-title mt-4">
