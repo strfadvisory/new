@@ -291,123 +291,80 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
               <div className="companies-list">
                 {roles.map((role) => {
                   const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
-                  return (
-                    <React.Fragment key={role._id}>
-                     
-                      <div 
-                        className={`company-item ${selectedRole?._id === role._id ? 'active' : ''}`}
-                        onClick={async () => {
-                          if (!isValidId) {
-                            console.error('Invalid role ID:', role._id);
-                            setSelectedRole(role);
-                            return;
+                  const allRoles = [];
+                  
+                  // Add parent role
+                  allRoles.push({ ...role, hierarchy: 'L1', level: 1 });
+                  
+                  // Add child roles
+                  if (role.childRoles && role.childRoles.length > 0) {
+                    role.childRoles.forEach((childRole: any) => {
+                      allRoles.push({ 
+                        ...childRole, 
+                        parentRoleId: role._id, 
+                        hierarchy: `${role.name}`,
+                        level: 2
+                      });
+                      
+                      // Add grandchild roles
+                      if (childRole.childRoles && childRole.childRoles.length > 0) {
+                        childRole.childRoles.forEach((grandChildRole: any) => {
+                          allRoles.push({ 
+                            ...grandChildRole, 
+                            parentRoleId: role._id, 
+                            childRoleId: childRole._id,
+                            hierarchy: `${role.name} - ${childRole.name}`,
+                            level: 3
+                          });
+                        });
+                      }
+                    });
+                  }
+                  
+                  return allRoles.map((roleItem) => (
+                    <div 
+                      key={roleItem._id}
+                      className={`company-item ${selectedRole?._id === roleItem._id ? 'active' : ''}`}
+                      onClick={async () => {
+                        if (!isValidId) {
+                          console.error('Invalid role ID:', roleItem._id);
+                          setSelectedRole(roleItem);
+                          return;
+                        }
+                        try {
+                          const token = localStorage.getItem('token');
+                          const response = await fetch(`${API_BASE_URL}/api/roles/${roleItem._id}`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
+                          });
+                          if (response.ok) {
+                            const freshRole = await response.json();
+                            setSelectedRole({ ...freshRole, ...roleItem });
+                          } else {
+                            setSelectedRole(roleItem);
                           }
-                          try {
-                            const token = localStorage.getItem('token');
-                            const response = await fetch(`${API_BASE_URL}/api/roles/${role._id}`, {
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            if (response.ok) {
-                              const freshRole = await response.json();
-                              setSelectedRole(freshRole);
-                            } else {
-                              setSelectedRole(role);
-                            }
-                          } catch (error) {
-                            console.error('Error fetching role:', error);
-                            setSelectedRole(role);
-                          }
-                        }}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <div className="company-name">{role.name}</div>
-                        <div className="company-desc">{role.description}</div>
+                        } catch (error) {
+                          console.error('Error fetching role:', error);
+                          setSelectedRole(roleItem);
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <div className="company-name">{roleItem.name}</div>
+                      <div className="company-hierarchy" style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                        {roleItem.hierarchy}
                       </div>
-                      {role.childRoles && role.childRoles.length > 0 && role.childRoles.map((childRole: any) => (
-                        <React.Fragment key={childRole._id}>
-                          <div 
-                            className={`company-item ${selectedRole?._id === childRole._id ? 'active' : ''}`}
-                            onClick={() => setSelectedRole({ ...childRole, parentRoleId: role._id })}
-                            style={{ cursor: 'pointer', paddingLeft: '40px' }}
-                          >
-                            <div className="company-name">└ {childRole.name}</div>
-                          </div>
-                          {childRole.childRoles && childRole.childRoles.length > 0 && childRole.childRoles.map((grandChildRole: any) => (
-                            <div 
-                              key={grandChildRole._id}
-                              className={`company-item ${selectedRole?._id === grandChildRole._id ? 'active' : ''}`}
-                              onClick={() => setSelectedRole({ ...grandChildRole, parentRoleId: role._id, childRoleId: childRole._id })}
-                              style={{ cursor: 'pointer', paddingLeft: '60px' }}
-                            >
-                              <div className="company-name">└─ {grandChildRole.name}</div>
-                            </div>
-                          ))}
-                          <button 
-                            className="add-sub-user-btn"
-                            style={{ marginLeft: '20px', fontSize: '16px' }}
-                            onClick={() => {
-                              setFormData({ 
-                                _id: '', 
-                                name: '', 
-                                description: '', 
-                                icon: '', 
-                                status: true, 
-                                parentRole: role._id,
-                                childRoleId: childRole._id,
-                                permissions: {} 
-                              });
-                              setIconPreview('');
-                              setEditMode(false);
-                              setIsSlidebarOpen(true);
-                            }}
-                          >
-                            <i className="fas fa-plus"></i> Add Member Role
-                          </button>
-                        </React.Fragment>
-                      ))}
-                      <button 
-                        className="add-sub-user-btn"
-                           style={{   fontSize: '16px' }}
-                        onClick={async () => {
-                          try {
-                            const token = localStorage.getItem('token');
-                            const response = await fetch(`${API_BASE_URL}/api/roles/default-permissions`, {
-                              headers: { 'Authorization': `Bearer ${token}` }
-                            });
-                            const defaultPermissions = await response.json();
-                            setFormData({ 
-                              _id: '', 
-                              name: '', 
-                              description: '', 
-                              icon: '', 
-                              status: true, 
-                              parentRole: role._id,
-                              childRoleId: '',
-                              permissions: defaultPermissions 
-                            });
-                          } catch (error) {
-                            console.error('Error fetching default permissions:', error);
-                            setFormData({ 
-                              _id: '', 
-                              name: '', 
-                              description: '', 
-                              icon: '', 
-                              status: true, 
-                              parentRole: role._id,
-                              childRoleId: '',
-                              permissions: {} 
-                            });
-                          }
-                          setIconPreview('');
-                          setEditMode(false);
-                          setIsSlidebarOpen(true);
-                        }}
-                      >
-                        <i className="fas fa-plus"></i> Add Sub-role
-                      </button>
-                    </React.Fragment>
-                  );
-                })}
+                      <div className="company-desc">{roleItem.description}</div>
+                      <div className="company-status" style={{ 
+                        fontSize: '12px', 
+                        color: roleItem.status ? '#10b981' : '#ef4444',
+                        marginTop: '8px',
+                        fontWeight: '500'
+                      }}>
+                        {roleItem.status ? 'Active' : 'Inactive'}
+                      </div>
+                    </div>
+                  ));
+                }).flat()}
               </div>
             </div>}
             
@@ -493,6 +450,40 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                     <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Icon</span>
                   </div>
                 </div>
+
+                <div className="form-group">
+                  <label>Role Type*</label>
+                  <select 
+                    className="form-input"
+                    value={formData.parentRole}
+                    onChange={(e) => {
+                      setFormData({ ...formData, parentRole: e.target.value, childRoleId: '' });
+                    }}
+                    required
+                  >
+                    <option value="primary">Primary</option>
+                    {roles.map((role) => (
+                      <option key={role._id} value={role._id}>{role.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {formData.parentRole && roles.find(r => r._id === formData.parentRole)?.childRoles?.length > 0 && (
+                  <div className="form-group">
+                    <label>Sub Role*</label>
+                    <select 
+                      className="form-input"
+                      value={formData.childRoleId}
+                      onChange={(e) => setFormData({ ...formData, childRoleId: e.target.value })}
+                      required
+                    >
+                      <option value="">Select Sub Role</option>
+                      {roles.find(r => r._id === formData.parentRole)?.childRoles?.map((childRole: any) => (
+                        <option key={childRole._id} value={childRole._id}>{childRole.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <input 
