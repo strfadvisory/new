@@ -450,7 +450,17 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 ) : (
                   roles.map((role) => {
                     const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
-                    const parentName = role.parentRoleId?.name || '';
+                    
+                    // Build parent hierarchy chain only for type 3
+                    let parentHierarchy = '';
+                    if (role.type === '3' && role.parentRoleId) {
+                      const parentRole = role.parentRoleId;
+                      if (parentRole.parentRoleId) {
+                        parentHierarchy = `${parentRole.parentRoleId.name} - ${parentRole.name}`;
+                      } else {
+                        parentHierarchy = parentRole.name;
+                      }
+                    }
                     
                     return (
                       <div 
@@ -487,12 +497,12 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                           transition: 'all 0.15s ease'
                         }}
                       >
-                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '2px' }}>
+                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '4px' }}>
                           {role.name}
                         </div>
-                        {parentName && (
-                          <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>
-                            {parentName}
+                        {parentHierarchy && (
+                          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '500' }}>
+                            {parentHierarchy}
                           </div>
                         )}
                         <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.4' }}>

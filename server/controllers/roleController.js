@@ -120,7 +120,14 @@ const getDefaultPermissions = (req, res) => {
 const getAllRoles = async (req, res) => {
   try {
     const roles = await Role.find({ createdBy: req.user._id })
-      .populate('parentRoleId', 'name type')
+      .populate({
+        path: 'parentRoleId',
+        select: 'name type',
+        populate: {
+          path: 'parentRoleId',
+          select: 'name type'
+        }
+      })
       .sort({ level: 1, createdAt: -1 })
       .lean();
     
