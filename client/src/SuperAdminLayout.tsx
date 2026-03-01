@@ -451,9 +451,9 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   roles.map((role) => {
                     const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
                     
-                    // Build parent hierarchy chain only for type 3
+                    // Build parent hierarchy chain for type 2 and type 3
                     let parentHierarchy = '';
-                    if (role.type === '3' && role.parentRoleId) {
+                    if ((role.type === '2' || role.type === '3') && role.parentRoleId) {
                       const parentRole = role.parentRoleId;
                       if (parentRole.parentRoleId) {
                         parentHierarchy = `${parentRole.parentRoleId.name} - ${parentRole.name}`;

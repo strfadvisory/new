@@ -1,5 +1,5 @@
 const express = require('express');
-const { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getDefaultPermissions, getFirstLevelRoles, getUserPermissions, getUserNextSteps, getUserVideos, getChildRoles, getUserOwnRole, updateUserOwnRole, bulkUpdatePermissions, getRoleHierarchy, updateUserNextStep } = require('../controllers/roleController');
+const { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getDefaultPermissions, getFirstLevelRoles, getUserPermissions, getUserNextSteps, getUserVideos, getChildRoles, getUserOwnRole, updateUserOwnRole, bulkUpdatePermissions, getRoleHierarchy, updateUserNextStep, getType2Roles, getType3Roles } = require('../controllers/roleController');
 const { protect } = require('../middleware/authMiddleware.jsx');
 const { superAdminOnly } = require('../middleware/superAdminMiddleware');
 const { roleManagementPermission } = require('../middleware/roleManagementMiddleware');
@@ -7,6 +7,8 @@ const { roleManagementPermission } = require('../middleware/roleManagementMiddle
 const router = express.Router();
 
 router.get('/company-types', getFirstLevelRoles);
+router.get('/type-2-roles', protect, getType2Roles);
+router.get('/type-3-roles/:parentId', protect, getType3Roles);
 router.get('/user-permissions', protect, getUserPermissions);
 router.get('/user-nextsteps', protect, getUserNextSteps);
 router.put('/user-nextstep', protect, updateUserNextStep);

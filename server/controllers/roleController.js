@@ -39,7 +39,7 @@ const cascadePermissionsToChildren = async (roleId) => {
 
 const createRole = async (req, res) => {
   try {
-    const { name, description, icon, status, permissions, parentRoleId, nextSteps, video } = req.body;
+    const { name, description, icon, status, permissions, parentRoleId, nextSteps, video, type, userType } = req.body;
     
     let level = 0;
     let hierarchyPath = [];
@@ -65,7 +65,7 @@ const createRole = async (req, res) => {
     const defaultPerms = initializeDefaultPermissions();
     const finalPermissions = permissions || defaultPerms;
     
-    const roleType = level === 0 ? '1' : level === 1 ? '2' : '3';
+    const roleType = type || 'User-Created';
     
     const role = new Role({
       name,
@@ -74,6 +74,7 @@ const createRole = async (req, res) => {
       icon: icon || '',
       status: status !== undefined ? status : true,
       createdBy: req.user._id,
+      userType: userType || null,
       ownPermissions: finalPermissions,
       inheritedPermissions,
       parentRoleId: parentRoleId || null,
@@ -89,6 +90,7 @@ const createRole = async (req, res) => {
     });
     
     const savedRole = await role.save();
+    console.log('Saved role - ID:', savedRole._id, 'type:', savedRole.type, 'userType:', savedRole.userType);
     res.status(201).json(savedRole);
     
   } catch (error) {
@@ -318,7 +320,8 @@ const getUserNextSteps = async (req, res) => {
       return res.status(404).json({ message: 'Role not found' });
     }
 
-    res.json({ nextSteps: role.nextSteps || [] });
+    const incompleteSteps = (role.nextSteps || []).filter(step => step.completed);
+    res.json({ nextSteps: incompleteSteps });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -518,6 +521,25 @@ const updateUserNextStep = async (req, res) => {
   }
 };
 
+const getType2Roles = async (req, res) => {
+  try {
+    const roles = await Role.find({ type: '2', status: true }).select('name description icon type').lean();
+    res.json(roles);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const getType3Roles = async (req, res) => {
+  try {
+    const { parentId } = req.params;
+    const roles = await Role.find({ type: '3', parentRoleId: parentId, status: true }).select('name description icon type').lean();
+    res.json(roles);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = { 
   createRole, 
   getAllRoles, 
@@ -534,5 +556,7 @@ module.exports = {
   updateUserOwnRole, 
   bulkUpdatePermissions, 
   getRoleHierarchy, 
-  updateUserNextStep 
+  updateUserNextStep,
+  getType2Roles,
+  getType3Roles
 };

@@ -21,8 +21,9 @@ const roleSchema = new mongoose.Schema({
   level: { type: Number, default: 0 },
   nextSteps: [nextStepSchema],
   video: [{ type: mongoose.Schema.Types.Mixed }],
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
-}, { timestamps: true, strict: false });
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  userType: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', default: null }
+}, { timestamps: true });
 
 roleSchema.index({ parentRoleId: 1 });
 roleSchema.index({ createdBy: 1 });

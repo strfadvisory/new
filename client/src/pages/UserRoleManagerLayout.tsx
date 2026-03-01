@@ -17,8 +17,15 @@ const UserRoleManagerLayout: React.FC = () => {
     status: true,
     permissions: {} as Record<string, boolean>,
     nextSteps: [] as any[],
-    video: [] as any[]
+    video: [] as any[],
+    userType: '',
+    type: '2',
+    parentRoleId: '',
+    secondaryRoleId: ''
   });
+  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
+  const [level2Roles, setLevel2Roles] = useState<any[]>([]);
+  const [level3Roles, setLevel3Roles] = useState<any[]>([]);
   const [iconPreview, setIconPreview] = useState<string>('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -26,6 +33,7 @@ const UserRoleManagerLayout: React.FC = () => {
     fetchUserRole();
     fetchUserPermissions();
     fetchUserCreatedRoles();
+    fetchLevel2Roles();
   }, []);
 
   const fetchUserPermissions = async () => {
@@ -78,6 +86,38 @@ const UserRoleManagerLayout: React.FC = () => {
     }
   };
 
+  const fetchLevel2Roles = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/roles/type-2-roles`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const roles = await response.json();
+        console.log('Level 2 roles:', roles);
+        setLevel2Roles(roles);
+      }
+    } catch (error) {
+      console.error('Error fetching level 2 roles:', error);
+    }
+  };
+
+  const fetchLevel3Roles = async (parentId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/roles/type-3-roles/${parentId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const roles = await response.json();
+        console.log('Level 3 roles for parent', parentId, ':', roles);
+        setLevel3Roles(roles);
+      }
+    } catch (error) {
+      console.error('Error fetching level 3 roles:', error);
+    }
+  };
+
   const handleEditRole = (role: any) => {
     setFormData({
       _id: role._id,
@@ -92,7 +132,11 @@ const UserRoleManagerLayout: React.FC = () => {
         { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
         { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
       ],
-      video: role.video || []
+      video: role.video || [],
+      userType: role.userType?._id || role.userType || '',
+      type: role.type || '2',
+      parentRoleId: '',
+      secondaryRoleId: ''
     });
     setIconPreview(role.icon || '');
     setEditMode(true);
@@ -140,7 +184,11 @@ const UserRoleManagerLayout: React.FC = () => {
             { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
             { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
           ],
-          video: []
+          video: [],
+          userType: '',
+          type: '2',
+          parentRoleId: '',
+          secondaryRoleId: ''
         });
       } catch (error) {
         console.error('Error fetching default permissions:', error);
@@ -157,7 +205,11 @@ const UserRoleManagerLayout: React.FC = () => {
             { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
             { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
           ],
-          video: []
+          video: [],
+          userType: '',
+          type: '2',
+          parentRoleId: '',
+          secondaryRoleId: ''
         });
       }
       setIconPreview('');
@@ -177,6 +229,12 @@ const UserRoleManagerLayout: React.FC = () => {
         url = `${API_BASE_URL}/api/roles/${formData._id}`;
         method = 'PUT';
       }
+
+      const submitData = {
+        ...formData,
+        parentRoleId: formData.secondaryRoleId || formData.parentRoleId || null,
+        userType: formData.userType || null
+      };
       
       const response = await fetch(url, {
         method,
@@ -184,14 +242,15 @@ const UserRoleManagerLayout: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(submitData)
       });
       
       if (response.ok) {
         setIsSlidebarOpen(false);
         setEditMode(false);
-        setFormData({ _id: '', name: '', description: '', icon: '', status: true, permissions: {}, nextSteps: [], video: [] });
+        setFormData({ _id: '', name: '', description: '', icon: '', status: true, permissions: {}, nextSteps: [], video: [], userType: '', type: '2', parentRoleId: '', secondaryRoleId: '' });
         setIconPreview('');
+        setLevel3Roles([]);
         fetchUserCreatedRoles();
       }
     } catch (error) {
@@ -271,6 +330,50 @@ const UserRoleManagerLayout: React.FC = () => {
             </div>
             <form onSubmit={handleSubmit}>
               <div className="slidebar-content">
+                <div className="form-group">
+                  <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+                    Select   Role Type
+                  </label>
+                  <select 
+                    className="form-input"
+                    value={formData.parentRoleId}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFormData({ ...formData, parentRoleId: value, secondaryRoleId: '', type: '2' });
+                      setLevel3Roles([]);
+                      if (value) fetchLevel3Roles(value);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <option value="">Select a type </option>
+                    {level2Roles.map((role) => (
+                      <option key={role._id} value={role._id}>{role.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {formData.parentRoleId && level3Roles.length > 0 && (
+                  <div className="form-group">
+                    <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+                      Select Type 3 Role (Optional)
+                    </label>
+                    <select 
+                      className="form-input"
+                      value={formData.secondaryRoleId}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setFormData({ ...formData, secondaryRoleId: value, type: value ? '3' : '2' });
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
+                      <option value="">Select a type 3 role</option>
+                      {level3Roles.map((role) => (
+                        <option key={role._id} value={role._id}>{role.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="form-group">
                   <input 
                     type="text" 
