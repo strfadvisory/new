@@ -8,6 +8,7 @@ const initializeDefaultPermissions = () => {
       permissions[`${mod.module}.${perm.code}`] = false;
     });
   });
+  console.log('Initialized default permissions:', permissions);
   return permissions;
 };
 
@@ -147,6 +148,8 @@ const updateRole = async (req, res) => {
     const { id } = req.params;
     const { name, description, icon, status, permissions, canEditPermissions, parentRole, childRoleId, grandChildRoleId, nextSteps } = req.body;
     
+    console.log('Update role request:', { id, parentRole, childRoleId, grandChildRoleId });
+    
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ message: 'Invalid role ID format' });
     }
@@ -172,12 +175,25 @@ const updateRole = async (req, res) => {
       if (description) grandChildRole.description = description;
       if (icon !== undefined) grandChildRole.icon = icon;
       if (status !== undefined) grandChildRole.status = status;
-      if (permissions) grandChildRole.permissions = permissions;
-      if (canEditPermissions) grandChildRole.canEditPermissions = canEditPermissions;
-      if (nextSteps) grandChildRole.nextSteps = nextSteps;
-      if (req.body.video !== undefined) grandChildRole.video = req.body.video;
+      if (permissions) {
+        grandChildRole.permissions = permissions;
+        parent.markModified('childRoles');
+      }
+      if (canEditPermissions) {
+        grandChildRole.canEditPermissions = canEditPermissions;
+        parent.markModified('childRoles');
+      }
+      if (nextSteps) {
+        grandChildRole.nextSteps = nextSteps;
+        parent.markModified('childRoles');
+      }
+      if (req.body.video !== undefined) {
+        grandChildRole.video = req.body.video;
+        parent.markModified('childRoles');
+      }
       
-      await parent.save();
+      const savedParent = await parent.save();
+      console.log('Grandchild role updated successfully');
       return res.json(grandChildRole);
     }
     
@@ -197,12 +213,25 @@ const updateRole = async (req, res) => {
       if (description) childRole.description = description;
       if (icon !== undefined) childRole.icon = icon;
       if (status !== undefined) childRole.status = status;
-      if (permissions) childRole.permissions = permissions;
-      if (canEditPermissions) childRole.canEditPermissions = canEditPermissions;
-      if (nextSteps) childRole.nextSteps = nextSteps;
-      if (req.body.video !== undefined) childRole.video = req.body.video;
+      if (permissions) {
+        childRole.permissions = permissions;
+        parent.markModified('childRoles');
+      }
+      if (canEditPermissions) {
+        childRole.canEditPermissions = canEditPermissions;
+        parent.markModified('childRoles');
+      }
+      if (nextSteps) {
+        childRole.nextSteps = nextSteps;
+        parent.markModified('childRoles');
+      }
+      if (req.body.video !== undefined) {
+        childRole.video = req.body.video;
+        parent.markModified('childRoles');
+      }
       
-      await parent.save();
+      const savedParent = await parent.save();
+      console.log('Child role updated successfully');
       return res.json(childRole);
     }
     
@@ -234,6 +263,7 @@ const updateRole = async (req, res) => {
     }
     
     const savedRole = await role.save();
+    console.log('Parent role updated successfully');
 
     res.json(savedRole);
   } catch (error) {

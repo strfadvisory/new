@@ -51,14 +51,24 @@
       "displayName": "User Management",
       "canEdit": true,
       "canEditValue": false,
-      "permissions": []
+      "permissions": [
+        { "code": "ADD_MEMBER_ROLE", "name": "Add Member Role", "description": "Create and assign member roles with specific permissions and access levels." },
+        { "code": "EDIT_MEMBER_ROLE", "name": "Edit Member Role", "description": "Modify existing member roles and update their permissions and access rights." },
+        { "code": "DELETE_MEMBER_ROLE", "name": "Delete Member Role", "description": "Remove member roles and revoke associated permissions from the system." },
+        { "code": "VIEW_MEMBER_LIST", "name": "View Member List", "description": "Access and view the complete list of members and their role assignments." }
+      ]
     },
     {
       "module": "ROLE_MANAGEMENT",
       "displayName": "Role Management",
       "canEdit": true,
       "canEditValue": false,
-      "permissions": []
+      "permissions": [
+        { "code": "CREATE_ROLE", "name": "Create Role", "description": "Create new roles with custom permissions and access configurations." },
+        { "code": "EDIT_ROLE", "name": "Edit Role", "description": "Modify existing roles and update their permission sets and configurations." },
+        { "code": "DELETE_ROLE", "name": "Delete Role", "description": "Remove roles from the system and handle associated user reassignments." },
+        { "code": "ASSIGN_PERMISSIONS", "name": "Assign Permissions", "description": "Grant or revoke specific permissions to roles and manage access control." }
+      ]
     },
     {
       "module": "BANKING_SERVICES",

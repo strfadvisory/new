@@ -124,10 +124,14 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     
     const permissionsData: any = {};
     const canEditData: any = {};
+    
     modules.forEach(mod => {
+      // Handle modules with permissions
       mod.permissions.forEach(perm => {
         permissionsData[`${mod.module}.${perm.code}`] = perm.enabled;
       });
+      
+      // Handle modules with canEdit functionality (USER_MANAGEMENT, ROLE_MANAGEMENT)
       if (mod.canEdit) {
         canEditData[mod.module] = mod.canEditValue || false;
       }
@@ -147,12 +151,24 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         video: selectedVideos
       };
       
+      // Handle child role updates
       if (selectedRole.parentRoleId) {
         updateData.parentRole = selectedRole.parentRoleId;
         updateData.childRoleId = selectedRole._id;
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
+      // Handle grandchild role updates
+      if (selectedRole.grandParentRoleId && selectedRole.parentRoleId) {
+        updateData.parentRole = selectedRole.grandParentRoleId;
+        updateData.childRoleId = selectedRole.parentRoleId;
+        updateData.grandChildRoleId = selectedRole._id;
+      }
+      
+      const roleId = selectedRole.grandParentRoleId || selectedRole.parentRoleId || selectedRole._id;
+      
+      console.log('Saving role with canEditPermissions:', canEditData);
+      
+      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -162,11 +178,12 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       });
       
       if (response.ok) {
-        toast.success('Successfully updated!');
+        toast.success('Role updated successfully!');
         setHasChanges(false);
       } else {
         const error = await response.json();
-        toast.error('Failed to save: ' + error.message);
+        console.error('Update error:', error);
+        toast.error('Failed to save: ' + (error.message || 'Unknown error'));
       }
     } catch (error) {
       console.error('Error saving:', error);
@@ -267,17 +284,36 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         permissions: selectedRole.permissions,
         nextSteps: steps
       };
+      
+      // Handle child role updates
       if (selectedRole.parentRoleId) {
         updateData.parentRole = selectedRole.parentRoleId;
         updateData.childRoleId = selectedRole._id;
       }
-      await fetch(`${API_BASE_URL}/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
+      
+      // Handle grandchild role updates
+      if (selectedRole.grandParentRoleId && selectedRole.parentRoleId) {
+        updateData.parentRole = selectedRole.grandParentRoleId;
+        updateData.childRoleId = selectedRole.parentRoleId;
+        updateData.grandChildRoleId = selectedRole._id;
+      }
+      
+      const roleId = selectedRole.grandParentRoleId || selectedRole.parentRoleId || selectedRole._id;
+      
+      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(updateData)
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        console.error('Failed to save next steps:', error);
+        toast.error('Failed to save next steps');
+      }
     } catch (error) {
       console.error('Error saving next steps:', error);
+      toast.error('Error saving next steps');
     }
   };
 
@@ -289,10 +325,14 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     
     const permissionsData: any = {};
     const canEditData: any = {};
+    
     updatedModules.forEach(mod => {
+      // Handle modules with permissions
       mod.permissions.forEach(perm => {
         permissionsData[`${mod.module}.${perm.code}`] = perm.enabled;
       });
+      
+      // Handle modules with canEdit functionality (USER_MANAGEMENT, ROLE_MANAGEMENT)
       if (mod.canEdit) {
         canEditData[mod.module] = mod.canEditValue || false;
       }
@@ -301,6 +341,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     try {
       const token = localStorage.getItem('token');
       console.log('Saving permissions for role:', selectedRole._id);
+      console.log('CanEdit data:', canEditData);
       
       const updateData: any = { 
         name: selectedRole.name,
@@ -312,13 +353,22 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         canEditPermissions: canEditData
       };
       
-      // If this is a child role, include parent info
+      // Handle child role updates
       if (selectedRole.parentRoleId) {
         updateData.parentRole = selectedRole.parentRoleId;
         updateData.childRoleId = selectedRole._id;
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/roles/${selectedRole.parentRoleId || selectedRole._id}`, {
+      // Handle grandchild role updates
+      if (selectedRole.grandParentRoleId && selectedRole.parentRoleId) {
+        updateData.parentRole = selectedRole.grandParentRoleId;
+        updateData.childRoleId = selectedRole.parentRoleId;
+        updateData.grandChildRoleId = selectedRole._id;
+      }
+      
+      const roleId = selectedRole.grandParentRoleId || selectedRole.parentRoleId || selectedRole._id;
+      
+      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -330,11 +380,14 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       if (!response.ok) {
         const error = await response.json();
         console.error('Failed to save permissions:', error);
+        toast.error('Failed to save permissions: ' + (error.message || 'Unknown error'));
       } else {
         console.log('Permissions saved successfully');
+        toast.success('Permissions saved successfully!');
       }
     } catch (error) {
       console.error('Error saving permissions:', error);
+      toast.error('Error saving permissions');
     }
   };
 
