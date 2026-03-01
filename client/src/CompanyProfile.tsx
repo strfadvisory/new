@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
 import { API_BASE_URL } from './config';
-import { updateSignupState, getSignupState, getCompanyFormData, updateCompanyFormData, CompanyFormData } from './utils/signupState';
+import { updateSignupState, getSignupState, getCompanyFormData, updateCompanyFormData, CompanyFormData, clearSignupState } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
+import AuthSidebar from './components/AuthSidebar';
 
 interface CompanyProfileProps {
   onComplete: () => void;
@@ -144,6 +145,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
       if (response.ok) {
         localStorage.setItem('user', JSON.stringify(data));
         toast.success('Company profile created successfully');
+        clearSignupState();
         onComplete();
       } else {
         toast.error(data.message);
@@ -157,20 +159,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
 
   return (
     <div className="create-profile-container">
-      <div className="profile-sidebar">
-        <div className="logo">
-          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-          
-        </div>
-        <div className="contact-info">
-          <div className="contact-item">
-            <i className="fas fa-envelope"></i> info@reservefundadvisory.com
-          </div>
-          <div className="contact-item">
-            <i className="fas fa-phone"></i> 727-788-4800
-          </div>
-        </div>
-      </div>
+      <AuthSidebar />
       
       <div className="profile-content">
         <Breadcrumb items={[

@@ -4,6 +4,7 @@ import './CreateProfile.css';
 import { API_BASE_URL } from './config';
 import { updateSignupState, getSignupState, getFormData } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
+import AuthSidebar from './components/AuthSidebar';
 
 interface OTPVerificationProps {
   onVerify: () => void;
@@ -120,19 +121,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ onVerify, onBack, onN
 
   return (
     <div className="create-profile-container">
-      <div className="profile-sidebar">
-        <div className="logo">
-          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-        </div>
-        <div className="contact-info">
-          <div className="contact-item">
-            <i className="fas fa-envelope"></i> info@reservefundadvisory.com
-          </div>
-          <div className="contact-item">
-            <i className="fas fa-phone"></i> 727-788-4800
-          </div>
-        </div>
-      </div>
+      <AuthSidebar />
       
       <div className="profile-content">
         <Breadcrumb items={[
@@ -227,16 +216,27 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ onVerify, onBack, onN
             <button 
               type="button" 
               onClick={onBack} 
+              className="company-not-listed-btn"
               style={{
-                width: '100%',
-                backgroundColor: 'transparent',
-                color: '#6b7280',
+                background: 'white',
+                color: '#374151',
                 border: '1px solid #d1d5db',
-                padding: '16px 24px',
+                padding: '12px 24px',
                 borderRadius: '8px',
                 fontSize: '16px',
                 fontWeight: '500',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                width: '100%'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f9fafb';
+                e.currentTarget.style.borderColor = '#9ca3af';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'white';
+                e.currentTarget.style.borderColor = '#d1d5db';
               }}
             >
               Back to Profile

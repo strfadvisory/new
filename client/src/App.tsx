@@ -107,7 +107,7 @@ function App() {
 
   return (
     <div className="App">
-      {/* <SignupStateDebug /> */}
+      {/* {  <SignupStateDebug />  } */}
       <Routes>
         <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/companies' : '/dashboard'} replace />} />
         <Route path="/signup" element={<CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />} />

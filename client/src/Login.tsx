@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import './Login.css';
 import { API_BASE_URL } from './config';
+import AuthSidebar from './components/AuthSidebar';
 
 interface LoginProps {
   onNewUser: () => void;
@@ -40,20 +41,7 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
 
   return (
     <div className="login-container">
-      <div className="login-sidebar">
-        <div className="logo">
-          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
- 
-        </div>
-        <div className="contact-info">
-          <div className="contact-item">
-            <i className="fas fa-envelope"></i> info@reservefundadvisory.com
-          </div>
-          <div className="contact-item">
-            <i className="fas fa-phone"></i> 727-788-4800
-          </div>
-        </div>
-      </div>
+      <AuthSidebar />
       
       <div className="login-form-container">
         <div className="login-form">
@@ -98,7 +86,32 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
             </button>
             
             <div className="new-user">
-              <button type="button" onClick={onNewUser} className="new-user-link">
+              <button 
+                type="button" 
+                onClick={onNewUser} 
+                className="company-not-listed-btn"
+                style={{
+                  background: 'white',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  width: '100%'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                  e.currentTarget.style.borderColor = '#9ca3af';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                }}
+              >
                 I am new user
               </button>
             </div>

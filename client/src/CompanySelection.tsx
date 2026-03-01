@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './CompanySelection.css';
 import { API_BASE_URL } from './config';
 import { updateSignupState } from './utils/signupState';
+import AuthSidebar from './components/AuthSidebar';
 
 interface CompanyType {
   _id: string;
@@ -46,20 +47,7 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
 
   return (
     <div className="company-selection-container">
-      <div className="company-sidebar">
-        <div className="logo">
-          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-           
-        </div>
-        <div className="contact-info">
-          <div className="contact-item">
-            <i className="fas fa-envelope"></i> info@reservefundadvisory.com
-          </div>
-          <div className="contact-item">
-            <i className="fas fa-phone"></i> 727-788-4800
-          </div>
-        </div>
-      </div>
+      <AuthSidebar />
       
       <div className="company-content">
                 <div  style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto' }}> 

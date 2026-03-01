@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from './config';
 import './CreateProfile.css';
+import AuthSidebar from './components/AuthSidebar';
 
 const AdvisoryVerification: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -111,19 +112,7 @@ const AdvisoryVerification: React.FC = () => {
 
   return (
     <div className="create-profile-container">
-      <div className="profile-sidebar">
-        <div className="logo">
-          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-        </div>
-        <div className="contact-info">
-          <div className="contact-item">
-            <i className="fas fa-envelope"></i> info@reservefundadvisory.com
-          </div>
-          <div className="contact-item">
-            <i className="fas fa-phone"></i> 727-788-4800
-          </div>
-        </div>
-      </div>
+      <AuthSidebar />
       
       <div className="profile-content">
         <div className="profile-header" style={{

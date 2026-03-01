@@ -5,6 +5,7 @@ import './CreateProfile.css';
 import { API_BASE_URL } from './config';
 import { updateSignupState, getSignupState, getFormData, updateFormData, SignupFormData } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
+import AuthSidebar from './components/AuthSidebar';
 
 interface CreateProfileProps {
   onBack: () => void;
@@ -280,20 +281,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
 
   return (
     <div className="create-profile-container">
-      <div className="profile-sidebar">
-        <div className="logo">
-          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
-         
-        </div>
-        <div className="contact-info">
-          <div className="contact-item">
-            <i className="fas fa-envelope"></i> info@reservefundadvisory.com
-          </div>
-          <div className="contact-item">
-            <i className="fas fa-phone"></i> 727-788-4800
-          </div>
-        </div>
-      </div>
+      <AuthSidebar />
       
       <div className="profile-content">
         <Breadcrumb items={[
