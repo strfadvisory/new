@@ -15,14 +15,13 @@ interface Module {
   permissions: Permission[];
   enabled: boolean;
   expanded?: boolean;
-  canEdit?: boolean;
-  canEditValue?: boolean;
 }
 
 interface RoleManagerProps {
   selectedRole: any;
   onEdit: (role: any) => void;
   onDelete: (roleId: string) => void;
+  onRoleUpdate?: () => void;
 }
 
 interface Video {
@@ -34,7 +33,7 @@ interface Video {
   isActive: boolean;
 }
 
-const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelete }) => {
+const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelete, onRoleUpdate }) => {
   const [modules, setModules] = useState<Module[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -68,7 +67,6 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
           ...mod,
           enabled: false,
           expanded: false,
-          canEditValue: mod.canEditValue || false,
           permissions: mod.permissions.map((perm: any) => ({ ...perm, enabled: false }))
         }));
         setModules(modulesWithState);
@@ -105,36 +103,27 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
           };
         });
         const moduleEnabled = modulePermissions.some(p => p.enabled);
-        const canEditValue = selectedRole.canEditPermissions?.[mod.module] || false;
         return {
           ...mod,
           enabled: moduleEnabled,
           expanded: moduleEnabled && mod.permissions.length > 0,
-          canEditValue: canEditValue,
           permissions: modulePermissions
         };
       });
       setModules(updatedModules);
       setHasChanges(false);
     }
-  }, [selectedRole, selectedRole?.permissions, selectedRole?.canEditPermissions]);
+  }, [selectedRole, selectedRole?.permissions]);
 
   const handleSave = async () => {
     if (!selectedRole?._id) return;
     
     const permissionsData: any = {};
-    const canEditData: any = {};
     
     modules.forEach(mod => {
-      // Handle modules with permissions
       mod.permissions.forEach(perm => {
         permissionsData[`${mod.module}.${perm.code}`] = perm.enabled;
       });
-      
-      // Handle modules with canEdit functionality (USER_MANAGEMENT, ROLE_MANAGEMENT)
-      if (mod.canEdit) {
-        canEditData[mod.module] = mod.canEditValue || false;
-      }
     });
 
     try {
@@ -146,7 +135,6 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         icon: selectedRole.icon,
         status: selectedRole.status,
         permissions: permissionsData,
-        canEditPermissions: canEditData,
         nextSteps: nextSteps,
         video: selectedVideos
       };
@@ -166,7 +154,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       
       const roleId = selectedRole.grandParentRoleId || selectedRole.parentRoleId || selectedRole._id;
       
-      console.log('Saving role with canEditPermissions:', canEditData);
+      console.log('Saving role permissions:', permissionsData);
       
       const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}`, {
         method: 'PUT',
@@ -180,6 +168,10 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       if (response.ok) {
         toast.success('Role updated successfully!');
         setHasChanges(false);
+        // Refresh role data
+        if (onRoleUpdate) {
+          onRoleUpdate();
+        }
       } else {
         const error = await response.json();
         console.error('Update error:', error);
@@ -216,7 +208,6 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
           ...mod,
           enabled: newEnabled,
           expanded: newEnabled && mod.permissions.length > 0,
-          canEditValue: newEnabled ? mod.canEditValue : false,
           permissions: mod.permissions.map(p => ({ ...p, enabled: newEnabled }))
         };
       }
@@ -245,13 +236,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     setHasChanges(true);
   };
 
-  const toggleCanEdit = (index: number) => {
-    const updatedModules = modules.map((mod, i) => 
-      i === index ? { ...mod, canEditValue: !mod.canEditValue } : mod
-    );
-    setModules(updatedModules);
-    setHasChanges(true);
-  };
+
 
   const toggleNextStep = async (index: number) => {
     const updatedSteps = nextSteps.map((step, i) => 
@@ -324,24 +309,16 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     }
     
     const permissionsData: any = {};
-    const canEditData: any = {};
     
     updatedModules.forEach(mod => {
-      // Handle modules with permissions
       mod.permissions.forEach(perm => {
         permissionsData[`${mod.module}.${perm.code}`] = perm.enabled;
       });
-      
-      // Handle modules with canEdit functionality (USER_MANAGEMENT, ROLE_MANAGEMENT)
-      if (mod.canEdit) {
-        canEditData[mod.module] = mod.canEditValue || false;
-      }
     });
 
     try {
       const token = localStorage.getItem('token');
       console.log('Saving permissions for role:', selectedRole._id);
-      console.log('CanEdit data:', canEditData);
       
       const updateData: any = { 
         name: selectedRole.name,
@@ -349,8 +326,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         description: selectedRole.description,
         icon: selectedRole.icon,
         status: selectedRole.status,
-        permissions: permissionsData,
-        canEditPermissions: canEditData
+        permissions: permissionsData
       };
       
       // Handle child role updates
@@ -433,17 +409,6 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                   {module.displayName}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {module.canEdit && module.enabled && (
-                    <>
-                      <span style={{ fontSize: '12px', color: '#6b7280', marginRight: '8px' }}>Can Edit</span>
-                      <input 
-                        type="checkbox" 
-                        checked={module.canEditValue || false} 
-                        onChange={() => toggleCanEdit(moduleIndex)}
-                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                      />
-                    </>
-                  )}
                   <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={module.enabled} onChange={() => toggleModule(moduleIndex)} />
                     <span className="toggle-slider"></span>
@@ -469,14 +434,6 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                           <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{permission.description}</p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}>
-                          {module.canEdit && (
-                            <input 
-                              type="checkbox" 
-                              checked={permission.enabled} 
-                              onChange={() => togglePermission(moduleIndex, permission.code)}
-                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                            />
-                          )}
                           <label className="toggle-switch">
                             <input type="checkbox" checked={permission.enabled} onChange={() => togglePermission(moduleIndex, permission.code)} />
                             <span className="toggle-slider"></span>

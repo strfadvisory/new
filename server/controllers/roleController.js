@@ -146,7 +146,7 @@ const getRoleById = async (req, res) => {
 const updateRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, icon, status, permissions, canEditPermissions, parentRole, childRoleId, grandChildRoleId, nextSteps } = req.body;
+    const { name, description, icon, status, permissions, parentRole, childRoleId, grandChildRoleId, nextSteps } = req.body;
     
     console.log('Update role request:', { id, parentRole, childRoleId, grandChildRoleId });
     
@@ -177,10 +177,6 @@ const updateRole = async (req, res) => {
       if (status !== undefined) grandChildRole.status = status;
       if (permissions) {
         grandChildRole.permissions = permissions;
-        parent.markModified('childRoles');
-      }
-      if (canEditPermissions) {
-        grandChildRole.canEditPermissions = canEditPermissions;
         parent.markModified('childRoles');
       }
       if (nextSteps) {
@@ -217,10 +213,6 @@ const updateRole = async (req, res) => {
         childRole.permissions = permissions;
         parent.markModified('childRoles');
       }
-      if (canEditPermissions) {
-        childRole.canEditPermissions = canEditPermissions;
-        parent.markModified('childRoles');
-      }
       if (nextSteps) {
         childRole.nextSteps = nextSteps;
         parent.markModified('childRoles');
@@ -248,10 +240,6 @@ const updateRole = async (req, res) => {
     if (permissions) {
       role.permissions = permissions;
       role.markModified('permissions');
-    }
-    if (canEditPermissions) {
-      role.canEditPermissions = canEditPermissions;
-      role.markModified('canEditPermissions');
     }
     if (nextSteps) {
       role.nextSteps = nextSteps;

@@ -69,6 +69,28 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     }
   };
 
+  const refreshSelectedRole = async () => {
+    if (selectedRole?._id) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/roles/${selectedRole._id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const freshRole = await response.json();
+          setSelectedRole({ ...freshRole, ...selectedRole });
+        }
+      } catch (error) {
+        console.error('Error refreshing selected role:', error);
+      }
+    }
+  };
+
+  const handleRoleUpdate = () => {
+    fetchRoles();
+    refreshSelectedRole();
+  };
+
   const fetchRoles = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -523,7 +545,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 <Route path="users" element={<AllUsers />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="settings" element={<SystemSettings />} />
-                <Route path="role-manager" element={<RoleManager selectedRole={selectedRole} onEdit={handleEditRole} onDelete={handleDeleteRole} />} />
+                <Route path="role-manager" element={<RoleManager selectedRole={selectedRole} onEdit={handleEditRole} onDelete={handleDeleteRole} onRoleUpdate={handleRoleUpdate} />} />
                 <Route path="library" element={<Library selectedItem={selectedLibraryItem} onEdit={handleEditLibraryItem} onDelete={handleDeleteLibraryItem} />} />
               </Routes>
             </div>

@@ -33,10 +33,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
   const [countries, setCountries] = useState<any[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showRePassword, setShowRePassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(() => {
-    const state = getSignupState();
-    return state.agreeToTerms || false;
-  });
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [useMyAddress, setUseMyAddress] = useState(false);
 
   const currentCountry = countries.find(c => c.code === selectedCountry) || { code: 'US', name: 'United States', dialCode: '+1', flag: 'us', prefix: '1' };
@@ -68,7 +65,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
       const savedState = getSignupState();
       setFormData(savedFormData);
       setSelectedCountry(savedState.selectedCountry || 'US');
-      setAgreeToTerms(savedState.agreeToTerms || false);
+      // Keep agreeToTerms as false - don't restore from saved state
     };
     
     window.addEventListener('signupStateChanged', handleStateChange);
@@ -87,7 +84,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
       const savedState = getSignupState();
       setFormData(savedFormData);
       setSelectedCountry(savedState.selectedCountry || 'US');
-      setAgreeToTerms(savedState.agreeToTerms || false);
+      // Keep agreeToTerms as false - don't restore from saved state
     };
     
     window.addEventListener('signupStateChanged', handleStateChange);
@@ -531,7 +528,16 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
               <p className="text-muted small">Please note that fields marked with * are mandatory.</p>
             </div>
             
-            <button type="submit" className="continue-button" disabled={loading || !agreeToTerms}>
+            <button 
+              type="submit" 
+              className="continue-button" 
+              disabled={loading || !agreeToTerms}
+              style={{
+                opacity: (loading || !agreeToTerms) ? 0.5 : 1,
+                cursor: (loading || !agreeToTerms) ? 'not-allowed' : 'pointer',
+                backgroundColor: (loading || !agreeToTerms) ? '#9ca3af' : undefined
+              }}
+            >
               {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Continue'}
             </button>
             
