@@ -370,6 +370,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
             
             <div className="companies-right-panel" style={currentPage === 'companies' || currentPage === 'simulators' ? { marginLeft: 0, width: '100%', flex: 1 } : { flex: 1 }}>
               <Routes>
+                <Route path="" element={<Navigate to="simulators" replace />} />
                 <Route path="simulators" element={<SuperAdminDashboard />} />
                 <Route path="companies" element={<AllCompanies />} />
                 <Route path="users" element={<AllUsers />} />

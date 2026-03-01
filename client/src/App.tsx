@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { updateSignupState, getSignupState, clearSignupState, getFormData } from './utils/signupState';
+import { API_BASE_URL } from './config';
 import SignupStateDebug from './components/SignupStateDebug';
 import Login from './Login';
 import CompanySelection from './CompanySelection';
@@ -66,10 +67,32 @@ function App() {
     navigate('/signup');
   };
 
-  const handleLogin = (userData: any) => {
+  const handleLogin = async (userData: any) => {
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
-    navigate(userData.isSuperAdmin ? '/admin/companies' : '/dashboard');
+    
+    if (userData.isSuperAdmin) {
+      navigate('/admin/simulators');
+    } else {
+      // Fetch user permissions to get first navigation item
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/roles/user-permissions`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        const data = await response.json();
+        if (response.ok && data.menu && data.menu.length > 0) {
+          navigate(data.menu[0].path);
+        } else {
+          navigate('/dashboard');
+        }
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+        navigate('/dashboard');
+      }
+    }
   };
 
   const handleRegister = (userData: any) => {
@@ -109,7 +132,7 @@ function App() {
     <div className="App">
       {/* {  <SignupStateDebug />  } */}
       <Routes>
-        <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/companies' : '/dashboard'} replace />} />
+        <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard'} replace />} />
         <Route path="/signup" element={<CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />} />
         <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} onNavigate={(step) => navigate(step)} />} />
         <Route path="/verify-otp" element={<OTPVerification onVerify={handleOTPVerified} onBack={handleBackToProfile} onNavigate={(step) => navigate(step)} />} />
@@ -125,7 +148,7 @@ function App() {
           <Route path="users" element={<Users />} />
           <Route path="banking" element={<Banking />} />
         </Route>
-        <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/companies' : '/dashboard') : '/login'} replace />} />
+        <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard') : '/login'} replace />} />
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
     </div>

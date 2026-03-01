@@ -25,6 +25,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout }) => 
         const data = await response.json();
         if (response.ok) {
           setMenu(data.menu || []);
+          // Redirect to first menu item if on dashboard root
+          if (location.pathname === '/dashboard' && data.menu && data.menu.length > 0) {
+            navigate(data.menu[0].path, { replace: true });
+          }
         }
       } catch (error) {
         console.error('Error fetching permissions:', error);
@@ -32,7 +36,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout }) => 
     };
 
     fetchPermissions();
-  }, []);
+  }, [navigate, location.pathname]);
 
   return (
     <div className="dashboard-container-no-sidebar">
