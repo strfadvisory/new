@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { API_BASE_URL } from './config';
 import './CreateProfile.css';
 import AuthSidebar from './components/AuthSidebar';
+import AddressForm from './components/AddressForm';
 
 const AdvisoryVerification: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -200,73 +201,18 @@ const AdvisoryVerification: React.FC = () => {
               </div>
             </div>
             
-            <div className="section-title mt-4">
-              <h3>Add your Address</h3>
-              <p>Provide the official location details of , including street, city, state, country, and ZIP code.</p>
-            </div>
-            
-            <div className="row g-4">
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label>Zip Code*</label>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label>State*</label>
-                  <select
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select State</option>
-                    {usStates.map(state => (
-                      <option key={state.code} value={state.code}>{state.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label>City*</label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Address 1*</label>
-              <input
-                type="text"
-                name="address1"
-                value={formData.address1}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Address 2</label>
-              <input
-                type="text"
-                name="address2"
-                value={formData.address2}
-                onChange={handleInputChange}
-              />
-            </div>
+            <AddressForm
+              addressData={{
+                zipCode: formData.zipCode,
+                state: formData.state,
+                city: formData.city,
+                address1: formData.address1,
+                address2: formData.address2
+              }}
+              onAddressChange={(addressData) => {
+                setFormData({ ...formData, ...addressData });
+              }}
+            />
             
             <div className="form-note mt-4">
               <p className="text-muted small">Please note that fields marked with * are mandatory.</p>

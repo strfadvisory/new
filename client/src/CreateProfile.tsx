@@ -6,6 +6,7 @@ import { API_BASE_URL } from './config';
 import { updateSignupState, getSignupState, getFormData, updateFormData, SignupFormData } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
 import AuthSidebar from './components/AuthSidebar';
+import AddressForm from './components/AddressForm';
 
 interface CreateProfileProps {
   onBack: () => void;
@@ -437,91 +438,20 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
           
             
  
-            <div className="section-title mt-5">
-              <h3>Add your Address</h3>
-              <p>Provide the official location details of , including street, city, state, country, and ZIP code.</p>
-            </div>
-            
-            <div className="row g-4">
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label>Zip Code*</label>
-                  <input
-                    type="text"
-                    name="zipCode"
-                    value={formData.zipCode}
-                    onChange={handleInputChange}
-                    maxLength={5}
-                    pattern="[0-9]{5}"
-                    placeholder="Enter 5-digit ZIP code"
-                    required
-                  />
-                  {loadingZip && <div className="text-muted small mt-1"><i className="fas fa-spinner fa-spin"></i> Loading...</div>}
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label>State*</label>
-                  <select
-                    name="state"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select State</option>
-                    {usStates.map(state => (
-                      <option key={state.code} value={state.code}>{state.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-            
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <label>City*</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    placeholder="City will auto-fill from ZIP code"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <label>Address 1*</label>
-                  <input
-                    type="text"
-                    name="address1"
-                    value={formData.address1}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <label>Address 2*</label>
-                  <input
-                    type="text"
-                    name="address2"
-                    value={formData.address2}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
+            <AddressForm
+              addressData={{
+                zipCode: formData.zipCode,
+                state: formData.state,
+                city: formData.city,
+                address1: formData.address1,
+                address2: formData.address2
+              }}
+              onAddressChange={(addressData) => {
+                const newFormData = { ...formData, ...addressData };
+                setFormData(newFormData);
+                updateFormData(newFormData);
+              }}
+            />
             
             <div className="section-title mt-5">
               <h3>Create Your Password</h3>

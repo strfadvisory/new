@@ -5,6 +5,7 @@ import { API_BASE_URL } from './config';
 import { updateSignupState, getSignupState, getCompanyFormData, updateCompanyFormData, CompanyFormData, clearSignupState } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
 import AuthSidebar from './components/AuthSidebar';
+import AddressForm from './components/AddressForm';
 
 interface CompanyProfileProps {
   onComplete: () => void;
@@ -58,10 +59,8 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
     }
   };
 
-  const handleUseMyAddress = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const checked = e.target.checked;
+  const handleUseMyAddress = async (checked: boolean) => {
     setUseMyAddress(checked);
-    
     updateSignupState({ useMyAddress: checked });
     
     if (checked) {
@@ -74,34 +73,32 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
         if (response.ok) {
           const userData = await response.json();
           if (userData.address) {
-            const newFormData = {
-              ...formData,
+            const addressData = {
               zipCode: userData.address.zipCode || '',
               state: userData.address.state || '',
               city: userData.address.city || '',
               address1: userData.address.address1 || '',
               address2: userData.address.address2 || ''
             };
+            const newFormData = { ...formData, ...addressData };
             setFormData(newFormData);
             updateCompanyFormData(newFormData);
-            updateSignupState({ useMyAddress: checked });
           }
         }
       } catch (error) {
         console.error('Error fetching user address:', error);
       }
     } else {
-      const newFormData = {
-        ...formData,
+      const addressData = {
         zipCode: '',
         state: '',
         city: '',
         address1: '',
         address2: ''
       };
+      const newFormData = { ...formData, ...addressData };
       setFormData(newFormData);
       updateCompanyFormData(newFormData);
-      updateSignupState({ useMyAddress: checked });
     }
   };
 
@@ -334,132 +331,23 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
               />
             </div>
             
-            <div className="section-title mt-4">
-              <h3>Add your Address</h3>
-              <p>Provide the official location details of , including street, city, state, country, and ZIP code.</p>
-            </div>
-            
-            <div className="form-group">
-              <div className="checkbox-group">
-                <input 
-                  type="checkbox" 
-                  id="useMyAddress" 
-                  checked={useMyAddress}
-                  onChange={handleUseMyAddress}
-                />
-                <label htmlFor="useMyAddress">
-                  Use My Address
-                </label>
-              </div>
-            </div>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label>Zip Code*</label>
-                <input
-                  type="text"
-                  name="zipCode"
-                  value={formData.zipCode}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>State*</label>
-                <select
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select State</option>
-                  <option value="AL">Alabama</option>
-                  <option value="AK">Alaska</option>
-                  <option value="AZ">Arizona</option>
-                  <option value="AR">Arkansas</option>
-                  <option value="CA">California</option>
-                  <option value="CO">Colorado</option>
-                  <option value="CT">Connecticut</option>
-                  <option value="DE">Delaware</option>
-                  <option value="FL">Florida</option>
-                  <option value="GA">Georgia</option>
-                  <option value="HI">Hawaii</option>
-                  <option value="ID">Idaho</option>
-                  <option value="IL">Illinois</option>
-                  <option value="IN">Indiana</option>
-                  <option value="IA">Iowa</option>
-                  <option value="KS">Kansas</option>
-                  <option value="KY">Kentucky</option>
-                  <option value="LA">Louisiana</option>
-                  <option value="ME">Maine</option>
-                  <option value="MD">Maryland</option>
-                  <option value="MA">Massachusetts</option>
-                  <option value="MI">Michigan</option>
-                  <option value="MN">Minnesota</option>
-                  <option value="MS">Mississippi</option>
-                  <option value="MO">Missouri</option>
-                  <option value="MT">Montana</option>
-                  <option value="NE">Nebraska</option>
-                  <option value="NV">Nevada</option>
-                  <option value="NH">New Hampshire</option>
-                  <option value="NJ">New Jersey</option>
-                  <option value="NM">New Mexico</option>
-                  <option value="NY">New York</option>
-                  <option value="NC">North Carolina</option>
-                  <option value="ND">North Dakota</option>
-                  <option value="OH">Ohio</option>
-                  <option value="OK">Oklahoma</option>
-                  <option value="OR">Oregon</option>
-                  <option value="PA">Pennsylvania</option>
-                  <option value="RI">Rhode Island</option>
-                  <option value="SC">South Carolina</option>
-                  <option value="SD">South Dakota</option>
-                  <option value="TN">Tennessee</option>
-                  <option value="TX">Texas</option>
-                  <option value="UT">Utah</option>
-                  <option value="VT">Vermont</option>
-                  <option value="VA">Virginia</option>
-                  <option value="WA">Washington</option>
-                  <option value="WV">West Virginia</option>
-                  <option value="WI">Wisconsin</option>
-                  <option value="WY">Wyoming</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label>City*</label>
-              <input
-                type="text"
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                placeholder="Enter city name"
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Address 1*</label>
-              <input
-                type="text"
-                name="address1"
-                value={formData.address1}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Address 2*</label>
-              <input
-                type="text"
-                name="address2"
-                value={formData.address2}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
+            <AddressForm
+              addressData={{
+                zipCode: formData.zipCode,
+                state: formData.state,
+                city: formData.city,
+                address1: formData.address1,
+                address2: formData.address2
+              }}
+              onAddressChange={(addressData) => {
+                const newFormData = { ...formData, ...addressData };
+                setFormData(newFormData);
+                updateCompanyFormData(newFormData);
+              }}
+              showUseMyAddress={true}
+              useMyAddress={useMyAddress}
+              onUseMyAddressChange={handleUseMyAddress}
+            />
             
             <div className="form-note">
               <p>Please note that fields marked with * are mandatory.</p>
