@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
+import { updateSignupState, getSignupState, clearSignupState, getFormData } from './utils/signupState';
+import SignupStateDebug from './components/SignupStateDebug';
 import Login from './Login';
 import CompanySelection from './CompanySelection';
 import CreateProfile from './CreateProfile';
@@ -24,8 +26,18 @@ function App() {
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
   const [selectedRoleName, setSelectedRoleName] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
-  const [formState, setFormState] = useState<any>({});
   const navigate = useNavigate();
+
+  // Load persisted state on app start
+  useEffect(() => {
+    const handleStorageChange = () => {
+      // Force re-render when signup state changes
+      setLoading(prev => !prev && prev); // Trigger re-render
+    };
+    
+    window.addEventListener('signupStateChanged', handleStorageChange);
+    return () => window.removeEventListener('signupStateChanged', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -46,8 +58,7 @@ function App() {
   };
 
   const handleCompanySelect = (roleId: string, roleName: string) => {
-    setSelectedRoleId(roleId);
-    setSelectedRoleName(roleName);
+    updateSignupState({ roleId, roleName });
     navigate('/create-profile');
   };
 
@@ -63,8 +74,7 @@ function App() {
 
   const handleRegister = (userData: any) => {
     setUser(userData);
-    setUserEmail(userData.email || localStorage.getItem('tempEmail') || '');
-    setFormState({ ...formState, profile: userData });
+    updateSignupState({ email: userData.email });
     navigate('/verify-otp');
   };
 
@@ -81,6 +91,7 @@ function App() {
     if (userData) {
       setUser(JSON.parse(userData));
     }
+    clearSignupState();
     navigate('/dashboard');
   };
 
@@ -96,11 +107,12 @@ function App() {
 
   return (
     <div className="App">
+      {/* <SignupStateDebug /> */}
       <Routes>
         <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/companies' : '/dashboard'} replace />} />
         <Route path="/signup" element={<CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />} />
-        <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} roleId={selectedRoleId} roleName={selectedRoleName} savedData={formState.profile} onNavigate={(step) => navigate(step)} />} />
-        <Route path="/verify-otp" element={<OTPVerification email={userEmail} onVerify={handleOTPVerified} onBack={handleBackToProfile} onNavigate={(step) => navigate(step)} />} />
+        <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} onNavigate={(step) => navigate(step)} />} />
+        <Route path="/verify-otp" element={<OTPVerification onVerify={handleOTPVerified} onBack={handleBackToProfile} onNavigate={(step) => navigate(step)} />} />
         <Route path="/company-profile" element={<CompanyProfile onComplete={handleCompanyProfileComplete} onNavigate={(step) => navigate(step)} />} />
         <Route path="/verify-advisory/:token" element={<AdvisoryVerification />} />
         <Route path="/admin/*" element={user?.isSuperAdmin ? <SuperAdminLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />

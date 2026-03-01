@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from './config';
+import './CreateProfile.css';
 
 const AdvisoryVerification: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     companyName: '',
     description: '',
@@ -21,8 +23,30 @@ const AdvisoryVerification: React.FC = () => {
     city: '',
     address1: '',
     address2: '',
-    password: ''
+    password: '',
+    rePassword: ''
   });
+  const [userInfo, setUserInfo] = useState({ firstName: '', lastName: '', companyName: '' });
+
+  const usStates = [
+    { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
+    { code: 'AR', name: 'Arkansas' }, { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
+    { code: 'CT', name: 'Connecticut' }, { code: 'DE', name: 'Delaware' }, { code: 'FL', name: 'Florida' },
+    { code: 'GA', name: 'Georgia' }, { code: 'HI', name: 'Hawaii' }, { code: 'ID', name: 'Idaho' },
+    { code: 'IL', name: 'Illinois' }, { code: 'IN', name: 'Indiana' }, { code: 'IA', name: 'Iowa' },
+    { code: 'KS', name: 'Kansas' }, { code: 'KY', name: 'Kentucky' }, { code: 'LA', name: 'Louisiana' },
+    { code: 'ME', name: 'Maine' }, { code: 'MD', name: 'Maryland' }, { code: 'MA', name: 'Massachusetts' },
+    { code: 'MI', name: 'Michigan' }, { code: 'MN', name: 'Minnesota' }, { code: 'MS', name: 'Mississippi' },
+    { code: 'MO', name: 'Missouri' }, { code: 'MT', name: 'Montana' }, { code: 'NE', name: 'Nebraska' },
+    { code: 'NV', name: 'Nevada' }, { code: 'NH', name: 'New Hampshire' }, { code: 'NJ', name: 'New Jersey' },
+    { code: 'NM', name: 'New Mexico' }, { code: 'NY', name: 'New York' }, { code: 'NC', name: 'North Carolina' },
+    { code: 'ND', name: 'North Dakota' }, { code: 'OH', name: 'Ohio' }, { code: 'OK', name: 'Oklahoma' },
+    { code: 'OR', name: 'Oregon' }, { code: 'PA', name: 'Pennsylvania' }, { code: 'RI', name: 'Rhode Island' },
+    { code: 'SC', name: 'South Carolina' }, { code: 'SD', name: 'South Dakota' }, { code: 'TN', name: 'Tennessee' },
+    { code: 'TX', name: 'Texas' }, { code: 'UT', name: 'Utah' }, { code: 'VT', name: 'Vermont' },
+    { code: 'VA', name: 'Virginia' }, { code: 'WA', name: 'Washington' }, { code: 'WV', name: 'West Virginia' },
+    { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' }
+  ];
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -30,10 +54,10 @@ const AdvisoryVerification: React.FC = () => {
         const response = await fetch(`${API_BASE_URL}/api/auth/verify-advisory/${token}`);
         const data = await response.json();
         if (response.ok) {
+          setUserInfo({ firstName: data.firstName, lastName: data.lastName, companyName: data.companyName });
           setFormData(prev => ({
             ...prev,
-            email: data.email,
-            companyName: data.companyName
+            email: data.email
           }));
         } else {
           toast.error(data.message || 'Invalid verification link');
@@ -50,8 +74,16 @@ const AdvisoryVerification: React.FC = () => {
     fetchUserData();
   }, [token, navigate]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.password !== formData.rePassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
     setSubmitLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/complete-advisory-profile/${token}`, {
@@ -78,28 +110,185 @@ const AdvisoryVerification: React.FC = () => {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div style={{ maxWidth: '600px', margin: '40px auto', padding: '24px', background: 'white', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-      <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '24px' }}>Complete Your Profile</h2>
-      <form onSubmit={handleSubmit}>
-        <input type="text" placeholder="Company Name" value={formData.companyName} onChange={(e) => setFormData({...formData, companyName: e.target.value})} required style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} disabled />
-        <textarea placeholder="Description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px', minHeight: '80px' }} />
-        <input type="tel" placeholder="Phone" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})} required style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-        <input type="password" placeholder="Password *" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} required style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-        <input type="email" placeholder="Company Email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} disabled />
-        <input type="text" placeholder="Contact Person" value={formData.contactPerson} onChange={(e) => setFormData({...formData, contactPerson: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-        <input type="text" placeholder="LinkedIn URL" value={formData.linkedinUrl} onChange={(e) => setFormData({...formData, linkedinUrl: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-        <input type="text" placeholder="Website Link" value={formData.websiteLink} onChange={(e) => setFormData({...formData, websiteLink: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-          <input type="text" placeholder="Zip Code" value={formData.zipCode} onChange={(e) => setFormData({...formData, zipCode: e.target.value})} style={{ padding: '12px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-          <input type="text" placeholder="State" value={formData.state} onChange={(e) => setFormData({...formData, state: e.target.value})} style={{ padding: '12px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
+    <div className="create-profile-container">
+      <div className="profile-sidebar">
+        <div className="logo">
+          <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
         </div>
-        <input type="text" placeholder="City" value={formData.city} onChange={(e) => setFormData({...formData, city: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-        <input type="text" placeholder="Address 1" value={formData.address1} onChange={(e) => setFormData({...formData, address1: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '16px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-        <input type="text" placeholder="Address 2" value={formData.address2} onChange={(e) => setFormData({...formData, address2: e.target.value})} style={{ width: '100%', padding: '12px', marginBottom: '24px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
-        <button type="submit" disabled={submitLoading} style={{ width: '100%', padding: '12px', background: submitLoading ? '#9ca3af' : '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: '600', cursor: submitLoading ? 'not-allowed' : 'pointer' }}>
-          {submitLoading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Complete Profile'}
-        </button>
-      </form>
+        <div className="contact-info">
+          <div className="contact-item">
+            <i className="fas fa-envelope"></i> info@reservefundadvisory.com
+          </div>
+          <div className="contact-item">
+            <i className="fas fa-phone"></i> 727-788-4800
+          </div>
+        </div>
+      </div>
+      
+      <div className="profile-content">
+        <div className="profile-header" style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          padding: '20px 0',
+          borderBottom: '1px solid #e5e7eb',
+          marginBottom: '30px'
+        }}>
+          <div></div>
+          <div style={{ display: 'flex', gap: '30px', fontSize: '14px', color: '#6b7280' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="fas fa-envelope"></i>
+              <span>info@reservefundadvisory.com</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <i className="fas fa-phone"></i>
+              <span>727-788-4800</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto'}}>
+          <h1>{userInfo.firstName} {userInfo.lastName}</h1>
+          <p>You are registered with the email {formData.email} as the Director of the Association and have Manager access in this system.</p>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="section-title mt-4">
+              <h3>Add your Phone number</h3>
+            </div>
+            
+            <div className="form-group phone-group">
+              <div className="phone-input">
+                <span className="country-code">
+                  <img src="https://flagcdn.com/w20/us.png" alt="US" />
+                  +1
+                </span>
+                <input
+                  type="tel"
+                  name="phone"
+                  placeholder="99999 99999"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="section-title mt-4">
+              <h3>Create Password</h3>
+              <p>Create a secure password to set up your account and access the system.</p>
+            </div>
+            
+            <div className="form-group">
+              <label>Password*</label>
+              <div className="password-input">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                </button>
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>Re Password*</label>
+              <div className="password-input">
+                <input
+                  type="password"
+                  name="rePassword"
+                  value={formData.rePassword}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="section-title mt-4">
+              <h3>Add your Address</h3>
+              <p>Provide the official location details of , including street, city, state, country, and ZIP code.</p>
+            </div>
+            
+            <div className="row g-4">
+              <div className="col-md-6">
+                <div className="form-group">
+                  <label>Zip Code*</label>
+                  <input
+                    type="text"
+                    name="zipCode"
+                    value={formData.zipCode}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="form-group">
+                  <label>State*</label>
+                  <select
+                    name="state"
+                    value={formData.state}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select State</option>
+                    {usStates.map(state => (
+                      <option key={state.code} value={state.code}>{state.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>City*</label>
+              <input
+                type="text"
+                name="city"
+                value={formData.city}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Address 1*</label>
+              <input
+                type="text"
+                name="address1"
+                value={formData.address1}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label>Address 2</label>
+              <input
+                type="text"
+                name="address2"
+                value={formData.address2}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="form-note mt-4">
+              <p className="text-muted small">Please note that fields marked with * are mandatory.</p>
+            </div>
+            
+            <button type="submit" className="continue-button" disabled={submitLoading}>
+              {submitLoading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Continue'}
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };

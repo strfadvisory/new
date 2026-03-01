@@ -15,6 +15,18 @@ router.post('/company-profile', protect, upload.single('logo'), uploadToGridFS, 
 router.post('/invite-advisory', protect, inviteAdvisory);
 router.get('/verify-advisory/:token', verifyAdvisoryToken);
 router.post('/complete-advisory-profile/:token', completeAdvisoryProfile);
+router.get('/profile', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password -otp -otpExpiry');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching profile' });
+  }
+});
+
 router.get('/users', protect, async (req, res) => {
   try {
     const users = await User.find({ 'companyProfile.companyName': { $exists: true, $ne: null } })

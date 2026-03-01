@@ -10,10 +10,8 @@ add eye option on password field
  default fotn will 16 across the app 
  use your addres checkbox must be working 
 
- company profile  msut be same as previous screen and auto save 
- 
-
- 
+  
 
 
- 
+ http://localhost:3000/create-profile 
+ http://localhost:3000/company-profile

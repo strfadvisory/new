@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './CompanySelection.css';
 import { API_BASE_URL } from './config';
+import { updateSignupState } from './utils/signupState';
 
 interface CompanyType {
   _id: string;
@@ -35,6 +36,11 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
   }, []);
 
   const handleCompanySelect = (roleId: string, roleName: string) => {
+    updateSignupState({ 
+      roleId, 
+      roleName, 
+      currentStep: 'company-selection'
+    });
     onSelect(roleId, roleName);
   };
 

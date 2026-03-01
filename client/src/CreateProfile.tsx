@@ -3,44 +3,38 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import './CreateProfile.css';
 import { API_BASE_URL } from './config';
+import { updateSignupState, getSignupState, getFormData, updateFormData, SignupFormData } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
 
 interface CreateProfileProps {
   onBack: () => void;
   onRegister: (user: any) => void;
-  companyType?: string;
-  roleId?: string;
-  roleName?: string;
-  savedData?: any;
   onNavigate?: (step: string) => void;
 }
 
-const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, companyType, roleId, roleName, savedData, onNavigate }) => {
+const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNavigate }) => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState(savedData || {
-    firstName: '',
-    lastName: '',
-    email: '',
-    designation: '',
-    phone: '',
-    password: '',
-    rePassword: '',
-    zipCode: '',
-    state: '',
-    city: '',
-    address1: '',
-    address2: ''
+  
+  // Load form data from signup state
+  const [formData, setFormData] = useState<SignupFormData>(() => {
+    return getFormData();
   });
 
   const [emailValidation, setEmailValidation] = useState<{ valid: boolean | null, message: string, checking: boolean }>({ valid: null, message: '', checking: false });
   const [loading, setLoading] = useState(false);
   const [cities, setCities] = useState<string[]>([]);
   const [loadingZip, setLoadingZip] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState('US');
+  const [selectedCountry, setSelectedCountry] = useState(() => {
+    const state = getSignupState();
+    return state.selectedCountry || 'US';
+  });
   const [countries, setCountries] = useState<any[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showRePassword, setShowRePassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(() => {
+    const state = getSignupState();
+    return state.agreeToTerms || false;
+  });
   const [useMyAddress, setUseMyAddress] = useState(false);
 
   const currentCountry = countries.find(c => c.code === selectedCountry) || { code: 'US', name: 'United States', dialCode: '+1', flag: 'us', prefix: '1' };
@@ -66,7 +60,46 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
   ];
 
   useEffect(() => {
-    if (!companyType && !roleName) {
+    // Listen for state changes and update form data
+    const handleStateChange = () => {
+      const savedFormData = getFormData();
+      const savedState = getSignupState();
+      setFormData(savedFormData);
+      setSelectedCountry(savedState.selectedCountry || 'US');
+      setAgreeToTerms(savedState.agreeToTerms || false);
+    };
+    
+    window.addEventListener('signupStateChanged', handleStateChange);
+    return () => window.removeEventListener('signupStateChanged', handleStateChange);
+  }, []);
+
+  useEffect(() => {
+    // Update current step
+    updateSignupState({ currentStep: 'create-profile' });
+  }, []);
+
+  // Listen for state changes and update form data
+  useEffect(() => {
+    const handleStateChange = () => {
+      const savedFormData = getFormData();
+      const savedState = getSignupState();
+      setFormData(savedFormData);
+      setSelectedCountry(savedState.selectedCountry || 'US');
+      setAgreeToTerms(savedState.agreeToTerms || false);
+    };
+    
+    window.addEventListener('signupStateChanged', handleStateChange);
+    return () => window.removeEventListener('signupStateChanged', handleStateChange);
+  }, []);
+
+  useEffect(() => {
+    // Update current step
+    updateSignupState({ currentStep: 'create-profile' });
+  }, []);
+
+  useEffect(() => {
+    const state = getSignupState();
+    if (!state.roleId || !state.roleName) {
       navigate('/');
     }
     
@@ -84,7 +117,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
         setCountries(formattedCountries);
       })
       .catch(err => console.error('Error loading countries:', err));
-  }, [companyType, roleName, navigate]);
+  }, [navigate]);
 
   // Update phone number format when country changes
   useEffect(() => {
@@ -94,10 +127,14 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
         // Only update if phone doesn't already have the correct country code
         const cleanPhone = formData.phone.replace(/^\+?\d{1,4}\s?/, ''); // Remove existing country code
         if (cleanPhone) {
-          setFormData((prev: any) => ({
-            ...prev,
+          const newFormData = {
+            ...formData,
             phone: `${country.dialCode} ${cleanPhone}`
-          }));
+          };
+          setFormData(newFormData);
+          
+        updateFormData(newFormData);
+        updateSignupState({ selectedCountry });
         }
       }
     }
@@ -106,10 +143,14 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    setFormData({
+    const newFormData = {
       ...formData,
       [name]: value
-    });
+    };
+    setFormData(newFormData);
+
+    updateFormData(newFormData);
+    updateSignupState({ selectedCountry, agreeToTerms });
 
     if (name === 'phone') {
       // Auto-detect country from phone number
@@ -139,11 +180,13 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
       if (response.ok) {
         const data = await response.json();
         const place = data.places[0];
-        setFormData((prev: any) => ({
-          ...prev,
+        const newFormData = {
+          ...formData,
           state: place['state abbreviation'],
           city: place['place name']
-        }));
+        };
+        setFormData(newFormData);
+        updateFormData(newFormData);
       }
     } catch (error) {
       console.error('Error fetching location:', error);
@@ -195,6 +238,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
     
     setLoading(true);
     try {
+      const state = getSignupState();
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,6 +249,8 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
           designation: formData.designation,
           phone: formData.phone,
           password: formData.password,
+          selectedCountry: selectedCountry,
+          agreeToTerms: agreeToTerms,
           address: {
             zipCode: formData.zipCode,
             state: formData.state,
@@ -212,7 +258,8 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
             address1: formData.address1,
             address2: formData.address2
           },
-          roleId,
+          roleId: state.roleId,
+          roleName: state.roleName,
           level: 'l1'
         })
       });
@@ -250,7 +297,10 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
       
       <div className="profile-content">
         <Breadcrumb items={[
-          { label: 'Select Company', onClick: () => onNavigate?.('/signup') },
+          { label: 'Select Company', onClick: () => {
+            updateSignupState({ formData, selectedCountry, agreeToTerms });
+            onNavigate?.('/signup');
+          }},
           { label: 'Create Profile', active: true }
         ]} />
         
@@ -342,16 +392,26 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
                       id="country-select"
                       value={selectedCountry}
                       onChange={(e) => {
-                        setSelectedCountry(e.target.value);
+                        const newCountry = e.target.value;
+                        setSelectedCountry(newCountry);
+                        
+                        updateSignupState({ selectedCountry: newCountry });
+                        
                         // Update phone number with new country code if phone exists
-                        const newCountry = countries.find(c => c.code === e.target.value);
-                        if (newCountry && formData.phone) {
+                        const country = countries.find(c => c.code === newCountry);
+                        if (country && formData.phone) {
                           const cleanPhone = formData.phone.replace(/^\+?\d{1,4}\s?/, ''); // Remove existing country code
                           if (cleanPhone) {
-                            setFormData((prev: any) => ({
-                              ...prev,
-                              phone: `${newCountry.dialCode} ${cleanPhone}`
-                            }));
+                            const newFormData = {
+                              ...formData,
+                              phone: `${country.dialCode} ${cleanPhone}`
+                            };
+                            setFormData(newFormData);
+                            updateFormData(newFormData);
+                            updateSignupState({
+                              selectedCountry: newCountry,
+                              agreeToTerms
+                            });
                           }
                         }
                       }}
@@ -384,57 +444,11 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
               </div>
             </div>
             
-            <div className="section-title mt-5">
-              <h3>Add your Address</h3>
-              <p>Provide the official location details of , including street, city, state, country, and ZIP code.</p>
-            </div>
+         
             
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <div className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      id="useMyAddress"
-                      checked={useMyAddress}
-                      onChange={(e) => setUseMyAddress(e.target.checked)}
-                    />
-                    <label htmlFor="useMyAddress">Use your address</label>
-                  </div>
-                </div>
-              </div>
-            </div>
+          
             
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <label>Password*</label>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="row g-4  ">
-              <div className="col-12">
-                <div className="form-group">
-                  <label>Re Password*</label>
-                  <input
-                    type="password"
-                    name="rePassword"
-                    value={formData.rePassword}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-            
+ 
             <div className="section-title mt-5">
               <h3>Add your Address</h3>
               <p>Provide the official location details of , including street, city, state, country, and ZIP code.</p>
@@ -582,7 +596,11 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, compa
                       type="checkbox"
                       id="agreeToTerms"
                       checked={agreeToTerms}
-                      onChange={(e) => setAgreeToTerms(e.target.checked)}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setAgreeToTerms(checked);
+                        updateSignupState({ agreeToTerms: checked });
+                      }}
                       required
                     />
                     <label htmlFor="agreeToTerms">I agree to the Terms and Conditions*</label>

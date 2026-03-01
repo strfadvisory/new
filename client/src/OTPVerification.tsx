@@ -2,21 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
 import { API_BASE_URL } from './config';
+import { updateSignupState, getSignupState, getFormData } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
 
 interface OTPVerificationProps {
-  email: string;
   onVerify: () => void;
   onBack: () => void;
   onNavigate?: (step: string) => void;
 }
 
-const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBack, onNavigate }) => {
+const OTPVerification: React.FC<OTPVerificationProps> = ({ onVerify, onBack, onNavigate }) => {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [timer, setTimer] = useState(30);
   const [canResend, setCanResend] = useState(false);
+
+  // Get email from signup state
+  const email = getSignupState().email || getFormData().email || '';
 
   useEffect(() => {
     if (timer > 0) {
@@ -133,8 +136,14 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ email, onVerify, onBa
       
       <div className="profile-content">
         <Breadcrumb items={[
-          { label: 'Select Company', onClick: () => onNavigate?.('/signup') },
-          { label: 'Create Profile', onClick: () => onNavigate?.('/create-profile') },
+          { label: 'Select Company', onClick: () => {
+            updateSignupState({ currentStep: 'company-selection' });
+            onNavigate?.('/signup');
+          }},
+          { label: 'Create Profile', onClick: () => {
+            updateSignupState({ currentStep: 'create-profile' });
+            onNavigate?.('/create-profile');
+          }},
           { label: 'OTP Verification', active: true }
         ]} />
         

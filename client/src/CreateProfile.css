@@ -66,14 +66,12 @@
   font-size: 10px;
 }
 
-.breadcrumb .clickable {
+.breadcrumb .clickable , .breadcrumb .clickable:hover {
   color: #3b82f6;
-  text-decoration: underline;
+ 
 }
 
-.breadcrumb .clickable:hover {
-  color: #2563eb;
-}
+ 
 
 .profile-form {
   width: 100%;
