@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "migrate-roles": "node migrations/migrateRoleSchema.js",
+    "validate-permissions": "node validatePermissions.js validate",
+    "fix-permissions": "node validatePermissions.js fix",
+    "test-permissions": "jest tests/permissionInheritance.test.js"
+  }
+}

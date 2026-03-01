@@ -10,15 +10,17 @@ const {
 const { protect } = require('../middleware/authMiddleware.jsx');
 const { superAdminOnly } = require('../middleware/superAdminMiddleware');
 
-// All routes require authentication and super admin access
+// Authentication required for all routes
 router.use(protect);
-router.use(superAdminOnly);
 
-// GET /api/library - Get all library items
+// GET /api/library - Get all library items (accessible to all authenticated users)
 router.get('/', getLibraryItems);
 
-// GET /api/library/:id - Get single library item
+// GET /api/library/:id - Get single library item (accessible to all authenticated users)
 router.get('/:id', getLibraryItem);
+
+// Admin-only routes
+router.use(superAdminOnly);
 
 // POST /api/library - Create new library item
 router.post('/', createLibraryItem);
