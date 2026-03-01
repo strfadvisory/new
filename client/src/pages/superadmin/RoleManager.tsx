@@ -15,6 +15,8 @@ interface Module {
   permissions: Permission[];
   enabled: boolean;
   expanded?: boolean;
+  canEdit?: boolean;
+  canEditValue?: boolean;
 }
 
 interface RoleManagerProps {
@@ -24,12 +26,11 @@ interface RoleManagerProps {
 }
 
 interface Video {
-  id: string;
+  _id: string;
   title: string;
   description: string;
-  image: string;
+  thumbnail: string;
   videoUrl: string;
-  category: string;
   isActive: boolean;
 }
 
@@ -46,20 +47,28 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   ]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/videos`)
+    const token = localStorage.getItem('token');
+    fetch(`${API_BASE_URL}/api/library`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then(response => response.json())
       .then(data => setVideos(data))
-      .catch(error => console.error('Error fetching videos:', error));
+      .catch(error => console.error('Error fetching library items:', error));
   }, []);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/menu/menu-master`)
       .then(response => response.json())
       .then(data => {
-        const modulesWithState = data.modules.map((mod: any) => ({
+        // Filter out COMPANY_CONTROL module
+        const filteredModules = data.modules.filter((mod: any) => mod.module !== 'COMPANY_CONTROL');
+        const modulesWithState = filteredModules.map((mod: any) => ({
           ...mod,
           enabled: false,
           expanded: false,
+          canEditValue: mod.canEditValue || false,
           permissions: mod.permissions.map((perm: any) => ({ ...perm, enabled: false }))
         }));
         setModules(modulesWithState);
@@ -96,26 +105,32 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
           };
         });
         const moduleEnabled = modulePermissions.some(p => p.enabled);
+        const canEditValue = selectedRole.canEditPermissions?.[mod.module] || false;
         return {
           ...mod,
           enabled: moduleEnabled,
-          expanded: moduleEnabled,
+          expanded: moduleEnabled && mod.permissions.length > 0,
+          canEditValue: canEditValue,
           permissions: modulePermissions
         };
       });
       setModules(updatedModules);
       setHasChanges(false);
     }
-  }, [selectedRole, selectedRole?.permissions]);
+  }, [selectedRole, selectedRole?.permissions, selectedRole?.canEditPermissions]);
 
   const handleSave = async () => {
     if (!selectedRole?._id) return;
     
     const permissionsData: any = {};
+    const canEditData: any = {};
     modules.forEach(mod => {
       mod.permissions.forEach(perm => {
         permissionsData[`${mod.module}.${perm.code}`] = perm.enabled;
       });
+      if (mod.canEdit) {
+        canEditData[mod.module] = mod.canEditValue || false;
+      }
     });
 
     try {
@@ -127,6 +142,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         icon: selectedRole.icon,
         status: selectedRole.status,
         permissions: permissionsData,
+        canEditPermissions: canEditData,
         nextSteps: nextSteps,
         video: selectedVideos
       };
@@ -182,7 +198,8 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         return {
           ...mod,
           enabled: newEnabled,
-          expanded: newEnabled,
+          expanded: newEnabled && mod.permissions.length > 0,
+          canEditValue: newEnabled ? mod.canEditValue : false,
           permissions: mod.permissions.map(p => ({ ...p, enabled: newEnabled }))
         };
       }
@@ -211,6 +228,14 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     setHasChanges(true);
   };
 
+  const toggleCanEdit = (index: number) => {
+    const updatedModules = modules.map((mod, i) => 
+      i === index ? { ...mod, canEditValue: !mod.canEditValue } : mod
+    );
+    setModules(updatedModules);
+    setHasChanges(true);
+  };
+
   const toggleNextStep = async (index: number) => {
     const updatedSteps = nextSteps.map((step, i) => 
       i === index ? { ...step, completed: !step.completed } : step
@@ -220,9 +245,9 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   };
 
   const toggleVideoSelection = (video: Video) => {
-    const isSelected = selectedVideos.some(v => v.id === video.id);
+    const isSelected = selectedVideos.some(v => v._id === video._id);
     if (isSelected) {
-      setSelectedVideos(selectedVideos.filter(v => v.id !== video.id));
+      setSelectedVideos(selectedVideos.filter(v => v._id !== video._id));
     } else {
       setSelectedVideos([...selectedVideos, video]);
     }
@@ -263,10 +288,14 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     }
     
     const permissionsData: any = {};
+    const canEditData: any = {};
     updatedModules.forEach(mod => {
       mod.permissions.forEach(perm => {
         permissionsData[`${mod.module}.${perm.code}`] = perm.enabled;
       });
+      if (mod.canEdit) {
+        canEditData[mod.module] = mod.canEditValue || false;
+      }
     });
 
     try {
@@ -279,7 +308,8 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         description: selectedRole.description,
         icon: selectedRole.icon,
         status: selectedRole.status,
-        permissions: permissionsData 
+        permissions: permissionsData,
+        canEditPermissions: canEditData
       };
       
       // If this is a child role, include parent info
@@ -314,16 +344,10 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <div>
-              <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '600', color: '#1f2937' }}>{selectedRole.name}</h2>
+              <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '600', color: '#1f2937' }}>Role Management - {selectedRole.name}</h2>
               <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>{selectedRole.type}</p>
             </div>
             <div style={{ display: 'flex', gap: '12px' }}>
-              <button 
-                onClick={() => onDelete(selectedRole._id)}
-                style={{ padding: '8px 16px', border: '1px solid #ef4444', borderRadius: '6px', background: 'white', color: '#ef4444', cursor: 'pointer', fontSize: '14px' }}
-              >
-                Remove this
-              </button>
               {hasChanges ? (
                 <button 
                   onClick={handleSave}
@@ -350,20 +374,35 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
             <div key={module.module} style={{ marginBottom: '16px', padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: module.expanded ? '16px' : '0' }}>
                 <span 
-                  style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', cursor: 'pointer', flex: 1 }}
-                  onClick={() => toggleModuleExpand(moduleIndex)}
+                  style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', cursor: module.permissions.length > 0 ? 'pointer' : 'default', flex: 1 }}
+                  onClick={module.permissions.length > 0 ? () => toggleModuleExpand(moduleIndex) : undefined}
                 >
                   {module.displayName}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {module.canEdit && module.enabled && (
+                    <>
+                      <span style={{ fontSize: '12px', color: '#6b7280', marginRight: '8px' }}>Can Edit</span>
+                      <input 
+                        type="checkbox" 
+                        checked={module.canEditValue || false} 
+                        onChange={() => toggleCanEdit(moduleIndex)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                    </>
+                  )}
                   <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={module.enabled} onChange={() => toggleModule(moduleIndex)} />
                     <span className="toggle-slider"></span>
                   </label>
                   <i 
                     className={`fas fa-${module.expanded ? 'minus' : 'plus'}`} 
-                    style={{ fontSize: '14px', color: '#6b7280', cursor: 'pointer' }}
-                    onClick={() => toggleModuleExpand(moduleIndex)}
+                    style={{ 
+                      fontSize: '14px', 
+                      color: module.permissions.length > 0 ? '#6b7280' : '#d1d5db', 
+                      cursor: module.permissions.length > 0 ? 'pointer' : 'not-allowed' 
+                    }}
+                    onClick={module.permissions.length > 0 ? () => toggleModuleExpand(moduleIndex) : undefined}
                   ></i>
                 </div>
               </div>
@@ -376,10 +415,20 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                           <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{permission.name}</h4>
                           <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{permission.description}</p>
                         </div>
-                        <label className="toggle-switch" style={{ marginLeft: '16px' }}>
-                          <input type="checkbox" checked={permission.enabled} onChange={() => togglePermission(moduleIndex, permission.code)} />
-                          <span className="toggle-slider"></span>
-                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}>
+                          {module.canEdit && (
+                            <input 
+                              type="checkbox" 
+                              checked={permission.enabled} 
+                              onChange={() => togglePermission(moduleIndex, permission.code)}
+                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                            />
+                          )}
+                          <label className="toggle-switch">
+                            <input type="checkbox" checked={permission.enabled} onChange={() => togglePermission(moduleIndex, permission.code)} />
+                            <span className="toggle-slider"></span>
+                          </label>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -411,32 +460,39 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
 
           <div style={{ marginTop: '24px', marginBottom: '16px' }}>
             <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>Videos</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-              {videos.map((video) => (
-                <div key={video.id} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <img src={video.image} alt={video.title} style={{ width: '100%', height: '140px', borderRadius: '6px', objectFit: 'cover' }} />
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{video.title}</h4>
-                    <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#6b7280' }}>{video.description}</p>
-                    <span style={{ fontSize: '12px', color: '#3b82f6', background: '#eff6ff', padding: '2px 8px', borderRadius: '4px' }}>{video.category}</span>
+            {videos.filter(video => video.isActive).length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                {videos.filter(video => video.isActive).map((video) => (
+                  <div key={video._id} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <img src={video.thumbnail} alt={video.title} style={{ width: '100%', height: '140px', borderRadius: '6px', objectFit: 'cover' }} />
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{video.title}</h4>
+                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#6b7280' }}>{video.description}</p>
+                      <span style={{ fontSize: '12px', color: video.isActive ? '#22c55e' : '#ef4444', background: video.isActive ? '#dcfce7' : '#fee2e2', padding: '2px 8px', borderRadius: '4px' }}>{video.isActive ? 'Active' : 'Inactive'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #e5e7eb' }}>
+                      <span style={{ fontSize: '13px', color: '#6b7280' }}>Select</span>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedVideos.some(v => v._id === video._id)} 
+                        onChange={() => toggleVideoSelection(video)}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                      />
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #e5e7eb' }}>
-                    <span style={{ fontSize: '13px', color: '#6b7280' }}>Select</span>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedVideos.some(v => v.id === video.id)} 
-                      onChange={() => toggleVideoSelection(video)}
-                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ padding: '32px', border: '2px dashed #d1d5db', borderRadius: '8px', textAlign: 'center', background: '#f9fafb' }}>
+                <p style={{ fontSize: '16px', color: '#6b7280', margin: 0 }}>No videos available</p>
+              </div>
+            )}
           </div>
         </>
       ) : (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
-          <p>Select a role from the left panel to view details</p>
+        <div style={{ textAlign: 'center', padding: '48px' }}>
+          <h3 style={{ fontSize: '18px', color: '#6b7280', marginBottom: '16px' }}>Select a role to manage permissions</h3>
+          <p style={{ fontSize: '14px', color: '#9ca3af' }}>Choose a role from the sidebar to configure its permissions and settings.</p>
         </div>
       )}
     </div>

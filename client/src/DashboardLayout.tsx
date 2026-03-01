@@ -25,10 +25,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout }) => 
         const data = await response.json();
         if (response.ok) {
           setMenu(data.menu || []);
-          // Redirect to first menu item if on dashboard root
-          if (location.pathname === '/dashboard' && data.menu && data.menu.length > 0) {
+          // Only redirect to first menu item if on dashboard root AND it's the initial load
+          if (location.pathname === '/dashboard' && data.menu && data.menu.length > 0 && !sessionStorage.getItem('dashboardVisited')) {
             navigate(data.menu[0].path, { replace: true });
           }
+          // Mark dashboard as visited
+          sessionStorage.setItem('dashboardVisited', 'true');
         }
       } catch (error) {
         console.error('Error fetching permissions:', error);

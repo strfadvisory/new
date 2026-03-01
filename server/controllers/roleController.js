@@ -145,7 +145,7 @@ const getRoleById = async (req, res) => {
 const updateRole = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, icon, status, permissions, parentRole, childRoleId, grandChildRoleId, nextSteps } = req.body;
+    const { name, description, icon, status, permissions, canEditPermissions, parentRole, childRoleId, grandChildRoleId, nextSteps } = req.body;
     
     if (!id.match(/^[0-9a-fA-F]{24}$/)) {
       return res.status(400).json({ message: 'Invalid role ID format' });
@@ -173,6 +173,7 @@ const updateRole = async (req, res) => {
       if (icon !== undefined) grandChildRole.icon = icon;
       if (status !== undefined) grandChildRole.status = status;
       if (permissions) grandChildRole.permissions = permissions;
+      if (canEditPermissions) grandChildRole.canEditPermissions = canEditPermissions;
       if (nextSteps) grandChildRole.nextSteps = nextSteps;
       if (req.body.video !== undefined) grandChildRole.video = req.body.video;
       
@@ -197,6 +198,7 @@ const updateRole = async (req, res) => {
       if (icon !== undefined) childRole.icon = icon;
       if (status !== undefined) childRole.status = status;
       if (permissions) childRole.permissions = permissions;
+      if (canEditPermissions) childRole.canEditPermissions = canEditPermissions;
       if (nextSteps) childRole.nextSteps = nextSteps;
       if (req.body.video !== undefined) childRole.video = req.body.video;
       
@@ -217,6 +219,10 @@ const updateRole = async (req, res) => {
     if (permissions) {
       role.permissions = permissions;
       role.markModified('permissions');
+    }
+    if (canEditPermissions) {
+      role.canEditPermissions = canEditPermissions;
+      role.markModified('canEditPermissions');
     }
     if (nextSteps) {
       role.nextSteps = nextSteps;

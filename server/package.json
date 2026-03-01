@@ -5,7 +5,8 @@
   "scripts": {
     "start": "node index.jsx",
     "seed:superadmin": "node seedSuperAdmin.js",
-    "dev": "nodemon index.jsx",
+    "dev": "nodemon --watch . --ext js,jsx,json --ignore node_modules/ --ignore uploads/ index.jsx",
+    "run-dev": "nodemon --watch . --ext js,jsx,json --ignore node_modules/ --ignore uploads/ index.jsx",
     "delete:users": "node deleteUsers.js"
   },
   "dependencies": {

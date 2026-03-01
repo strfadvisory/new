@@ -7,8 +7,10 @@ const itemRoutes = require('./routes/itemRoutes');
 const authRoutes = require('./routes/authRoutes');
 const validationRoutes = require('./routes/validationRoutes');
 const roleRoutes = require('./routes/roleRoutes');
+const userRoutes = require('./routes/userRoutes');
 const menuRoutes = require('./routes/menuRoutes');
 const videoRoutes = require('./routes/videoRoutes');
+const libraryRoutes = require('./routes/libraryRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -35,6 +37,7 @@ mongoose.connect(process.env.MONGO_URI, {
 })
   .then(() => {
     console.log('✅ MongoDB connected successfully');
+    console.log(`⏰ Connected at: ${new Date().toLocaleString()}`);
     console.log(`📊 Database: ${mongoose.connection.db.databaseName}`);
     console.log(`🌐 Host: ${mongoose.connection.host}`);
   })
@@ -47,8 +50,10 @@ mongoose.connect(process.env.MONGO_URI, {
 app.use('/api/auth', authRoutes);
 app.use('/api/validate', validationRoutes);
 app.use('/api/roles', roleRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api', videoRoutes);
+app.use('/api/library', libraryRoutes);
 app.use('/api', itemRoutes);
 
 // Error handling

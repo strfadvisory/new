@@ -8,6 +8,7 @@ import AllUsers from './pages/superadmin/AllUsers';
 import Analytics from './pages/superadmin/Analytics';
 import SystemSettings from './pages/superadmin/SystemSettings';
 import RoleManager from './pages/superadmin/RoleManager';
+import Library from './pages/superadmin/Library';
 import { API_BASE_URL } from './config';
 
 interface SuperAdminLayoutProps {
@@ -24,6 +25,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
   const [roles, setRoles] = useState<any[]>([]);
   const [selectedRole, setSelectedRole] = useState<any>(null);
+  const [libraryItems, setLibraryItems] = useState<any[]>([]);
+  const [selectedLibraryItem, setSelectedLibraryItem] = useState<any>(null);
   const [iconPreview, setIconPreview] = useState<string>('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
@@ -34,7 +37,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     status: true,
     parentRole: '',
     childRoleId: '',
-    permissions: {} as Record<string, boolean>
+    permissions: {} as Record<string, boolean>,
+    videoUrl: ''
   });
 
   const currentPage = location.pathname.split('/').pop() || 'role-manager';
@@ -42,8 +46,28 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   React.useEffect(() => {
     if (currentPage === 'role-manager') {
       fetchRoles();
+    } else if (currentPage === 'library') {
+      fetchLibraryItems();
     }
   }, [currentPage]);
+
+  const fetchLibraryItems = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/library`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setLibraryItems(data);
+        if (currentPage === 'library' && data.length > 0) {
+          setSelectedLibraryItem(data[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching library items:', error);
+    }
+  };
 
   const fetchRoles = async () => {
     try {
@@ -108,6 +132,28 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     }
   };
 
+  const handleEditLibraryItem = (item: any) => {
+    setFormData({
+      _id: item._id,
+      name: item.title,
+      description: item.description,
+      icon: item.thumbnail,
+      status: item.isActive,
+      parentRole: '',
+      childRoleId: '',
+      permissions: {},
+      videoUrl: item.videoUrl
+    });
+    setIconPreview(item.thumbnail || '');
+    setEditMode(true);
+    setIsSlidebarOpen(true);
+  };
+
+  const handleDeleteLibraryItem = async (itemId: string) => {
+    setRoleToDelete(itemId);
+    setShowDeleteConfirm(true);
+  };
+
   const handleEditRole = (role: any) => {
     setFormData({
       _id: role._id,
@@ -117,7 +163,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       status: role.status,
       parentRole: role.parentRoleId || '',
       childRoleId: role.childRoleId || '',
-      permissions: role.permissions || {}
+      permissions: role.permissions || {},
+      videoUrl: ''
     });
     setIconPreview(role.icon || '');
     setEditMode(true);
@@ -125,6 +172,14 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   };
 
   const handleAddNew = async () => {
+    if (currentPage === 'library') {
+      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {}, videoUrl: '' });
+      setIconPreview('');
+      setEditMode(false);
+      setIsSlidebarOpen(true);
+      return;
+    }
+    
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/roles/default-permissions`, {
@@ -133,10 +188,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         }
       });
       const defaultPermissions = await response.json();
-      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: defaultPermissions });
+      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: defaultPermissions, videoUrl: '' });
     } catch (error) {
       console.error('Error fetching default permissions:', error);
-      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {} });
+      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {}, videoUrl: '' });
     }
     setIconPreview('');
     setEditMode(false);
@@ -152,13 +207,19 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     if (roleToDelete) {
       try {
         const token = localStorage.getItem('token');
-        let url = `${API_BASE_URL}/api/roles/${roleToDelete}`;
+        let url;
         
-        if (selectedRole?.parentRoleId && selectedRole?.childRoleId) {
-          url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${selectedRole.childRoleId}&grandChildRoleId=${roleToDelete}`;
-        }
-        else if (selectedRole?.parentRoleId) {
-          url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${roleToDelete}`;
+        if (currentPage === 'library') {
+          url = `${API_BASE_URL}/api/library/${roleToDelete}`;
+        } else {
+          url = `${API_BASE_URL}/api/roles/${roleToDelete}`;
+          
+          if (selectedRole?.parentRoleId && selectedRole?.childRoleId) {
+            url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${selectedRole.childRoleId}&grandChildRoleId=${roleToDelete}`;
+          }
+          else if (selectedRole?.parentRoleId) {
+            url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${roleToDelete}`;
+          }
         }
         
         const response = await fetch(url, {
@@ -169,11 +230,16 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         });
         
         if (response.ok) {
-          setSelectedRole(null);
-          fetchRoles();
+          if (currentPage === 'library') {
+            setSelectedLibraryItem(null);
+            fetchLibraryItems();
+          } else {
+            setSelectedRole(null);
+            fetchRoles();
+          }
         }
       } catch (error) {
-        console.error('Error deleting role:', error);
+        console.error('Error deleting item:', error);
       }
     }
     setShowDeleteConfirm(false);
@@ -189,6 +255,49 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
+      
+      if (currentPage === 'library') {
+        const submitData = {
+          title: formData.name,
+          description: formData.description,
+          thumbnail: formData.icon,
+          videoUrl: formData.videoUrl || '',
+          isActive: formData.status
+        };
+        
+        let url = `${API_BASE_URL}/api/library`;
+        let method = 'POST';
+        
+        if (editMode && formData._id) {
+          url = `${API_BASE_URL}/api/library/${formData._id}`;
+          method = 'PUT';
+        }
+        
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(submitData)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+          setIsSlidebarOpen(false);
+          setEditMode(false);
+          setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {}, videoUrl: '' });
+          setIconPreview('');
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          fetchLibraryItems();
+        } else {
+          alert(`Error: ${result.message || 'Failed to save library item'}`);
+        }
+        return;
+      }
       
       let url = `${API_BASE_URL}/api/roles`;
       let method = 'POST';
@@ -224,7 +333,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       if (response.ok) {
         setIsSlidebarOpen(false);
         setEditMode(false);
-        setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {} });
+        setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {}, videoUrl: '' });
         setIconPreview('');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -234,15 +343,16 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         alert(`Error: ${result.message || 'Failed to save role'}`);
       }
     } catch (error) {
-      console.error('Error saving role:', error);
-      alert('Failed to save role. Check console for details.');
+      console.error('Error saving:', error);
+      alert('Failed to save. Check console for details.');
     }
   };
 
   const headerTabs = [
     { id: 'simulators', label: 'Simulators', path: '/admin/simulators' },
     { id: 'companies', label: 'Companies', path: '/admin/companies' },
-    { id: 'role-manager', label: 'Role Manager', path: '/admin/role-manager' }
+    { id: 'role-manager', label: 'Role Manager', path: '/admin/role-manager' },
+    { id: 'library', label: 'Library', path: '/admin/library' }
   ];
 
   return (
@@ -250,7 +360,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       <div className="dashboard-main">
         <header className="dashboard-header">
           <div className="header-left">
-            <div className="logo">
+            <div className="logo" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
               <img src="/logo.png" alt="Reserve Fund Advisory" style={{ height: '40px' }} />
               <div className="logo-text">
                 <div className="company-name">Super Admin</div>
@@ -286,85 +396,122 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 <button className="add-new-btn" onClick={handleAddNew}>+ Add New</button>
                 <input type="text" placeholder="Search by name" className="companies-search" />
               </div>
-              <div className="results-count">{roles.length} Results founded</div>
+              <div className="results-count">
+                {currentPage === 'library' ? libraryItems.length : roles.length} Results founded
+              </div>
               
               <div className="companies-list">
-                {roles.map((role) => {
-                  const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
-                  const allRoles = [];
-                  
-                  // Add parent role
-                  allRoles.push({ ...role, hierarchy: 'L1', level: 1 });
-                  
-                  // Add child roles
-                  if (role.childRoles && role.childRoles.length > 0) {
-                    role.childRoles.forEach((childRole: any) => {
-                      allRoles.push({ 
-                        ...childRole, 
-                        parentRoleId: role._id, 
-                        hierarchy: `${role.name}`,
-                        level: 2
-                      });
-                      
-                      // Add grandchild roles
-                      if (childRole.childRoles && childRole.childRoles.length > 0) {
-                        childRole.childRoles.forEach((grandChildRole: any) => {
-                          allRoles.push({ 
-                            ...grandChildRole, 
-                            parentRoleId: role._id, 
-                            childRoleId: childRole._id,
-                            hierarchy: `${role.name} - ${childRole.name}`,
-                            level: 3
-                          });
-                        });
-                      }
-                    });
-                  }
-                  
-                  return allRoles.map((roleItem) => (
+                {currentPage === 'library' ? (
+                  libraryItems.map((item) => (
                     <div 
-                      key={roleItem._id}
-                      className={`company-item ${selectedRole?._id === roleItem._id ? 'active' : ''}`}
-                      onClick={async () => {
-                        if (!isValidId) {
-                          console.error('Invalid role ID:', roleItem._id);
-                          setSelectedRole(roleItem);
-                          return;
-                        }
-                        try {
-                          const token = localStorage.getItem('token');
-                          const response = await fetch(`${API_BASE_URL}/api/roles/${roleItem._id}`, {
-                            headers: { 'Authorization': `Bearer ${token}` }
-                          });
-                          if (response.ok) {
-                            const freshRole = await response.json();
-                            setSelectedRole({ ...freshRole, ...roleItem });
-                          } else {
-                            setSelectedRole(roleItem);
-                          }
-                        } catch (error) {
-                          console.error('Error fetching role:', error);
-                          setSelectedRole(roleItem);
-                        }
-                      }}
+                      key={item._id}
+                      className={`company-item ${selectedLibraryItem?._id === item._id ? 'active' : ''}`}
+                      onClick={() => setSelectedLibraryItem(item)}
                       style={{ cursor: 'pointer' }}
                     >
-                      <div className="company-name">{roleItem.name}</div>
-                      <div className="company-hierarchy" style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
-                        {roleItem.hierarchy}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                        <img 
+                          src={item.thumbnail} 
+                          alt={item.title}
+                          style={{ 
+                            width: '60px', 
+                            height: '40px', 
+                            objectFit: 'cover', 
+                            borderRadius: '4px',
+                            border: '1px solid #e5e7eb'
+                          }}
+                        />
+                        <div className="company-name">{item.title}</div>
                       </div>
-                      <div className="company-desc">{roleItem.description}</div>
+                      <div className="company-desc">{item.description}</div>
                       <div className="company-status" style={{ 
                         fontSize: '12px', 
-                        color: roleItem.status ? '#10b981' : '#ef4444',
+                        color: item.isActive ? '#10b981' : '#ef4444',
                         marginTop: '8px',
                         fontWeight: '500'
                       }}>
-                        {roleItem.status ? 'Active' : 'Inactive'}
+                        {item.isActive ? 'Active' : 'Inactive'}
                       </div>
                     </div>
-                  ));
-                }).flat()}
+                  ))
+                ) : (
+                  roles.map((role) => {
+                    const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
+                    const allRoles = [];
+                    
+                    // Add parent role
+                    allRoles.push({ ...role, hierarchy: 'L1', level: 1 });
+                    
+                    // Add child roles
+                    if (role.childRoles && role.childRoles.length > 0) {
+                      role.childRoles.forEach((childRole: any) => {
+                        allRoles.push({ 
+                          ...childRole, 
+                          parentRoleId: role._id, 
+                          hierarchy: `${role.name}`,
+                          level: 2
+                        });
+                        
+                        // Add grandchild roles
+                        if (childRole.childRoles && childRole.childRoles.length > 0) {
+                          childRole.childRoles.forEach((grandChildRole: any) => {
+                            allRoles.push({ 
+                              ...grandChildRole, 
+                              parentRoleId: role._id, 
+                              childRoleId: childRole._id,
+                              hierarchy: `${role.name} - ${childRole.name}`,
+                              level: 3
+                            });
+                          });
+                        }
+                      });
+                    }
+                    
+                    return allRoles.map((roleItem) => (
+                      <div 
+                        key={roleItem._id}
+                        className={`company-item ${selectedRole?._id === roleItem._id ? 'active' : ''}`}
+                        onClick={async () => {
+                          if (!isValidId) {
+                            console.error('Invalid role ID:', roleItem._id);
+                            setSelectedRole(roleItem);
+                            return;
+                          }
+                          try {
+                            const token = localStorage.getItem('token');
+                            const response = await fetch(`${API_BASE_URL}/api/roles/${roleItem._id}`, {
+                              headers: { 'Authorization': `Bearer ${token}` }
+                            });
+                            if (response.ok) {
+                              const freshRole = await response.json();
+                              setSelectedRole({ ...freshRole, ...roleItem });
+                            } else {
+                              setSelectedRole(roleItem);
+                            }
+                          } catch (error) {
+                            console.error('Error fetching role:', error);
+                            setSelectedRole(roleItem);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <div className="company-name">{roleItem.name}</div>
+                        <div className="company-hierarchy" style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+                          {roleItem.hierarchy}
+                        </div>
+                        <div className="company-desc">{roleItem.description}</div>
+                        <div className="company-status" style={{ 
+                          fontSize: '12px', 
+                          color: roleItem.status ? '#10b981' : '#ef4444',
+                          marginTop: '8px',
+                          fontWeight: '500'
+                        }}>
+                          {roleItem.status ? 'Active' : 'Inactive'}
+                        </div>
+                      </div>
+                    ));
+                  }).flat()
+                )}
               </div>
             </div>}
             
@@ -377,6 +524,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="settings" element={<SystemSettings />} />
                 <Route path="role-manager" element={<RoleManager selectedRole={selectedRole} onEdit={handleEditRole} onDelete={handleDeleteRole} />} />
+                <Route path="library" element={<Library selectedItem={selectedLibraryItem} onEdit={handleEditLibraryItem} onDelete={handleDeleteLibraryItem} />} />
               </Routes>
             </div>
           </div>
@@ -389,7 +537,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
           <div className="slidebar-overlay" onClick={() => setIsSlidebarOpen(false)}></div>
           <div className="right-slidebar">
             <div className="slidebar-header">
-              <h3>{editMode ? 'Edit Role' : 'Add New Role'}</h3>
+              <h3>{editMode ? (currentPage === 'library' ? 'Edit Library Item' : 'Edit Role') : (currentPage === 'library' ? 'Add New Library Item' : 'Add New Role')}</h3>
               <button className="close-btn" onClick={() => setIsSlidebarOpen(false)}>
                 <i className="fas fa-times"></i>
               </button>
@@ -448,11 +596,13 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                         <i className="fas fa-plus"></i>
                       </button>
                     )}
-                    <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Icon</span>
+                    <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+                      {currentPage === 'library' ? 'Thumbnail' : 'Icon'}
+                    </span>
                   </div>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group" style={{ display: currentPage === 'library' ? 'none' : 'block' }}>
                   <label>Role Type*</label>
                   <select 
                     className="form-input"
@@ -460,7 +610,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                     onChange={(e) => {
                       setFormData({ ...formData, parentRole: e.target.value, childRoleId: '' });
                     }}
-                    required
+                    required={currentPage !== 'library'}
                   >
                     <option value="primary">Primary</option>
                     {roles.map((role) => (
@@ -469,7 +619,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   </select>
                 </div>
 
-                {formData.parentRole && roles.find(r => r._id === formData.parentRole)?.childRoles?.length > 0 && (
+                {formData.parentRole && roles.find(r => r._id === formData.parentRole)?.childRoles?.length > 0 && currentPage !== 'library' && (
                   <div className="form-group">
                     <label>Sub Role*</label>
                     <select 
@@ -489,7 +639,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 <div className="form-group">
                   <input 
                     type="text" 
-                    placeholder="Enter Role Name*" 
+                    placeholder={currentPage === 'library' ? 'Enter Title*' : 'Enter Role Name*'}
                     className="form-input"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -497,9 +647,22 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   />
                 </div>
 
+                {currentPage === 'library' && (
+                  <div className="form-group">
+                    <input 
+                      type="url" 
+                      placeholder="Enter Video URL*" 
+                      className="form-input"
+                      value={formData.videoUrl || ''}
+                      onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                      required
+                    />
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
-                    Discriber Details so use can identify use of this role *
+                    {currentPage === 'library' ? 'Describe the video content*' : 'Describe Details so user can identify use of this role *'}
                   </label>
                   <textarea 
                     className="form-textarea"
@@ -525,7 +688,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                           if (editMode && formData._id) {
                             try {
                               const token = localStorage.getItem('token');
-                              await fetch(`${API_BASE_URL}/api/roles/${formData._id}`, {
+                              const url = currentPage === 'library' 
+                                ? `${API_BASE_URL}/api/library/${formData._id}`
+                                : `${API_BASE_URL}/api/roles/${formData._id}`;
+                              await fetch(url, {
                                 method: 'PUT',
                                 headers: {
                                   'Content-Type': 'application/json',
@@ -545,7 +711,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 </div>
 
                 <button type="submit" className="submit-btn">
-                  {editMode ? 'Update Role' : 'Save Role'}
+                  {editMode ? (currentPage === 'library' ? 'Update Library Item' : 'Update Role') : (currentPage === 'library' ? 'Save Library Item' : 'Save Role')}
                 </button>
               </div>
             </form>
@@ -561,9 +727,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
             <div className="modal-icon">
               <i className="fas fa-exclamation-triangle" style={{ fontSize: '48px', color: '#ef4444' }}></i>
             </div>
-            <h3 style={{ margin: '16px 0', fontSize: '20px', fontWeight: '600', color: '#1f2937' }}>Delete Role</h3>
+            <h3 style={{ margin: '16px 0', fontSize: '20px', fontWeight: '600', color: '#1f2937' }}>
+              {currentPage === 'library' ? 'Delete Library Item' : 'Delete Role'}
+            </h3>
             <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#6b7280', textAlign: 'center' }}>
-              Are you sure you want to delete this role? This action cannot be undone.
+              Are you sure you want to delete this {currentPage === 'library' ? 'library item' : 'role'}? This action cannot be undone.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
               <button 

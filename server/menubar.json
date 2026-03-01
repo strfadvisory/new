@@ -47,19 +47,18 @@
       ]
     },
     {
-      "module": "USER_ROLE_MANAGEMENT",
-      "displayName": "User & Role Management",
-      "permissions": [
-        { "code": "ADD_MEMBER_ROLE", "name": "Add New Member Role", "description": "Creates and assigns the Member role with predefined permissions." },
-        { "code": "ADD_MANAGER_ROLE", "name": "Add New Manager Role", "description": "Creates and assigns the Manager role with defined access rights." },
-        { "code": "ADD_PROPERTY_MANAGER_ROLE", "name": "Add New Property Manager Role", "description": "Creates and assigns the Property Manager role with scoped permissions." },
-        { "code": "EDIT_MEMBER_ROLE", "name": "Edit Member Role", "description": "Modifies permission assignments for Member users." },
-        { "code": "EDIT_MANAGER_ROLE", "name": "Edit Manager Role", "description": "Updates access rights and permission scope for Manager users." },
-        { "code": "EDIT_PROPERTY_MANAGER_ROLE", "name": "Edit Property Manager Role", "description": "Adjusts permission mapping for Property Manager users." },
-        { "code": "CHANGE_USER_STATUS", "name": "Change User Status", "description": "Activates, deactivates, suspends, or reinstates user accounts based on system permissions." },
-        { "code": "EDIT_MY_PROFILE", "name": "Edit My Profile", "description": "Allows users to update their personal profile information." },
-        { "code": "CHANGE_MY_PASSWORD", "name": "Change My Password", "description": "Allows users to securely update their account password." }
-      ]
+      "module": "USER_MANAGEMENT",
+      "displayName": "User Management",
+      "canEdit": true,
+      "canEditValue": false,
+      "permissions": []
+    },
+    {
+      "module": "ROLE_MANAGEMENT",
+      "displayName": "Role Management",
+      "canEdit": true,
+      "canEditValue": false,
+      "permissions": []
     },
     {
       "module": "BANKING_SERVICES",

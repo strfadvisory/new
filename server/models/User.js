@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema({
   roleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
   role: { type: String, default: 'USER' },
   roleType: { type: String },
+  status: { type: String, enum: ['Active', 'Inactive', 'Suspended'], default: 'Active' },
   isSuperAdmin: { type: Boolean, default: false },
   orgId: { type: String },
   level: { type: String },
