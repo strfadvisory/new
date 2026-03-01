@@ -35,8 +35,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     description: '',
     icon: '',
     status: true,
-    parentRole: '',
-    childRoleId: '',
+    parentRoleId: '',
+    secondaryRoleId: '',
     permissions: {} as Record<string, boolean>,
     videoUrl: ''
   });
@@ -78,7 +78,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         });
         if (response.ok) {
           const freshRole = await response.json();
-          setSelectedRole({ ...freshRole, ...selectedRole });
+          setSelectedRole({ ...freshRole, hierarchy: selectedRole.hierarchy });
         }
       } catch (error) {
         console.error('Error refreshing selected role:', error);
@@ -161,8 +161,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       description: item.description,
       icon: item.thumbnail,
       status: item.isActive,
-      parentRole: '',
-      childRoleId: '',
+      parentRoleId: '',
+      secondaryRoleId: '',
       permissions: {},
       videoUrl: item.videoUrl
     });
@@ -183,8 +183,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       description: role.description,
       icon: role.icon || '',
       status: role.status,
-      parentRole: role.parentRoleId || '',
-      childRoleId: role.childRoleId || '',
+      parentRoleId: role.parentRoleId || '',
+      secondaryRoleId: '',
       permissions: role.permissions || {},
       videoUrl: ''
     });
@@ -195,7 +195,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
 
   const handleAddNew = async () => {
     if (currentPage === 'library') {
-      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {}, videoUrl: '' });
+      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: {}, videoUrl: '' });
       setIconPreview('');
       setEditMode(false);
       setIsSlidebarOpen(true);
@@ -210,10 +210,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         }
       });
       const defaultPermissions = await response.json();
-      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: defaultPermissions, videoUrl: '' });
+      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: defaultPermissions, videoUrl: '' });
     } catch (error) {
       console.error('Error fetching default permissions:', error);
-      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {}, videoUrl: '' });
+      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: {}, videoUrl: '' });
     }
     setIconPreview('');
     setEditMode(false);
@@ -235,13 +235,6 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
           url = `${API_BASE_URL}/api/library/${roleToDelete}`;
         } else {
           url = `${API_BASE_URL}/api/roles/${roleToDelete}`;
-          
-          if (selectedRole?.parentRoleId && selectedRole?.childRoleId) {
-            url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${selectedRole.childRoleId}&grandChildRoleId=${roleToDelete}`;
-          }
-          else if (selectedRole?.parentRoleId) {
-            url += `?parentRole=${selectedRole.parentRoleId}&childRoleId=${roleToDelete}`;
-          }
         }
         
         const response = await fetch(url, {
@@ -309,7 +302,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         if (response.ok) {
           setIsSlidebarOpen(false);
           setEditMode(false);
-          setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {}, videoUrl: '' });
+          setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: {}, videoUrl: '' });
           setIconPreview('');
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -323,22 +316,20 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       
       let url = `${API_BASE_URL}/api/roles`;
       let method = 'POST';
-      const submitData: any = { ...formData };
+      const submitData: any = { 
+        name: formData.name,
+        description: formData.description,
+        icon: formData.icon,
+        status: formData.status,
+        permissions: formData.permissions,
+        parentRoleId: formData.secondaryRoleId || formData.parentRoleId || null
+      };
+      
+      console.log('Submitting role with parentRoleId:', submitData.parentRoleId);
       
       if (editMode && formData._id) {
-        if (formData.parentRole && formData.childRoleId) {
-          url = `${API_BASE_URL}/api/roles/${formData.parentRole}`;
-          method = 'PUT';
-          submitData.grandChildRoleId = formData._id;
-        }
-        else if (formData.parentRole) {
-          url = `${API_BASE_URL}/api/roles/${formData.parentRole}`;
-          method = 'PUT';
-          submitData.childRoleId = formData._id;
-        } else {
-          url = `${API_BASE_URL}/api/roles/${formData._id}`;
-          method = 'PUT';
-        }
+        url = `${API_BASE_URL}/api/roles/${formData._id}`;
+        method = 'PUT';
       }
       
       const response = await fetch(url, {
@@ -355,12 +346,12 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       if (response.ok) {
         setIsSlidebarOpen(false);
         setEditMode(false);
-        setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRole: '', childRoleId: '', permissions: {}, videoUrl: '' });
+        setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: {}, videoUrl: '' });
         setIconPreview('');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
-        fetchRoles();
+        await fetchRoles();
       } else {
         alert(`Error: ${result.message || 'Failed to save role'}`);
       }
@@ -459,80 +450,57 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 ) : (
                   roles.map((role) => {
                     const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
-                    const allRoles = [];
+                    const parentName = role.parentRoleId?.name || '';
                     
-                    // Add parent role
-                    allRoles.push({ ...role, hierarchy: 'L1', level: 1 });
-                    
-                    // Add child roles
-                    if (role.childRoles && role.childRoles.length > 0) {
-                      role.childRoles.forEach((childRole: any) => {
-                        allRoles.push({ 
-                          ...childRole, 
-                          parentRoleId: role._id, 
-                          hierarchy: `${role.name}`,
-                          level: 2
-                        });
-                        
-                        // Add grandchild roles
-                        if (childRole.childRoles && childRole.childRoles.length > 0) {
-                          childRole.childRoles.forEach((grandChildRole: any) => {
-                            allRoles.push({ 
-                              ...grandChildRole, 
-                              parentRoleId: role._id, 
-                              childRoleId: childRole._id,
-                              hierarchy: `${role.name} - ${childRole.name}`,
-                              level: 3
-                            });
-                          });
-                        }
-                      });
-                    }
-                    
-                    return allRoles.map((roleItem) => (
+                    return (
                       <div 
-                        key={roleItem._id}
-                        className={`company-item ${selectedRole?._id === roleItem._id ? 'active' : ''}`}
+                        key={role._id}
+                        className={`company-item ${selectedRole?._id === role._id ? 'active' : ''}`}
                         onClick={async () => {
                           if (!isValidId) {
-                            console.error('Invalid role ID:', roleItem._id);
-                            setSelectedRole(roleItem);
+                            console.error('Invalid role ID:', role._id);
+                            setSelectedRole(role);
                             return;
                           }
+                          
                           try {
                             const token = localStorage.getItem('token');
-                            const response = await fetch(`${API_BASE_URL}/api/roles/${roleItem._id}`, {
+                            const response = await fetch(`${API_BASE_URL}/api/roles/${role._id}`, {
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             if (response.ok) {
                               const freshRole = await response.json();
-                              setSelectedRole({ ...freshRole, ...roleItem });
+                              setSelectedRole(freshRole);
                             } else {
-                              setSelectedRole(roleItem);
+                              setSelectedRole(role);
                             }
                           } catch (error) {
                             console.error('Error fetching role:', error);
-                            setSelectedRole(roleItem);
+                            setSelectedRole(role);
                           }
                         }}
-                        style={{ cursor: 'pointer' }}
+                        style={{ 
+                          cursor: 'pointer', 
+                          padding: '12px 16px',
+                          marginBottom: '1px',
+                          background: selectedRole?._id === role._id ? '#f0f9ff' : 'white',
+                          transition: 'all 0.15s ease'
+                        }}
                       >
-                        <div className="company-name">{roleItem.name}</div>
-                        <div className="company-hierarchy" style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
-                          {roleItem.hierarchy}
+                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '2px' }}>
+                          {role.name}
                         </div>
-                        <div className="company-desc">{roleItem.description}</div>
-                        <div className="company-status" style={{ 
-                          fontSize: '12px', 
-                          color: roleItem.status ? '#10b981' : '#ef4444',
-                          marginTop: '8px',
-                          fontWeight: '500'
-                        }}>
-                          {roleItem.status ? 'Active' : 'Inactive'}
+                        {parentName && (
+                          <div style={{ fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>
+                            {parentName}
+                          </div>
+                        )}
+                        <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.4' }}>
+                          {role.description}
                         </div>
                       </div>
-                    ));
-                  }).flat()
+                    );
+                  })
                 )}
               </div>
             </div>}
@@ -545,7 +513,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 <Route path="users" element={<AllUsers />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="settings" element={<SystemSettings />} />
-                <Route path="role-manager" element={<RoleManager selectedRole={selectedRole} onEdit={handleEditRole} onDelete={handleDeleteRole} onRoleUpdate={handleRoleUpdate} />} />
+                <Route path="role-manager" element={<RoleManager selectedRole={selectedRole} onEdit={handleEditRole} onDelete={handleDeleteRole} onRoleUpdate={handleRoleUpdate} isUserContext={false} />} />
                 <Route path="library" element={<Library selectedItem={selectedLibraryItem} onEdit={handleEditLibraryItem} onDelete={handleDeleteLibraryItem} />} />
               </Routes>
             </div>
@@ -625,38 +593,57 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                 </div>
 
                 <div className="form-group" style={{ display: currentPage === 'library' ? 'none' : 'block' }}>
-                  <label>Role Type*</label>
-                  <select 
-                    className="form-input"
-                    value={formData.parentRole}
-                    onChange={(e) => {
-                      setFormData({ ...formData, parentRole: e.target.value, childRoleId: '' });
-                    }}
-                    required={currentPage !== 'library'}
-                  >
-                    <option value="primary">Primary</option>
-                    {roles.map((role) => (
-                      <option key={role._id} value={role._id}>{role.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {formData.parentRole && roles.find(r => r._id === formData.parentRole)?.childRoles?.length > 0 && currentPage !== 'library' && (
-                  <div className="form-group">
-                    <label>Sub Role*</label>
+                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '8px', display: 'block' }}>Role Hierarchy</label>
+                  
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Level 1 (Primary)</label>
                     <select 
                       className="form-input"
-                      value={formData.childRoleId}
-                      onChange={(e) => setFormData({ ...formData, childRoleId: e.target.value })}
-                      required
+                      value={formData.parentRoleId}
+                      onChange={(e) => setFormData({ ...formData, parentRoleId: e.target.value, secondaryRoleId: '' })}
+                      disabled={editMode}
+                      style={{ fontSize: '14px' }}
                     >
-                      <option value="">Select Sub Role</option>
-                      {roles.find(r => r._id === formData.parentRole)?.childRoles?.map((childRole: any) => (
-                        <option key={childRole._id} value={childRole._id}>{childRole.name}</option>
+                      <option value="">Create New Level 1 Role</option>
+                      {roles.filter(r => r.type === '1').map((role) => (
+                        <option key={role._id} value={role._id}>{role.name}</option>
                       ))}
                     </select>
                   </div>
-                )}
+
+                  {formData.parentRoleId && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Level 2 (Secondary)</label>
+                      <select 
+                        className="form-input"
+                        value={formData.secondaryRoleId}
+                        onChange={(e) => setFormData({ ...formData, secondaryRoleId: e.target.value })}
+                        disabled={editMode}
+                        style={{ fontSize: '14px' }}
+                      >
+                        <option value="">Create New Level 2 Role</option>
+                        {roles.filter(r => {
+                          const parentId = r.parentRoleId?._id || r.parentRoleId;
+                          return r.type === '2' && parentId && parentId.toString() === formData.parentRoleId;
+                        }).map((role) => (
+                          <option key={role._id} value={role._id}>{role.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {formData.secondaryRoleId && (
+                    <div style={{ paddingLeft: '32px', borderLeft: '2px solid #e5e7eb', marginLeft: '16px' }}>
+                      <label style={{ fontSize: '12px', color: '#10b981', marginBottom: '4px', display: 'block', fontWeight: '500' }}>✓ Creating Level 3 (Member) Role</label>
+                    </div>
+                  )}
+
+                  {!formData.parentRoleId && (
+                    <div>
+                      <label style={{ fontSize: '12px', color: '#10b981', marginBottom: '4px', display: 'block', fontWeight: '500' }}>✓ Creating Level 1 (Primary) Role</label>
+                    </div>
+                  )}
+                </div>
 
                 <div className="form-group">
                   <input 

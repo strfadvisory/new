@@ -19,6 +19,7 @@ import Companies from './pages/Companies';
 import Associations from './pages/Associations';
 import Users from './pages/Users';
 import Banking from './pages/Banking';
+import UserRoleManagerLayout from './pages/UserRoleManagerLayout';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -147,6 +148,7 @@ function App() {
           <Route path="associations" element={<Associations />} />
           <Route path="users" element={<Users />} />
           <Route path="banking" element={<Banking />} />
+          <Route path="role-manager" element={<UserRoleManagerLayout />} />
         </Route>
         <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard') : '/login'} replace />} />
       </Routes>

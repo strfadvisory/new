@@ -9,7 +9,6 @@ const validationRoutes = require('./routes/validationRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const userRoutes = require('./routes/userRoutes');
 const menuRoutes = require('./routes/menuRoutes');
-const videoRoutes = require('./routes/videoRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
 
 const app = express();
@@ -52,7 +51,6 @@ app.use('/api/validate', validationRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/menu', menuRoutes);
-app.use('/api', videoRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api', itemRoutes);
 

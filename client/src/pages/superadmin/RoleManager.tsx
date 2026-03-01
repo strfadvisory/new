@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '../../config';
+import { RoleValidator, RoleData } from '../../utils/roleValidator';
+import './RoleManager.css';
 
 interface Permission {
   code: string;
@@ -22,6 +24,7 @@ interface RoleManagerProps {
   onEdit: (role: any) => void;
   onDelete: (roleId: string) => void;
   onRoleUpdate?: () => void;
+  isUserContext?: boolean;
 }
 
 interface Video {
@@ -33,11 +36,12 @@ interface Video {
   isActive: boolean;
 }
 
-const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelete, onRoleUpdate }) => {
+const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelete, onRoleUpdate, isUserContext = false }) => {
   const [modules, setModules] = useState<Module[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [videos, setVideos] = useState<Video[]>([]);
   const [selectedVideos, setSelectedVideos] = useState<Video[]>([]);
+  const [userPermissions, setUserPermissions] = useState<any>({});
   const [nextSteps, setNextSteps] = useState<any[]>([
     { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'user', completed: false },
     { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'building', completed: false },
@@ -55,6 +59,16 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       .then(response => response.json())
       .then(data => setVideos(data))
       .catch(error => console.error('Error fetching library items:', error));
+
+    // Fetch user permissions
+    fetch(`${API_BASE_URL}/api/roles/user-permissions`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+      .then(response => response.json())
+      .then(data => setUserPermissions(data.permissions || {}))
+      .catch(error => console.error('Error fetching user permissions:', error));
   }, []);
 
   useEffect(() => {
@@ -62,35 +76,69 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       .then(response => response.json())
       .then(data => {
         // Filter out COMPANY_CONTROL module
-        const filteredModules = data.modules.filter((mod: any) => mod.module !== 'COMPANY_CONTROL');
-        const modulesWithState = filteredModules.map((mod: any) => ({
-          ...mod,
-          enabled: false,
-          expanded: false,
-          permissions: mod.permissions.map((perm: any) => ({ ...perm, enabled: false }))
-        }));
+        let filteredModules = data.modules.filter((mod: any) => mod.module !== 'COMPANY_CONTROL');
+        
+        // If not super admin, filter modules based on user permissions
+        if (isUserContext && Object.keys(userPermissions).length > 0) {
+          filteredModules = filteredModules.filter((mod: any) => {
+            // Check if user has any permission in this module
+            return mod.permissions.some((perm: any) => 
+              userPermissions[`${mod.module}.${perm.code}`] === true
+            );
+          });
+        }
+        
+        const modulesWithState = filteredModules.map((mod: any) => {
+          let modulePermissions = mod.permissions;
+          
+          // If not super admin, filter permissions based on user permissions
+          if (isUserContext && Object.keys(userPermissions).length > 0) {
+            modulePermissions = mod.permissions.filter((perm: any) => 
+              userPermissions[`${mod.module}.${perm.code}`] === true
+            );
+          }
+          
+          return {
+            ...mod,
+            enabled: false,
+            expanded: false,
+            permissions: modulePermissions.map((perm: any) => ({ ...perm, enabled: false }))
+          };
+        });
         setModules(modulesWithState);
       })
       .catch(error => console.error('Error fetching menu data:', error));
-  }, []);
+  }, [isUserContext, userPermissions]);
 
   useEffect(() => {
+    console.log('Selected role changed:', selectedRole);
+    console.log('Role nextSteps:', selectedRole?.nextSteps);
+    
     if (selectedRole?.nextSteps && selectedRole.nextSteps.length > 0) {
+      console.log('Setting role nextSteps:', selectedRole.nextSteps);
       setNextSteps(selectedRole.nextSteps);
     } else {
-      setNextSteps([
-        { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'user', completed: false },
-        { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'building', completed: false },
-        { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'file', completed: false },
-        { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members, modules.ional entity to manage members, modules.', icon: 'calendar', completed: false }
-      ]);
+      // For admin context, set default steps. For user context, show empty state with option to add
+      if (!isUserContext) {
+        console.log('Setting default nextSteps for admin context');
+        setNextSteps([
+          { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members and modules.', icon: 'user', completed: false },
+          { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members and modules.', icon: 'building', completed: false },
+          { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
+          { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
+        ]);
+      } else {
+        console.log('No nextSteps found for user context, showing empty state');
+        setNextSteps([]);
+      }
     }
-    if (selectedRole?.video && selectedRole.video.length > 0) {
+    
+    if (selectedRole?.video && Array.isArray(selectedRole.video) && selectedRole.video.length > 0) {
       setSelectedVideos(selectedRole.video);
     } else {
       setSelectedVideos([]);
     }
-  }, [selectedRole]);
+  }, [selectedRole?._id, isUserContext]);
 
   useEffect(() => {
     if (selectedRole?.permissions && modules.length > 0) {
@@ -99,24 +147,27 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
           const permKey = `${mod.module}.${perm.code}`;
           return {
             ...perm,
-            enabled: selectedRole.permissions[permKey] || false
+            enabled: Boolean(selectedRole.permissions[permKey])
           };
         });
         const moduleEnabled = modulePermissions.some(p => p.enabled);
         return {
           ...mod,
           enabled: moduleEnabled,
-          expanded: moduleEnabled && mod.permissions.length > 0,
+          expanded: false,
           permissions: modulePermissions
         };
       });
       setModules(updatedModules);
       setHasChanges(false);
     }
-  }, [selectedRole, selectedRole?.permissions]);
+  }, [selectedRole?._id, selectedRole?.permissions]);
 
   const handleSave = async () => {
-    if (!selectedRole?._id) return;
+    if (!selectedRole?._id) {
+      toast.error('No role selected for update');
+      return;
+    }
     
     const permissionsData: any = {};
     
@@ -128,35 +179,46 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
 
     try {
       const token = localStorage.getItem('token');
-      const updateData: any = { 
+      if (!token) {
+        toast.error('Authentication required');
+        return;
+      }
+
+      // Validate role data before sending
+      const roleData: RoleData = {
+        _id: selectedRole._id,
         name: selectedRole.name,
         type: selectedRole.type,
         description: selectedRole.description,
-        icon: selectedRole.icon,
-        status: selectedRole.status,
+        icon: selectedRole.icon || '',
+        status: selectedRole.status !== undefined ? selectedRole.status : true,
         permissions: permissionsData,
-        nextSteps: nextSteps,
-        video: selectedVideos
+        nextSteps: nextSteps || [],
+        video: selectedVideos || [],
+        parentRoleId: selectedRole.parentRoleId
       };
+
+      const validation = RoleValidator.validateRoleData(roleData);
+      if (!validation.isValid) {
+        toast.error(`Validation failed: ${validation.errors.join(', ')}`);
+        return;
+      }
+
+      if (validation.warnings.length > 0) {
+        console.warn('Role validation warnings:', validation.warnings);
+      }
+
+      const updateData: any = RoleValidator.sanitizeRoleData(roleData);
       
-      // Handle child role updates
-      if (selectedRole.parentRoleId) {
-        updateData.parentRole = selectedRole.parentRoleId;
-        updateData.childRoleId = selectedRole._id;
+      let url = `${API_BASE_URL}/api/roles/`;
+      
+      if (isUserContext) {
+        url += 'user-own-role';
+      } else {
+        url += selectedRole._id;
       }
       
-      // Handle grandchild role updates
-      if (selectedRole.grandParentRoleId && selectedRole.parentRoleId) {
-        updateData.parentRole = selectedRole.grandParentRoleId;
-        updateData.childRoleId = selectedRole.parentRoleId;
-        updateData.grandChildRoleId = selectedRole._id;
-      }
-      
-      const roleId = selectedRole.grandParentRoleId || selectedRole.parentRoleId || selectedRole._id;
-      
-      console.log('Saving role permissions:', permissionsData);
-      
-      const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}`, {
+      const response = await fetch(url, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -166,20 +228,24 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       });
       
       if (response.ok) {
+        const updatedRole = await response.json();
         toast.success('Role updated successfully!');
         setHasChanges(false);
-        // Refresh role data
+        
+        // Parent component will handle role updates via onRoleUpdate callback
+        
+        // Refresh parent component data
         if (onRoleUpdate) {
           onRoleUpdate();
         }
       } else {
         const error = await response.json();
         console.error('Update error:', error);
-        toast.error('Failed to save: ' + (error.message || 'Unknown error'));
+        toast.error(`Failed to save: ${error.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error saving:', error);
-      toast.error('Failed to save changes');
+      toast.error('Network error: Failed to save changes');
     }
   };
 
@@ -207,7 +273,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         return {
           ...mod,
           enabled: newEnabled,
-          expanded: newEnabled && mod.permissions.length > 0,
+          expanded: mod.expanded,
           permissions: mod.permissions.map(p => ({ ...p, enabled: newEnabled }))
         };
       }
@@ -220,9 +286,20 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   const togglePermission = (moduleIndex: number, permCode: string) => {
     const updatedModules = modules.map((mod, i) => {
       if (i === moduleIndex) {
-        const updatedPermissions = mod.permissions.map(p => 
-          p.code === permCode ? { ...p, enabled: !p.enabled } : p
-        );
+        const updatedPermissions = mod.permissions.map(p => {
+          if (p.code === permCode) {
+            const newEnabled = !p.enabled;
+            
+            // Validate permission inheritance for child roles
+            if (newEnabled && selectedRole?.parentRoleId) {
+              console.log(`Enabling permission ${mod.module}.${permCode} for child role`);
+            }
+            
+            return { ...p, enabled: newEnabled };
+          }
+          return p;
+        });
+        
         const anyEnabled = updatedPermissions.some(p => p.enabled);
         return {
           ...mod,
@@ -232,6 +309,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       }
       return mod;
     });
+    
     setModules(updatedModules);
     setHasChanges(true);
   };
@@ -239,11 +317,34 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
 
 
   const toggleNextStep = async (index: number) => {
+    if (index < 0 || index >= nextSteps.length) {
+      console.error('Invalid step index:', index);
+      return;
+    }
+    
     const updatedSteps = nextSteps.map((step, i) => 
       i === index ? { ...step, completed: !step.completed } : step
     );
+    
     setNextSteps(updatedSteps);
     setHasChanges(true);
+    
+    // Auto-save next step changes if in user context
+    if (isUserContext) {
+      try {
+        const token = localStorage.getItem('token');
+        await fetch(`${API_BASE_URL}/api/roles/user-nextstep`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ stepIndex: index, completed: updatedSteps[index].completed })
+        });
+      } catch (error) {
+        console.error('Error auto-saving next step:', error);
+      }
+    }
   };
 
   const toggleVideoSelection = (video: Video) => {
@@ -270,20 +371,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         nextSteps: steps
       };
       
-      // Handle child role updates
-      if (selectedRole.parentRoleId) {
-        updateData.parentRole = selectedRole.parentRoleId;
-        updateData.childRoleId = selectedRole._id;
-      }
-      
-      // Handle grandchild role updates
-      if (selectedRole.grandParentRoleId && selectedRole.parentRoleId) {
-        updateData.parentRole = selectedRole.grandParentRoleId;
-        updateData.childRoleId = selectedRole.parentRoleId;
-        updateData.grandChildRoleId = selectedRole._id;
-      }
-      
-      const roleId = selectedRole.grandParentRoleId || selectedRole.parentRoleId || selectedRole._id;
+      const roleId = selectedRole._id;
       
       const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}`, {
         method: 'PUT',
@@ -329,20 +417,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         permissions: permissionsData
       };
       
-      // Handle child role updates
-      if (selectedRole.parentRoleId) {
-        updateData.parentRole = selectedRole.parentRoleId;
-        updateData.childRoleId = selectedRole._id;
-      }
-      
-      // Handle grandchild role updates
-      if (selectedRole.grandParentRoleId && selectedRole.parentRoleId) {
-        updateData.parentRole = selectedRole.grandParentRoleId;
-        updateData.childRoleId = selectedRole.parentRoleId;
-        updateData.grandChildRoleId = selectedRole._id;
-      }
-      
-      const roleId = selectedRole.grandParentRoleId || selectedRole.parentRoleId || selectedRole._id;
+      const roleId = selectedRole._id;
       
       const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}`, {
         method: 'PUT',
@@ -368,28 +443,68 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   };
 
   return (
-    <div style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto' }}>
+    <div className="role-manager-container">
       {selectedRole ? (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <div>
-              <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '600', color: '#1f2937' }}>Role Management - {selectedRole.name}</h2>
-              <p style={{ margin: 0, fontSize: '14px', color: '#6b7280' }}>{selectedRole.type}</p>
+          <div className="role-header">
+            <div className="role-info">
+              <h2>Role Management - {selectedRole.name}</h2>
+              <p>{selectedRole.type}</p>
+              {selectedRole.hierarchy && (
+                <span className="role-badge hierarchy">
+                  📍 {selectedRole.hierarchy}
+                </span>
+              )}
+              {selectedRole.parentRoleId && (
+                <span className="role-badge inheritance">
+                  ⚠️ Inherits permissions from parent role
+                </span>
+              )}
             </div>
-            <div style={{ display: 'flex', gap: '12px' }}>
+            <div className="role-actions">
               {hasChanges ? (
-                <button 
-                  onClick={handleSave}
-                  style={{ padding: '8px 16px', border: 'none', borderRadius: '6px', background: '#3b82f6', color: 'white', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}
-                >
-                  Save
-                </button>
+                <>
+                  <button 
+                    onClick={() => {
+                      setHasChanges(false);
+                      // Reset to original state
+                      if (selectedRole?.permissions && modules.length > 0) {
+                        const resetModules = modules.map(mod => {
+                          const modulePermissions = mod.permissions.map(perm => {
+                            const permKey = `${mod.module}.${perm.code}`;
+                            return {
+                              ...perm,
+                              enabled: Boolean(selectedRole.permissions[permKey])
+                            };
+                          });
+                          const moduleEnabled = modulePermissions.some(p => p.enabled);
+                          return {
+                            ...mod,
+                            enabled: moduleEnabled,
+                            expanded: false,
+                            permissions: modulePermissions
+                          };
+                        });
+                        setModules(resetModules);
+                      }
+                    }}
+                    className="btn btn-cancel"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={handleSave}
+                    className="btn btn-primary"
+                  >
+                    Save Changes
+                  </button>
+                </>
               ) : (
                 <button 
                   onClick={handleEdit}
-                  style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '6px', background: 'white', cursor: 'pointer', fontSize: '14px' }}
+                  className="btn btn-secondary"
                 >
-                  Edit
+                  Edit Role
                 </button>
               )}
             </div>
@@ -400,40 +515,35 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
           </p>
 
           {modules.map((module, moduleIndex) => (
-            <div key={module.module} style={{ marginBottom: '16px', padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: module.expanded ? '16px' : '0' }}>
+            <div key={module.module} className="module-card">
+              <div className={`module-header ${module.expanded ? 'expanded' : ''}`}>
                 <span 
-                  style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', cursor: module.permissions.length > 0 ? 'pointer' : 'default', flex: 1 }}
+                  className={`module-title ${module.permissions.length === 0 ? 'disabled' : ''}`}
                   onClick={module.permissions.length > 0 ? () => toggleModuleExpand(moduleIndex) : undefined}
                 >
                   {module.displayName}
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="module-controls">
                   <label className="toggle-switch" onClick={(e) => e.stopPropagation()}>
                     <input type="checkbox" checked={module.enabled} onChange={() => toggleModule(moduleIndex)} />
                     <span className="toggle-slider"></span>
                   </label>
                   <i 
-                    className={`fas fa-${module.expanded ? 'minus' : 'plus'}`} 
-                    style={{ 
-                      fontSize: '14px', 
-                      color: module.permissions.length > 0 ? '#6b7280' : '#d1d5db', 
-                      cursor: module.permissions.length > 0 ? 'pointer' : 'not-allowed' 
-                    }}
+                    className={`fas fa-${module.expanded ? 'minus' : 'plus'} expand-icon ${module.permissions.length === 0 ? 'disabled' : ''}`}
                     onClick={module.permissions.length > 0 ? () => toggleModuleExpand(moduleIndex) : undefined}
                   ></i>
                 </div>
               </div>
               {module.expanded && (
-                <div style={{ paddingTop: '16px', borderTop: '1px solid #e5e7eb' }}>
+                <div className="permissions-list">
                   {module.permissions.map((permission) => (
-                    <div key={permission.code} style={{ padding: '12px 0', borderBottom: '1px solid #f3f4f6' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div style={{ flex: 1 }}>
-                          <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{permission.name}</h4>
-                          <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{permission.description}</p>
+                    <div key={permission.code} className="permission-item">
+                      <div className="permission-content">
+                        <div className="permission-info">
+                          <h4 className="permission-name">{permission.name}</h4>
+                          <p className="permission-description">{permission.description}</p>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '16px' }}>
+                        <div className="permission-controls">
                           <label className="toggle-switch">
                             <input type="checkbox" checked={permission.enabled} onChange={() => togglePermission(moduleIndex, permission.code)} />
                             <span className="toggle-slider"></span>
@@ -447,62 +557,94 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
             </div>
           ))}
 
-          <div style={{ marginTop: '24px', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>Next Steps</h3>
-            {nextSteps.map((step, index) => (
-              <div key={index} style={{ marginBottom: '12px', padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                <div style={{ width: '48px', height: '48px', background: '#eff6ff', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <i className={`fas fa-${step.icon}`} style={{ fontSize: '20px', color: '#3b82f6' }}></i>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{step.title}</h4>
-                  <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{step.description}</p>
-                </div>
-                <input 
-                  type="checkbox" 
-                  checked={step.completed} 
-                  onChange={() => toggleNextStep(index)}
-                  style={{ width: '20px', height: '20px', cursor: 'pointer', marginTop: '4px' }}
-                />
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: '24px', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>Videos</h3>
-            {videos.filter(video => video.isActive).length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-                {videos.filter(video => video.isActive).map((video) => (
-                  <div key={video._id} style={{ padding: '16px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <img src={video.thumbnail} alt={video.title} style={{ width: '100%', height: '140px', borderRadius: '6px', objectFit: 'cover' }} />
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#1f2937' }}>{video.title}</h4>
-                      <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#6b7280' }}>{video.description}</p>
-                      <span style={{ fontSize: '12px', color: video.isActive ? '#22c55e' : '#ef4444', background: video.isActive ? '#dcfce7' : '#fee2e2', padding: '2px 8px', borderRadius: '4px' }}>{video.isActive ? 'Active' : 'Inactive'}</span>
+          <div className="next-steps-section">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 className="section-title" style={{ margin: 0 }}>Next Steps</h3>
+              {!isUserContext && nextSteps.length === 0 && (
+                <button 
+                  onClick={() => {
+                    const defaultSteps = [
+                      { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members and modules.', icon: 'user', completed: false },
+                      { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members and modules.', icon: 'building', completed: false },
+                      { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
+                      { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
+                    ];
+                    setNextSteps(defaultSteps);
+                    setHasChanges(true);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '12px', padding: '6px 12px' }}
+                >
+                  Add Default Steps
+                </button>
+              )}
+            </div>
+            {nextSteps && nextSteps.length > 0 ? (
+              <div className="next-steps-list">
+                {nextSteps.map((step: any, index: number) => (
+                  <div key={index} className="next-step-item">
+                    <div className="step-icon">
+                      <i className={`fas fa-${step.icon || 'circle'}`}></i>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid #e5e7eb' }}>
-                      <span style={{ fontSize: '13px', color: '#6b7280' }}>Select</span>
-                      <input 
-                        type="checkbox" 
-                        checked={selectedVideos.some(v => v._id === video._id)} 
-                        onChange={() => toggleVideoSelection(video)}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                      />
+                    <div className="step-content">
+                      <h4 className="step-title">{step.title || 'Untitled Step'}</h4>
+                      <p className="step-description">{step.description || 'No description available'}</p>
                     </div>
+                    <input 
+                      type="checkbox" 
+                      checked={step.completed || false} 
+                      onChange={() => toggleNextStep(index)}
+                      className="step-checkbox"
+                      disabled={isUserContext}
+                    />
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ padding: '32px', border: '2px dashed #d1d5db', borderRadius: '8px', textAlign: 'center', background: '#f9fafb' }}>
-                <p style={{ fontSize: '16px', color: '#6b7280', margin: 0 }}>No videos available</p>
+              <div className="empty-state">
+                <p>{isUserContext ? 'No next steps assigned to this role' : 'No next steps configured for this role'}</p>
+              </div>
+            )}
+          </div>
+
+          <div className="videos-section">
+            <h3 className="section-title">Videos</h3>
+            {Array.isArray(videos) && videos.filter(video => video.isActive).length > 0 ? (
+              <div className="videos-grid">
+                {Array.isArray(videos) ? videos.filter(video => video.isActive).map((video) => (
+                  <div key={video._id} className="video-card">
+                    <img src={video.thumbnail} alt={video.title} className="video-thumbnail" />
+                    <div className="video-info">
+                      <h4 className="video-title">{video.title}</h4>
+                      <p className="video-description">{video.description}</p>
+                      <span className={`video-status ${video.isActive ? 'active' : 'inactive'}`}>
+                        {video.isActive ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                    <div className="video-controls">
+                      <span className="video-select-label">Select</span>
+                      <input 
+                        type="checkbox" 
+                        checked={selectedVideos.some(v => v._id === video._id)} 
+                        onChange={() => toggleVideoSelection(video)}
+                        className="video-checkbox"
+                        disabled={isUserContext}
+                      />
+                    </div>
+                  </div>
+                )) : null}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <p>No videos available</p>
               </div>
             )}
           </div>
         </>
       ) : (
-        <div style={{ textAlign: 'center', padding: '48px' }}>
-          <h3 style={{ fontSize: '18px', color: '#6b7280', marginBottom: '16px' }}>Select a role to manage permissions</h3>
-          <p style={{ fontSize: '14px', color: '#9ca3af' }}>Choose a role from the sidebar to configure its permissions and settings.</p>
+        <div className="no-selection">
+          <h3>Select a role to manage permissions</h3>
+          <p>Choose a role from the sidebar to configure its permissions and settings.</p>
         </div>
       )}
     </div>
