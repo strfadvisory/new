@@ -7,7 +7,8 @@
     "seed:superadmin": "node seedSuperAdmin.js",
     "dev": "nodemon --watch . --ext js,jsx,json --ignore node_modules/ --ignore uploads/ index.jsx",
     "run-dev": "nodemon --watch . --ext js,jsx,json --ignore node_modules/ --ignore uploads/ index.jsx",
-    "delete:users": "node deleteUsers.js"
+    "delete:users": "node deleteUsers.js",
+    "clear": "node clearAndSeed.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

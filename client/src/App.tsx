@@ -19,6 +19,7 @@ import Companies from './pages/Companies';
 import Associations from './pages/Associations';
 import Users from './pages/Users';
 import Banking from './pages/Banking';
+import UserManagement from './pages/UserManagement';
 import UserRoleManagerLayout from './pages/UserRoleManagerLayout';
 
 function App() {
@@ -110,13 +111,31 @@ function App() {
     navigate('/create-profile');
   };
 
-  const handleCompanyProfileComplete = () => {
+  const handleCompanyProfileComplete = async () => {
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
     }
     clearSignupState();
-    navigate('/dashboard');
+    
+    // Fetch user permissions to get first navigation item
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/roles/user-permissions`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      if (response.ok && data.menu && data.menu.length > 0) {
+        navigate(data.menu[0].path);
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error('Error fetching permissions:', error);
+      navigate('/dashboard');
+    }
   };
 
   const handleLogout = () => {
@@ -146,7 +165,7 @@ function App() {
           <Route path="invitations" element={<Invitations />} />
           <Route path="companies" element={<Companies />} />
           <Route path="associations" element={<Associations />} />
-          <Route path="users" element={<Users />} />
+          <Route path="user-management" element={<UserManagement />} />
           <Route path="banking" element={<Banking />} />
           <Route path="role-manager" element={<UserRoleManagerLayout />} />
         </Route>

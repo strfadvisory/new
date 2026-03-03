@@ -20,6 +20,30 @@
   color: #1f2937;
 }
 
+.role-type-badge {
+  margin-top: 8px;
+}
+
+.badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.badge-master {
+  color: #7c3aed;
+  background: #ede9fe;
+  border: 1px solid #c4b5fd;
+}
+
+.badge-user {
+  color: #059669;
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
+}
+
 .role-info p {
   margin: 0;
   font-size: 14px;

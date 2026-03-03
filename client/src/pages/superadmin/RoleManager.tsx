@@ -4,6 +4,21 @@ import { API_BASE_URL } from '../../config';
 import { RoleValidator, RoleData } from '../../utils/roleValidator';
 import './RoleManager.css';
 
+interface Role {
+  _id: string;
+  name: string;
+  description: string;
+  icon: string;
+  type: 'Master' | 'User';
+  status: boolean;
+  permissions: any;
+  nextSteps: any[];
+  video: any[];
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface Permission {
   code: string;
   name: string;
@@ -20,8 +35,8 @@ interface Module {
 }
 
 interface RoleManagerProps {
-  selectedRole: any;
-  onEdit: (role: any) => void;
+  selectedRole: Role | null;
+  onEdit: (role: Role) => void;
   onDelete: (roleId: string) => void;
   onRoleUpdate?: () => void;
   isUserContext?: boolean;
@@ -118,18 +133,20 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       console.log('Setting role nextSteps:', selectedRole.nextSteps);
       setNextSteps(selectedRole.nextSteps);
     } else {
-      // For admin context, set default steps. For user context, show empty state with option to add
+      // For admin context, set default steps. For user context, also set default steps if none exist
+      const defaultSteps = [
+        { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members and modules.', icon: 'user', completed: false },
+        { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members and modules.', icon: 'building', completed: false },
+        { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
+        { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
+      ];
+      
       if (!isUserContext) {
         console.log('Setting default nextSteps for admin context');
-        setNextSteps([
-          { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members and modules.', icon: 'user', completed: false },
-          { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members and modules.', icon: 'building', completed: false },
-          { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
-          { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
-        ]);
+        setNextSteps(defaultSteps);
       } else {
-        console.log('No nextSteps found for user context, showing empty state');
-        setNextSteps([]);
+        console.log('Setting default nextSteps for user context since none found');
+        setNextSteps(defaultSteps);
       }
     }
     
@@ -188,14 +205,12 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       const roleData: RoleData = {
         _id: selectedRole._id,
         name: selectedRole.name,
-        type: selectedRole.type,
-        description: selectedRole.description,
+        description: selectedRole.description || '',
         icon: selectedRole.icon || '',
         status: selectedRole.status !== undefined ? selectedRole.status : true,
         permissions: permissionsData,
         nextSteps: nextSteps || [],
-        video: selectedVideos || [],
-        parentRoleId: selectedRole.parentRoleId
+        video: selectedVideos || []
       };
 
       const validation = RoleValidator.validateRoleData(roleData);
@@ -208,7 +223,10 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         console.warn('Role validation warnings:', validation.warnings);
       }
 
-      const updateData: any = RoleValidator.sanitizeRoleData(roleData);
+      const updateData: any = {
+        _id: selectedRole._id,
+        ...RoleValidator.sanitizeRoleData(roleData)
+      };
       
       let url = `${API_BASE_URL}/api/roles/`;
       
@@ -250,13 +268,14 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   };
 
   const handleEdit = () => {
+    if (!selectedRole?._id) return;
     const permissionsData: any = {};
     modules.forEach(mod => {
       mod.permissions.forEach(perm => {
         permissionsData[`${mod.module}.${perm.code}`] = perm.enabled;
       });
     });
-    onEdit({ ...selectedRole, permissions: permissionsData });
+    onEdit({ ...selectedRole, permissions: permissionsData } as Role);
   };
 
   const toggleModuleExpand = (index: number) => {
@@ -288,14 +307,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       if (i === moduleIndex) {
         const updatedPermissions = mod.permissions.map(p => {
           if (p.code === permCode) {
-            const newEnabled = !p.enabled;
-            
-            // Validate permission inheritance for child roles
-            if (newEnabled && selectedRole?.parentRoleId) {
-              console.log(`Enabling permission ${mod.module}.${permCode} for child role`);
-            }
-            
-            return { ...p, enabled: newEnabled };
+            return { ...p, enabled: !p.enabled };
           }
           return p;
         });
@@ -328,23 +340,6 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     
     setNextSteps(updatedSteps);
     setHasChanges(true);
-    
-    // Auto-save next step changes if in user context
-    if (isUserContext) {
-      try {
-        const token = localStorage.getItem('token');
-        await fetch(`${API_BASE_URL}/api/roles/user-nextstep`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ stepIndex: index, completed: updatedSteps[index].completed })
-        });
-      } catch (error) {
-        console.error('Error auto-saving next step:', error);
-      }
-    }
   };
 
   const toggleVideoSelection = (video: Video) => {
@@ -363,8 +358,6 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       const token = localStorage.getItem('token');
       const updateData: any = { 
         name: selectedRole.name,
-        type: selectedRole.type,
-        description: selectedRole.description,
         icon: selectedRole.icon,
         status: selectedRole.status,
         permissions: selectedRole.permissions,
@@ -410,8 +403,6 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
       
       const updateData: any = { 
         name: selectedRole.name,
-        type: selectedRole.type,
-        description: selectedRole.description,
         icon: selectedRole.icon,
         status: selectedRole.status,
         permissions: permissionsData
@@ -449,17 +440,11 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
           <div className="role-header">
             <div className="role-info">
               <h2>Role Management - {selectedRole.name}</h2>
-              <p>{selectedRole.type}</p>
-              {selectedRole.hierarchy && (
-                <span className="role-badge hierarchy">
-                  📍 {selectedRole.hierarchy}
+              <div className="role-type-badge">
+                <span className={`badge ${selectedRole.type === 'Master' ? 'badge-master' : 'badge-user'}`}>
+                  {selectedRole.type} Role
                 </span>
-              )}
-              {selectedRole.parentRoleId && (
-                <span className="role-badge inheritance">
-                  ⚠️ Inherits permissions from parent role
-                </span>
-              )}
+              </div>
             </div>
             <div className="role-actions">
               {hasChanges ? (
@@ -500,18 +485,27 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                   </button>
                 </>
               ) : (
-                <button 
-                  onClick={handleEdit}
-                  className="btn btn-secondary"
-                >
-                  Edit Role
-                </button>
+                <>
+                  <button 
+                    onClick={() => onDelete(selectedRole._id)}
+                    className="btn btn-danger"
+                    style={{ marginRight: '8px' }}
+                  >
+                    Delete Role
+                  </button>
+                  <button 
+                    onClick={handleEdit}
+                    className="btn btn-secondary"
+                  >
+                    Edit Role
+                  </button>
+                </>
               )}
             </div>
           </div>
           
           <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '32px' }}>
-            {selectedRole.description}
+            {selectedRole.description || 'User Role'}
           </p>
 
           {modules.map((module, moduleIndex) => (
@@ -560,7 +554,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
           <div className="next-steps-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 className="section-title" style={{ margin: 0 }}>Next Steps</h3>
-              {!isUserContext && nextSteps.length === 0 && (
+              {nextSteps.length === 0 && (
                 <button 
                   onClick={() => {
                     const defaultSteps = [
@@ -595,14 +589,13 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                       checked={step.completed || false} 
                       onChange={() => toggleNextStep(index)}
                       className="step-checkbox"
-                      disabled={isUserContext}
                     />
                   </div>
                 ))}
               </div>
             ) : (
               <div className="empty-state">
-                <p>{isUserContext ? 'No next steps assigned to this role' : 'No next steps configured for this role'}</p>
+                <p>No next steps configured for this role</p>
               </div>
             )}
           </div>
@@ -628,7 +621,6 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                         checked={selectedVideos.some(v => v._id === video._id)} 
                         onChange={() => toggleVideoSelection(video)}
                         className="video-checkbox"
-                        disabled={isUserContext}
                       />
                     </div>
                   </div>

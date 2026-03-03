@@ -32,13 +32,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const [formData, setFormData] = useState({
     _id: '',
     name: '',
-    description: '',
     icon: '',
     status: true,
-    parentRoleId: '',
-    secondaryRoleId: '',
     permissions: {} as Record<string, boolean>,
-    videoUrl: ''
+    videoUrl: '',
+    description: '' // Only used for library items
   });
 
   const currentPage = location.pathname.split('/').pop() || 'role-manager';
@@ -158,13 +156,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     setFormData({
       _id: item._id,
       name: item.title,
-      description: item.description,
       icon: item.thumbnail,
       status: item.isActive,
-      parentRoleId: '',
-      secondaryRoleId: '',
       permissions: {},
-      videoUrl: item.videoUrl
+      videoUrl: item.videoUrl,
+      description: item.description
     });
     setIconPreview(item.thumbnail || '');
     setEditMode(true);
@@ -180,11 +176,9 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     setFormData({
       _id: role._id,
       name: role.name,
-      description: role.description,
+      description: role.description || '',
       icon: role.icon || '',
       status: role.status,
-      parentRoleId: role.parentRoleId || '',
-      secondaryRoleId: '',
       permissions: role.permissions || {},
       videoUrl: ''
     });
@@ -195,7 +189,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
 
   const handleAddNew = async () => {
     if (currentPage === 'library') {
-      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: {}, videoUrl: '' });
+      setFormData({ _id: '', name: '', icon: '', status: true, permissions: {}, videoUrl: '', description: '' });
       setIconPreview('');
       setEditMode(false);
       setIsSlidebarOpen(true);
@@ -210,10 +204,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         }
       });
       const defaultPermissions = await response.json();
-      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: defaultPermissions, videoUrl: '' });
+      setFormData({ _id: '', name: '', icon: '', status: true, permissions: defaultPermissions, videoUrl: '', description: '' });
     } catch (error) {
       console.error('Error fetching default permissions:', error);
-      setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: {}, videoUrl: '' });
+      setFormData({ _id: '', name: '', icon: '', status: true, permissions: {}, videoUrl: '', description: '' });
     }
     setIconPreview('');
     setEditMode(false);
@@ -274,7 +268,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       if (currentPage === 'library') {
         const submitData = {
           title: formData.name,
-          description: formData.description,
+          description: formData.description || '',
           thumbnail: formData.icon,
           videoUrl: formData.videoUrl || '',
           isActive: formData.status
@@ -302,7 +296,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         if (response.ok) {
           setIsSlidebarOpen(false);
           setEditMode(false);
-          setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: {}, videoUrl: '' });
+          setFormData({ _id: '', name: '', icon: '', status: true, permissions: {}, videoUrl: '', description: '' });
           setIconPreview('');
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
@@ -321,11 +315,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         description: formData.description,
         icon: formData.icon,
         status: formData.status,
-        permissions: formData.permissions,
-        parentRoleId: formData.secondaryRoleId || formData.parentRoleId || null
+        permissions: formData.permissions
       };
-      
-      console.log('Submitting role with parentRoleId:', submitData.parentRoleId);
       
       if (editMode && formData._id) {
         url = `${API_BASE_URL}/api/roles/${formData._id}`;
@@ -346,7 +337,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       if (response.ok) {
         setIsSlidebarOpen(false);
         setEditMode(false);
-        setFormData({ _id: '', name: '', description: '', icon: '', status: true, parentRoleId: '', secondaryRoleId: '', permissions: {}, videoUrl: '' });
+        setFormData({ _id: '', name: '', icon: '', status: true, permissions: {}, videoUrl: '', description: '' });
         setIconPreview('');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
@@ -451,17 +442,6 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   roles.map((role) => {
                     const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
                     
-                    // Build parent hierarchy chain for type 2 and type 3
-                    let parentHierarchy = '';
-                    if ((role.type === '2' || role.type === '3') && role.parentRoleId) {
-                      const parentRole = role.parentRoleId;
-                      if (parentRole.parentRoleId) {
-                        parentHierarchy = `${parentRole.parentRoleId.name} - ${parentRole.name}`;
-                      } else {
-                        parentHierarchy = parentRole.name;
-                      }
-                    }
-                    
                     return (
                       <div 
                         key={role._id}
@@ -500,13 +480,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                         <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '4px' }}>
                           {role.name}
                         </div>
-                        {parentHierarchy && (
-                          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px', fontWeight: '500' }}>
-                            {parentHierarchy}
-                          </div>
-                        )}
                         <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.4' }}>
-                          {role.description}
+                          {role.description || 'Master Role'}
                         </div>
                       </div>
                     );
@@ -602,59 +577,6 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   </div>
                 </div>
 
-                <div className="form-group" style={{ display: currentPage === 'library' ? 'none' : 'block' }}>
-                  <label style={{ fontSize: '14px', fontWeight: '600', color: '#1f2937', marginBottom: '8px', display: 'block' }}>Role Hierarchy</label>
-                  
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Level 1 (Primary)</label>
-                    <select 
-                      className="form-input"
-                      value={formData.parentRoleId}
-                      onChange={(e) => setFormData({ ...formData, parentRoleId: e.target.value, secondaryRoleId: '' })}
-                      disabled={editMode}
-                      style={{ fontSize: '14px' }}
-                    >
-                      <option value="">Create New Level 1 Role</option>
-                      {roles.filter(r => r.type === '1').map((role) => (
-                        <option key={role._id} value={role._id}>{role.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {formData.parentRoleId && (
-                    <div style={{ marginBottom: '12px' }}>
-                      <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px', display: 'block' }}>Level 2 (Secondary)</label>
-                      <select 
-                        className="form-input"
-                        value={formData.secondaryRoleId}
-                        onChange={(e) => setFormData({ ...formData, secondaryRoleId: e.target.value })}
-                        disabled={editMode}
-                        style={{ fontSize: '14px' }}
-                      >
-                        <option value="">Create New Level 2 Role</option>
-                        {roles.filter(r => {
-                          const parentId = r.parentRoleId?._id || r.parentRoleId;
-                          return r.type === '2' && parentId && parentId.toString() === formData.parentRoleId;
-                        }).map((role) => (
-                          <option key={role._id} value={role._id}>{role.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {formData.secondaryRoleId && (
-                    <div style={{ paddingLeft: '32px', borderLeft: '2px solid #e5e7eb', marginLeft: '16px' }}>
-                      <label style={{ fontSize: '12px', color: '#10b981', marginBottom: '4px', display: 'block', fontWeight: '500' }}>✓ Creating Level 3 (Member) Role</label>
-                    </div>
-                  )}
-
-                  {!formData.parentRoleId && (
-                    <div>
-                      <label style={{ fontSize: '12px', color: '#10b981', marginBottom: '4px', display: 'block', fontWeight: '500' }}>✓ Creating Level 1 (Primary) Role</label>
-                    </div>
-                  )}
-                </div>
-
                 <div className="form-group">
                   <input 
                     type="text" 
@@ -666,32 +588,46 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   />
                 </div>
 
-                {currentPage === 'library' && (
+                {currentPage !== 'library' && (
                   <div className="form-group">
-                    <input 
-                      type="url" 
-                      placeholder="Enter Video URL*" 
-                      className="form-input"
-                      value={formData.videoUrl || ''}
-                      onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                    <textarea 
+                      className="form-textarea"
+                      rows={3}
+                      placeholder="Enter role description*"
+                      value={formData.description || ''}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                       required
-                    />
+                    ></textarea>
                   </div>
                 )}
 
-                <div className="form-group">
-                  <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
-                    {currentPage === 'library' ? 'Describe the video content*' : 'Describe Details so user can identify use of this role *'}
-                  </label>
-                  <textarea 
-                    className="form-textarea"
-                    rows={4}
-                    placeholder="Enter description..."
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    required
-                  ></textarea>
-                </div>
+                {currentPage === 'library' && (
+                  <>
+                    <div className="form-group">
+                      <input 
+                        type="url" 
+                        placeholder="Enter Video URL*" 
+                        className="form-input"
+                        value={formData.videoUrl || ''}
+                        onChange={(e) => setFormData({ ...formData, videoUrl: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
+                        Describe the video content*
+                      </label>
+                      <textarea 
+                        className="form-textarea"
+                        rows={4}
+                        placeholder="Enter description..."
+                        value={formData.description || ''}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        required
+                      ></textarea>
+                    </div>
+                  </>
+                )}
 
                 <div className="form-group">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

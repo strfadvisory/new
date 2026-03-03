@@ -1,96 +1,41 @@
 const Role = require('../models/Role');
-const menuData = require('../menubar.json');
+const User = require('../models/User');
+const configService = require('../services/configService');
 
-const initializeDefaultPermissions = () => {
-  const permissions = {};
-  menuData.modules.forEach(mod => {
-    mod.permissions.forEach(perm => {
-      permissions[`${mod.module}.${perm.code}`] = false;
-    });
-  });
-  return permissions;
-};
-
-const cascadePermissionsToChildren = async (roleId) => {
-  const parentRole = await Role.findById(roleId);
-  if (!parentRole) return;
-  
-  const childRoles = await Role.find({ parentRoleId: roleId });
-  
-  for (const child of childRoles) {
-    const newInherited = parentRole.effectivePermissions || parentRole.permissions || {};
-    const updatedOwnPermissions = { ...child.ownPermissions };
-    
-    Object.keys(updatedOwnPermissions).forEach(key => {
-      if (updatedOwnPermissions[key] === true && newInherited[key] !== true) {
-        updatedOwnPermissions[key] = false;
-      }
-    });
-    
-    child.inheritedPermissions = newInherited;
-    child.ownPermissions = updatedOwnPermissions;
-    child.markModified('inheritedPermissions');
-    child.markModified('ownPermissions');
-    await child.save();
-    
-    await cascadePermissionsToChildren(child._id);
-  }
-};
-
+// Create Role
 const createRole = async (req, res) => {
   try {
-    const { name, description, icon, status, permissions, parentRoleId, nextSteps, video, type, userType } = req.body;
+    const { name, description, icon } = req.body;
     
-    let level = 0;
-    let hierarchyPath = [];
-    let inheritedPermissions = {};
-    
-    if (parentRoleId) {
-      const parentRole = await Role.findById(parentRoleId);
-      if (!parentRole) return res.status(404).json({ message: 'Parent role not found' });
-      
-      level = parentRole.level + 1;
-      hierarchyPath = [...parentRole.hierarchyPath, parentRole._id];
-      inheritedPermissions = parentRole.effectivePermissions || parentRole.permissions || {};
-      
-      if (permissions && !req.user.isSuperAdmin) {
-        for (const [key, value] of Object.entries(permissions)) {
-          if (value === true && inheritedPermissions[key] !== true) {
-            return res.status(400).json({ message: `Permission ${key} not available from parent role` });
-          }
-        }
-      }
+    if (!name || !description) {
+      return res.status(400).json({ message: 'Name and description are required' });
     }
     
-    const defaultPerms = initializeDefaultPermissions();
-    const finalPermissions = permissions || defaultPerms;
+    // Check user's role field to determine what type of roles they can create
+    let type = 'User'; // default
+
+    console.log('User role:', req.user.role);
+    console.log('User isSuperAdmin:', req.user.isSuperAdmin);
+    console.log('User roleId type:', req.user.roleId?.type);
     
-    const roleType = type || 'User-Created';
+    // Only SUPER_ADMIN role or isSuperAdmin flag can create Master roles
+    if (req.user.role === 'SUPER_ADMIN' || req.user.isSuperAdmin === true) {
+      type = 'Master';
+    }
     
     const role = new Role({
       name,
-      type: roleType,
       description,
-      icon: icon || '',
-      status: status !== undefined ? status : true,
+      icon: icon || 'user',
+      type,
+      status: true,
       createdBy: req.user._id,
-      userType: userType || null,
-      ownPermissions: finalPermissions,
-      inheritedPermissions,
-      parentRoleId: parentRoleId || null,
-      level,
-      hierarchyPath,
-      nextSteps: nextSteps || [
-        { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members and modules.', icon: 'user', completed: false },
-        { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members and modules.', icon: 'building', completed: false },
-        { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
-        { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
-      ],
-      video: video || []
+      permissions: {},
+      nextSteps: [],
+      video: []
     });
     
     const savedRole = await role.save();
-    console.log('Saved role - ID:', savedRole._id, 'type:', savedRole.type, 'userType:', savedRole.userType);
     res.status(201).json(savedRole);
     
   } catch (error) {
@@ -99,41 +44,11 @@ const createRole = async (req, res) => {
   }
 };
 
-const getDefaultPermissions = (req, res) => {
-  try {
-    if (req.user.isSuperAdmin) {
-      const defaultPermissions = initializeDefaultPermissions();
-      res.json(defaultPermissions);
-    } else {
-      const userPermissions = req.user.rolePermissions || {};
-      const allowedPermissions = {};
-      
-      Object.keys(userPermissions).forEach(key => {
-        allowedPermissions[key] = false;
-      });
-      
-      res.json(allowedPermissions);
-    }
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
+// Get All Roles
 const getAllRoles = async (req, res) => {
   try {
     const roles = await Role.find({ createdBy: req.user._id })
-      .populate({
-        path: 'parentRoleId',
-        select: 'name type',
-        populate: {
-          path: 'parentRoleId',
-          select: 'name type'
-        }
-      })
-      .sort({ level: 1, createdAt: -1 })
-      .lean();
-    
-    console.log('Fetched roles:', roles.map(r => ({ name: r.name, type: r.type, level: r.level, parentRoleId: r.parentRoleId })));
+      .sort({ createdAt: -1 });
     
     res.json(roles);
   } catch (error) {
@@ -141,24 +56,14 @@ const getAllRoles = async (req, res) => {
   }
 };
 
+// Get Role by ID
 const getRoleById = async (req, res) => {
   try {
-    const { id } = req.params;
-    
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ message: 'Invalid role ID format' });
-    }
-    
-    const role = await Role.findById(id)
-      .populate('parentRoleId', 'name type')
-      .lean();
+    const role = await Role.findById(req.params.id);
     
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
-    
-    const childRoles = await Role.find({ parentRoleId: id }).lean();
-    role.childRoles = childRoles;
     
     res.json(role);
   } catch (error) {
@@ -166,52 +71,25 @@ const getRoleById = async (req, res) => {
   }
 };
 
+// Update Role
 const updateRole = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { name, description, icon, status, permissions, nextSteps, video } = req.body;
+    const { name, description, icon, status, permissions, nextSteps, video, type } = req.body;
     
-    if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-      return res.status(400).json({ message: 'Invalid role ID format' });
-    }
+    const role = await Role.findById(req.params.id);
     
-    const role = await Role.findById(id);
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
     
-    if (name !== undefined) role.name = name;
-    if (description !== undefined) role.description = description;
-    if (icon !== undefined) role.icon = icon;
+    if (name) role.name = name;
+    if (description) role.description = description;
+    if (icon) role.icon = icon;
     if (status !== undefined) role.status = status;
-    
-    if (permissions) {
-      if (role.parentRoleId && !req.user.isSuperAdmin) {
-        const parentRole = await Role.findById(role.parentRoleId);
-        const parentPerms = parentRole.effectivePermissions || parentRole.permissions || {};
-        
-        for (const [key, value] of Object.entries(permissions)) {
-          if (value === true && parentPerms[key] !== true) {
-            return res.status(400).json({ message: `Permission ${key} not available from parent role` });
-          }
-        }
-      }
-      
-      role.ownPermissions = permissions;
-      role.markModified('ownPermissions');
-      
-      await cascadePermissionsToChildren(role._id);
-    }
-    
-    if (nextSteps !== undefined) {
-      role.nextSteps = Array.isArray(nextSteps) ? nextSteps : [];
-      role.markModified('nextSteps');
-    }
-    
-    if (video !== undefined) {
-      role.video = Array.isArray(video) ? video : [];
-      role.markModified('video');
-    }
+    if (type) role.type = type;
+    if (permissions) role.permissions = permissions;
+    if (nextSteps) role.nextSteps = nextSteps;
+    if (video) role.video = video;
     
     const savedRole = await role.save();
     res.json(savedRole);
@@ -222,69 +100,69 @@ const updateRole = async (req, res) => {
   }
 };
 
+// Delete Role
 const deleteRole = async (req, res) => {
   try {
-    const { id } = req.params;
+    const role = await Role.findById(req.params.id);
     
-    const role = await Role.findById(id);
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
     
-    const childCount = await Role.countDocuments({ parentRoleId: id });
-    if (childCount > 0) {
-      return res.status(400).json({ message: 'Cannot delete role with child roles. Delete children first.' });
-    }
-    
-    await Role.findByIdAndDelete(id);
+    await Role.findByIdAndDelete(req.params.id);
     res.json({ message: 'Role deleted successfully' });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-const getFirstLevelRoles = async (req, res) => {
+// Get Master Roles (for signup)
+const getMasterRoles = async (req, res) => {
   try {
-    const roles = await Role.find({ type: '1', status: true }).select('name description icon').lean();
+    const roles = await Role.find({ status: true, type: 'Master' })
+      .select('name icon description');
     res.json(roles);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
+// Get User Permissions
 const getUserPermissions = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const User = require('../models/User');
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user._id).populate('roleId');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const role = await Role.findById(user.roleId);
-    
-    if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
+    if (user.isSuperAdmin) {
+      const roleConfig = configService.getRoleConfig('SUPER_ADMIN');
+      return res.json({
+        navigation: roleConfig?.navigation || [],
+        permissions: roleConfig?.permissions || [],
+        menu: roleConfig?.menu || []
+      });
     }
 
+    const role = user.roleId;
     const navigation = [];
     const menu = [];
     
-    if (role.permissions) {
+    if (role?.permissions) {
       Object.keys(role.permissions).forEach(key => {
         if (role.permissions[key]) {
           navigation.push(key);
         }
       });
       
+      // Basic menu mapping
       const menuMapping = {
-        'SIMULATOR_MANAGEMENT.TRANSFER_ASSOCIATION': { level: 'Simulator', path: '/dashboard/simulator' },
         'SIMULATOR_MANAGEMENT.ACCESS_SIMULATOR': { level: 'Simulator', path: '/dashboard/simulator' },
         'INVITATION_ONBOARDING.INVITE_MEMBERS': { level: 'Invitations', path: '/dashboard/invitations' },
         'COMPANY_CONTROL.CREATE_COMPANY': { level: 'Companies', path: '/dashboard/companies' },
         'ASSOCIATION_CONTROL.CREATE_SINGLE_ASSOCIATION': { level: 'Associations', path: '/dashboard/associations' },
-        'USER_ROLE_MANAGEMENT.ADD_MEMBER_ROLE': { level: 'Users', path: '/dashboard/users' },
+        'USER_MANAGEMENT.MANAGE_USERS': { level: 'User Management', path: '/dashboard/user-management' },
         'ROLE_MANAGEMENT.EDIT_ROLE': { level: 'Role Manager', path: '/dashboard/role-manager' },
         'BANKING_SERVICES.MANAGE_CD_PLANS': { level: 'Banking', path: '/dashboard/banking' }
       };
@@ -298,243 +176,127 @@ const getUserPermissions = async (req, res) => {
       });
     }
 
-    res.json({ navigation, permissions: role.permissions, menu });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const getUserNextSteps = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const User = require('../models/User');
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const role = await Role.findById(user.roleId);
-    
-    if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
-    }
-
-    const incompleteSteps = (role.nextSteps || []).filter(step => step.completed);
-    res.json({ nextSteps: incompleteSteps });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const getUserVideos = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const User = require('../models/User');
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const role = await Role.findById(user.roleId);
-    
-    if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
-    }
-
-    res.json({ videos: role.video || [] });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const getChildRoles = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const User = require('../models/User');
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const role = await Role.findById(user.roleId);
-    
-    if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
-    }
-
-    const childRoles = await Role.find({ parentRoleId: role._id }).lean();
-
-    res.json({ childRoles: childRoles || [] });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const getUserOwnRole = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const User = require('../models/User');
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const role = await Role.findById(user.roleId);
-    
-    if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
-    }
-
-    res.json(role);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const updateUserOwnRole = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const User = require('../models/User');
-    const { name, description, icon, status, permissions, nextSteps, video } = req.body;
-    const user = await User.findById(userId);
-    
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    const role = await Role.findById(user.roleId);
-    
-    if (!role) {
-      return res.status(404).json({ message: 'Role not found' });
-    }
-
-    if (name) role.name = name;
-    if (description) role.description = description;
-    if (icon !== undefined) role.icon = icon;
-    if (status !== undefined) role.status = status;
-    if (permissions) {
-      role.permissions = permissions;
-      role.markModified('permissions');
-    }
-    if (nextSteps) {
-      role.nextSteps = nextSteps;
-      role.markModified('nextSteps');
-    }
-    if (video !== undefined) {
-      role.video = video;
-      role.markModified('video');
-    }
-
-    await role.save();
-
-    res.json(role);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const bulkUpdatePermissions = async (req, res) => {
-  try {
-    const { roleIds, permissions } = req.body;
-    
-    if (!Array.isArray(roleIds) || !permissions) {
-      return res.status(400).json({ message: 'Invalid request data' });
-    }
-    
-    const results = [];
-    
-    for (const roleId of roleIds) {
-      try {
-        const role = await Role.findById(roleId);
-        if (role) {
-          role.ownPermissions = permissions;
-          role.markModified('ownPermissions');
-          await role.save();
-          await cascadePermissionsToChildren(roleId);
-          results.push({ roleId, success: true, role });
-        } else {
-          results.push({ roleId, success: false, error: 'Role not found' });
-        }
-      } catch (error) {
-        results.push({ roleId, success: false, error: error.message });
-      }
-    }
-    
-    res.json({ results });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
-
-const getRoleHierarchy = async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const role = await Role.findById(id).populate('parentRoleId').populate('hierarchyPath');
-    if (!role) return res.status(404).json({ message: 'Role not found' });
-    
-    const children = await Role.find({ parentRoleId: id });
-    
-    res.json({
-      role,
-      parent: role.parentRoleId,
-      children,
-      hierarchy: role.hierarchyPath
+    res.json({ 
+      navigation, 
+      permissions: role?.permissions || {}, 
+      menu 
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-const updateUserNextStep = async (req, res) => {
+// Get User Next Steps
+const getUserNextSteps = async (req, res) => {
   try {
-    const userId = req.user._id;
-    const { stepIndex, completed } = req.body;
-    const User = require('../models/User');
-    const user = await User.findById(userId);
+    const user = await User.findById(req.user._id).populate('roleId');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const role = await Role.findById(user.roleId);
+    const role = user.roleId;
+    const nextSteps = role?.nextSteps || [];
+
+    res.json({ nextSteps });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Get User Videos
+const getUserVideos = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate('roleId');
     
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const role = user.roleId;
+    const videos = role?.video || [];
+
+    res.json({ videos });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Update User Next Step
+const updateUserNextStep = async (req, res) => {
+  try {
+    const { stepIndex, completed } = req.body;
+    const user = await User.findById(req.user._id).populate('roleId');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const role = await Role.findById(user.roleId._id);
     if (!role) {
       return res.status(404).json({ message: 'Role not found' });
     }
 
-    if (!role.nextSteps || stepIndex >= role.nextSteps.length) {
-      return res.status(400).json({ message: 'Invalid step index' });
+    if (stepIndex >= 0 && stepIndex < role.nextSteps.length) {
+      role.nextSteps[stepIndex].completed = completed;
+      await role.save();
+      res.json({ message: 'Next step updated successfully' });
+    } else {
+      res.status(400).json({ message: 'Invalid step index' });
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Update User's Own Role
+const updateUserOwnRole = async (req, res) => {
+  try {
+    const { name, description, icon, status, permissions, nextSteps, video } = req.body;
+    const user = await User.findById(req.user._id).populate('roleId');
+    
+    if (!user || !user.roleId) {
+      return res.status(404).json({ message: 'User role not found' });
     }
 
-    role.nextSteps[stepIndex].completed = completed;
-    role.markModified('nextSteps');
-    await role.save();
-
-    res.json({ success: true, nextSteps: role.nextSteps });
+    const role = await Role.findById(user.roleId._id);
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+    
+    if (name) role.name = name;
+    if (description) role.description = description;
+    if (icon) role.icon = icon;
+    if (status !== undefined) role.status = status;
+    if (permissions) role.permissions = permissions;
+    if (nextSteps) role.nextSteps = nextSteps;
+    if (video) role.video = video;
+    
+    const savedRole = await role.save();
+    res.json(savedRole);
+    
   } catch (error) {
+    console.error('Error updating user role:', error);
     res.status(400).json({ message: error.message });
   }
 };
 
-const getType2Roles = async (req, res) => {
+// Simple Role Update
+const simpleUpdateRole = async (req, res) => {
   try {
-    const roles = await Role.find({ type: '2', status: true }).select('name description icon type').lean();
-    res.json(roles);
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-};
+    const { _id, ...updateData } = req.body;
+    
+    if (!_id) {
+      return res.status(400).json({ message: 'Role ID is required' });
+    }
 
-const getType3Roles = async (req, res) => {
-  try {
-    const { parentId } = req.params;
-    const roles = await Role.find({ type: '3', parentRoleId: parentId, status: true }).select('name description icon type').lean();
-    res.json(roles);
+    const role = await Role.findByIdAndUpdate(_id, updateData, { new: true });
+    
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+    
+    res.json(role);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
@@ -545,18 +307,12 @@ module.exports = {
   getAllRoles, 
   getRoleById, 
   updateRole, 
-  deleteRole, 
-  getDefaultPermissions, 
-  getFirstLevelRoles, 
-  getUserPermissions, 
-  getUserNextSteps, 
-  getUserVideos, 
-  getChildRoles, 
-  getUserOwnRole, 
-  updateUserOwnRole, 
-  bulkUpdatePermissions, 
-  getRoleHierarchy, 
+  deleteRole,
+  getMasterRoles,
+  getUserPermissions,
+  getUserNextSteps,
+  getUserVideos,
   updateUserNextStep,
-  getType2Roles,
-  getType3Roles
+  updateUserOwnRole,
+  simpleUpdateRole
 };

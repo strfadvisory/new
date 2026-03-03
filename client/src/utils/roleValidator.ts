@@ -8,16 +8,12 @@ export interface RoleValidationResult {
 export interface RoleData {
   _id?: string;
   name: string;
-  type: string;
   description: string;
-  icon?: string;
+  icon: string;
   status: boolean;
   permissions: Record<string, boolean>;
   nextSteps?: any[];
   video?: any[];
-  parentRoleId?: string;
-  grandParentRoleId?: string;
-  hierarchy?: string;
 }
 
 export class RoleValidator {
@@ -30,22 +26,17 @@ export class RoleValidator {
       errors.push('Role name is required');
     }
 
-    if (!roleData.type || roleData.type.trim().length === 0) {
-      errors.push('Role type is required');
-    }
-
     if (!roleData.description || roleData.description.trim().length === 0) {
       errors.push('Role description is required');
+    }
+
+    if (!roleData.icon || roleData.icon.trim().length === 0) {
+      errors.push('Role icon is required');
     }
 
     // Name length validation
     if (roleData.name && roleData.name.length > 100) {
       errors.push('Role name must be less than 100 characters');
-    }
-
-    // Description length validation
-    if (roleData.description && roleData.description.length > 500) {
-      errors.push('Role description must be less than 500 characters');
     }
 
     // Permissions validation
@@ -135,12 +126,11 @@ export class RoleValidator {
       ...roleData,
       name: roleData.name?.trim() || '',
       description: roleData.description?.trim() || '',
-      type: roleData.type?.trim() || '',
+      icon: roleData.icon?.trim() || '',
       status: Boolean(roleData.status),
       permissions: roleData.permissions || {},
       nextSteps: Array.isArray(roleData.nextSteps) ? roleData.nextSteps : [],
-      video: Array.isArray(roleData.video) ? roleData.video : [],
-      icon: roleData.icon?.trim() || ''
+      video: Array.isArray(roleData.video) ? roleData.video : []
     };
   }
 
@@ -151,8 +141,8 @@ export class RoleValidator {
       changes.push(`Name changed from "${original.name}" to "${updated.name}"`);
     }
 
-    if (original.description !== updated.description) {
-      changes.push('Description updated');
+    if (original.icon !== updated.icon) {
+      changes.push('Icon updated');
     }
 
     if (original.status !== updated.status) {

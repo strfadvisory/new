@@ -1,120 +1,113 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { API_BASE_URL } from '../config';
 import RoleManager from './superadmin/RoleManager';
+import '../Dashboard.css';
+import './superadmin/AllCompanies.css';
 
 const UserRoleManagerLayout: React.FC = () => {
-  const [userRole, setUserRole] = useState<any>(null);
-  const [userPermissions, setUserPermissions] = useState<any>({});
-  const [userCreatedRoles, setUserCreatedRoles] = useState<any[]>([]);
-  const [selectedRole, setSelectedRole] = useState<any>(null);
   const [isSlidebarOpen, setIsSlidebarOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
+  const [roles, setRoles] = useState<any[]>([]);
+  const [selectedRole, setSelectedRole] = useState<any>(null);
+  const [iconPreview, setIconPreview] = useState<string>('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     _id: '',
     name: '',
-    description: '',
     icon: '',
     status: true,
     permissions: {} as Record<string, boolean>,
-    nextSteps: [] as any[],
-    video: [] as any[],
-    userType: '',
-    type: '2',
-    parentRoleId: '',
-    secondaryRoleId: ''
+    description: ''
   });
-  const [availableRoles, setAvailableRoles] = useState<any[]>([]);
-  const [level2Roles, setLevel2Roles] = useState<any[]>([]);
-  const [level3Roles, setLevel3Roles] = useState<any[]>([]);
-  const [iconPreview, setIconPreview] = useState<string>('');
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    fetchUserRole();
-    fetchUserPermissions();
-    fetchUserCreatedRoles();
-    fetchLevel2Roles();
+  React.useEffect(() => {
+    fetchRoles();
   }, []);
 
-  const fetchUserPermissions = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/roles/user-permissions`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUserPermissions(data.permissions || {});
+  const refreshSelectedRole = async () => {
+    if (selectedRole?._id) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${API_BASE_URL}/api/roles/${selectedRole._id}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const freshRole = await response.json();
+          setSelectedRole({ ...freshRole, hierarchy: selectedRole.hierarchy });
+        }
+      } catch (error) {
+        console.error('Error refreshing selected role:', error);
       }
-    } catch (error) {
-      console.error('Error fetching user permissions:', error);
     }
   };
 
-  const fetchUserCreatedRoles = async () => {
+  const handleRoleUpdate = () => {
+    fetchRoles();
+    refreshSelectedRole();
+  };
+
+  const fetchRoles = async () => {
     try {
       const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
       const response = await fetch(`${API_BASE_URL}/api/roles`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      const data = await response.json();
       if (response.ok) {
-        const allRoles = await response.json();
-        const userRoles = allRoles.filter((role: any) => role.createdBy === user._id);
-        setUserCreatedRoles(userRoles);
-        if (userRoles.length > 0 && !selectedRole) {
-          setSelectedRole(userRoles[0]);
+        setRoles(data);
+        if (data.length > 0) {
+          const firstRole = data[0];
+          const isValidId = firstRole._id && firstRole._id.match(/^[0-9a-fA-F]{24}$/);
+          if (isValidId) {
+            const roleResponse = await fetch(`${API_BASE_URL}/api/roles/${firstRole._id}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const freshRole = roleResponse.ok ? await roleResponse.json() : firstRole;
+            setSelectedRole(freshRole);
+          } else {
+            setSelectedRole(firstRole);
+          }
         }
       }
     } catch (error) {
-      console.error('Error fetching user created roles:', error);
+      console.error('Error fetching roles:', error);
     }
   };
 
-  const fetchUserRole = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/roles/user-own-role`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const roleData = await response.json();
-        setUserRole(roleData);
+  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please upload an image file');
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching user role:', error);
+      
+      if (file.size > 2 * 1024 * 1024) {
+        alert('File size must be less than 2MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setIconPreview(base64String);
+        setFormData({ ...formData, icon: base64String });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const fetchLevel2Roles = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/roles/type-2-roles`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const roles = await response.json();
-        console.log('Level 2 roles:', roles);
-        setLevel2Roles(roles);
-      }
-    } catch (error) {
-      console.error('Error fetching level 2 roles:', error);
-    }
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
   };
 
-  const fetchLevel3Roles = async (parentId: string) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/roles/type-3-roles/${parentId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const roles = await response.json();
-        console.log('Level 3 roles for parent', parentId, ':', roles);
-        setLevel3Roles(roles);
-      }
-    } catch (error) {
-      console.error('Error fetching level 3 roles:', error);
+  const removeIcon = () => {
+    setIconPreview('');
+    setFormData({ ...formData, icon: '' });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -122,119 +115,90 @@ const UserRoleManagerLayout: React.FC = () => {
     setFormData({
       _id: role._id,
       name: role.name,
-      description: role.description,
+      description: role.description || '',
       icon: role.icon || '',
       status: role.status,
-      permissions: role.permissions || {},
-      nextSteps: role.nextSteps || [
-        { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members and modules.', icon: 'user', completed: false },
-        { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members and modules.', icon: 'building', completed: false },
-        { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
-        { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
-      ],
-      video: role.video || [],
-      userType: role.userType?._id || role.userType || '',
-      type: role.type || '2',
-      parentRoleId: '',
-      secondaryRoleId: ''
+      permissions: role.permissions || {}
     });
     setIconPreview(role.icon || '');
     setEditMode(true);
     setIsSlidebarOpen(true);
   };
 
+  const handleAddNew = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/roles/default-permissions`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const defaultPermissions = await response.json();
+      setFormData({ _id: '', name: '', icon: '', status: true, permissions: defaultPermissions, description: '' });
+    } catch (error) {
+      console.error('Error fetching default permissions:', error);
+      setFormData({ _id: '', name: '', icon: '', status: true, permissions: {}, description: '' });
+    }
+    setIconPreview('');
+    setEditMode(false);
+    setIsSlidebarOpen(true);
+  };
+
   const handleDeleteRole = async (roleId: string) => {
-    if (userPermissions['ROLE_MANAGEMENT.DELETE_ROLE']) {
+    setRoleToDelete(roleId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (roleToDelete) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/${roleId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/roles/${roleToDelete}`, {
           method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-          fetchUserCreatedRoles();
-          if (selectedRole?._id === roleId) {
-            setSelectedRole(null);
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
+        });
+        
+        if (response.ok) {
+          setSelectedRole(null);
+          fetchRoles();
+        } else {
+          const errorData = await response.json();
+          alert(`Error: ${errorData.message || 'Failed to delete role'}`);
         }
       } catch (error) {
         console.error('Error deleting role:', error);
       }
     }
+    setShowDeleteConfirm(false);
+    setRoleToDelete(null);
   };
 
-  const handleAddNew = async () => {
-    if (userPermissions['ROLE_MANAGEMENT.CREATE_ROLE']) {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/default-permissions`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const defaultPermissions = await response.json();
-        setFormData({ 
-          _id: '', 
-          name: '', 
-          description: '', 
-          icon: '', 
-          status: true, 
-          permissions: defaultPermissions,
-          nextSteps: [
-            { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members and modules.', icon: 'user', completed: false },
-            { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members and modules.', icon: 'building', completed: false },
-            { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
-            { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
-          ],
-          video: [],
-          userType: '',
-          type: '2',
-          parentRoleId: '',
-          secondaryRoleId: ''
-        });
-      } catch (error) {
-        console.error('Error fetching default permissions:', error);
-        setFormData({ 
-          _id: '', 
-          name: '', 
-          description: '', 
-          icon: '', 
-          status: true, 
-          permissions: {},
-          nextSteps: [
-            { title: 'Invite Advisory', description: 'Set up a new organizational entity to manage members and modules.', icon: 'user', completed: false },
-            { title: 'Invite a Association', description: 'Set up a new organizational entity to manage members and modules.', icon: 'building', completed: false },
-            { title: 'Upload Reserve Study Data', description: 'Set up a new organizational entity to manage members and modules.', icon: 'file', completed: false },
-            { title: 'Schedule meeting with Expert', description: 'Set up a new organizational entity to manage members and modules.', icon: 'calendar', completed: false }
-          ],
-          video: [],
-          userType: '',
-          type: '2',
-          parentRoleId: '',
-          secondaryRoleId: ''
-        });
-      }
-      setIconPreview('');
-      setEditMode(false);
-      setIsSlidebarOpen(true);
-    }
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false);
+    setRoleToDelete(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
+      
       let url = `${API_BASE_URL}/api/roles`;
       let method = 'POST';
+      const submitData: any = { 
+        name: formData.name,
+        description: formData.description,
+        icon: formData.icon,
+        status: formData.status,
+        permissions: formData.permissions
+      };
       
       if (editMode && formData._id) {
         url = `${API_BASE_URL}/api/roles/${formData._id}`;
         method = 'PUT';
       }
-
-      const submitData = {
-        ...formData,
-        parentRoleId: formData.secondaryRoleId || formData.parentRoleId || null,
-        userType: formData.userType || null
-      };
       
       const response = await fetch(url, {
         method,
@@ -245,65 +209,89 @@ const UserRoleManagerLayout: React.FC = () => {
         body: JSON.stringify(submitData)
       });
       
+      const result = await response.json();
+      
       if (response.ok) {
         setIsSlidebarOpen(false);
         setEditMode(false);
-        setFormData({ _id: '', name: '', description: '', icon: '', status: true, permissions: {}, nextSteps: [], video: [], userType: '', type: '2', parentRoleId: '', secondaryRoleId: '' });
+        setFormData({ _id: '', name: '', icon: '', status: true, permissions: {}, description: '' });
         setIconPreview('');
-        setLevel3Roles([]);
-        fetchUserCreatedRoles();
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        await fetchRoles();
+      } else {
+        const errorData = await response.json();
+        alert(`Error: ${errorData.message || 'Failed to save role'}`);
       }
     } catch (error) {
-      console.error('Error saving role:', error);
+      console.error('Error saving:', error);
+      alert('Failed to save. Check console for details.');
     }
   };
-
-  const canCreateRole = userPermissions['ROLE_MANAGEMENT.CREATE_ROLE'] || false;
 
   return (
     <div className="main-content">
       <div className="companies-left-panel">
         <div className="companies-header">
-          <button 
-            className="add-new-btn" 
-            onClick={handleAddNew} 
-            disabled={!canCreateRole}
-            style={{ 
-              opacity: canCreateRole ? 1 : 0.5, 
-              cursor: canCreateRole ? 'pointer' : 'not-allowed' 
-            }}
-          >
-            + Add New
-          </button>
-          <input type="text" placeholder="Search by name" className="companies-search" disabled style={{ opacity: 0.5 }} />
+          <button className="add-new-btn" onClick={handleAddNew}>+ Add New</button>
+          <input type="text" placeholder="Search by name" className="companies-search" />
         </div>
         <div className="results-count">
-          {userCreatedRoles.length} Results founded
+          {roles.length} Results founded
         </div>
         
         <div className="companies-list">
-          {userCreatedRoles.map((role) => (
-            <div 
-              key={role._id}
-              className={`company-item ${selectedRole?._id === role._id ? 'active' : ''}`}
-              onClick={() => setSelectedRole(role)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="company-name">{role.name}</div>
-              <div className="company-hierarchy" style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
-                Created by me
+          {roles.map((role) => {
+            const isValidId = role._id && role._id.match(/^[0-9a-fA-F]{24}$/);
+            
+            return (
+              <div 
+                key={role._id}
+                className={`company-item ${selectedRole?._id === role._id ? 'active' : ''}`}
+                onClick={async () => {
+                  if (!isValidId) {
+                    console.error('Invalid role ID:', role._id);
+                    setSelectedRole(role);
+                    return;
+                  }
+                  
+                  try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`${API_BASE_URL}/api/roles/${role._id}`, {
+                      headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (response.ok) {
+                      const freshRole = await response.json();
+                      setSelectedRole(freshRole);
+                    } else if (response.status === 404) {
+                      console.error('Role not found or access denied');
+                      setSelectedRole(null);
+                    } else {
+                      setSelectedRole(role);
+                    }
+                  } catch (error) {
+                    console.error('Error fetching role:', error);
+                    setSelectedRole(role);
+                  }
+                }}
+                style={{ 
+                  cursor: 'pointer', 
+                  padding: '12px 16px',
+                  marginBottom: '1px',
+                  background: selectedRole?._id === role._id ? '#f0f9ff' : 'white',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '4px' }}>
+                  {role.name}
+                </div>
+                <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.4' }}>
+                  {role.description || 'User Role'}
+                </div>
               </div>
-              <div className="company-desc">{role.description}</div>
-              <div className="company-status" style={{ 
-                fontSize: '12px', 
-                color: role.status ? '#10b981' : '#ef4444',
-                marginTop: '8px',
-                fontWeight: '500'
-              }}>
-                {role.status ? 'Active' : 'Inactive'}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       
@@ -312,7 +300,7 @@ const UserRoleManagerLayout: React.FC = () => {
           selectedRole={selectedRole} 
           onEdit={handleEditRole} 
           onDelete={handleDeleteRole} 
-          onRoleUpdate={fetchUserCreatedRoles}
+          onRoleUpdate={handleRoleUpdate}
           isUserContext={true}
         />
       </div>
@@ -330,49 +318,62 @@ const UserRoleManagerLayout: React.FC = () => {
             </div>
             <form onSubmit={handleSubmit}>
               <div className="slidebar-content">
+                
                 <div className="form-group">
-                  <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
-                    Select   Role Type
-                  </label>
-                  <select 
-                    className="form-input"
-                    value={formData.parentRoleId}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setFormData({ ...formData, parentRoleId: value, secondaryRoleId: '', type: '2' });
-                      setLevel3Roles([]);
-                      if (value) fetchLevel3Roles(value);
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <option value="">Select a type </option>
-                    {level2Roles.map((role) => (
-                      <option key={role._id} value={role._id}>{role.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {formData.parentRoleId && level3Roles.length > 0 && (
-                  <div className="form-group">
-                    <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
-                      Select Type 3 Role (Optional)
-                    </label>
-                    <select 
-                      className="form-input"
-                      value={formData.secondaryRoleId}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setFormData({ ...formData, secondaryRoleId: value, type: value ? '3' : '2' });
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <option value="">Select a type 3 role</option>
-                      {level3Roles.map((role) => (
-                        <option key={role._id} value={role._id}>{role.name}</option>
-                      ))}
-                    </select>
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleIconUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <div className="icon-upload">
+                    {iconPreview ? (
+                      <div style={{ position: 'relative' }}>
+                        <img 
+                          src={iconPreview} 
+                          alt="Icon preview" 
+                          style={{ 
+                            width: '60px', 
+                            height: '60px', 
+                            objectFit: 'cover', 
+                            borderRadius: '8px',
+                            border: '2px solid #d1d5db'
+                          }} 
+                        />
+                        <button 
+                          type="button"
+                          onClick={removeIcon}
+                          style={{
+                            position: 'absolute',
+                            top: '-8px',
+                            right: '-8px',
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            background: '#ef4444',
+                            color: 'white',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '12px'
+                          }}
+                        >
+                          <i className="fas fa-times"></i>
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" className="icon-upload-btn" onClick={triggerFileInput}>
+                        <i className="fas fa-plus"></i>
+                      </button>
+                    )}
+                    <span style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>
+                      Icon
+                    </span>
                   </div>
-                )}
+                </div>
 
                 <div className="form-group">
                   <input 
@@ -386,14 +387,11 @@ const UserRoleManagerLayout: React.FC = () => {
                 </div>
 
                 <div className="form-group">
-                  <label style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px', display: 'block' }}>
-                    Describe Details so user can identify use of this role *
-                  </label>
                   <textarea 
                     className="form-textarea"
-                    rows={4}
-                    placeholder="Enter description..."
-                    value={formData.description}
+                    rows={3}
+                    placeholder="Enter role description*"
+                    value={formData.description || ''}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     required
                   ></textarea>
@@ -406,7 +404,26 @@ const UserRoleManagerLayout: React.FC = () => {
                       <input 
                         type="checkbox" 
                         checked={formData.status}
-                        onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
+                        onChange={async (e) => {
+                          const newStatus = e.target.checked;
+                          setFormData({ ...formData, status: newStatus });
+                          
+                          if (editMode && formData._id) {
+                            try {
+                              const token = localStorage.getItem('token');
+                              await fetch(`${API_BASE_URL}/api/roles/${formData._id}`, {
+                                method: 'PUT',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ ...formData, status: newStatus })
+                              });
+                            } catch (error) {
+                              console.error('Error updating status:', error);
+                            }
+                          }
+                        }}
                       />
                       <span className="toggle-slider"></span>
                     </label>
@@ -418,6 +435,55 @@ const UserRoleManagerLayout: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <>
+          <div className="modal-overlay" onClick={cancelDelete}></div>
+          <div className="confirm-modal">
+            <div className="modal-icon">
+              <i className="fas fa-exclamation-triangle" style={{ fontSize: '48px', color: '#ef4444' }}></i>
+            </div>
+            <h3 style={{ margin: '16px 0', fontSize: '20px', fontWeight: '600', color: '#1f2937' }}>
+              Delete Role
+            </h3>
+            <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#6b7280', textAlign: 'center' }}>
+              Are you sure you want to delete this role? This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button 
+                onClick={cancelDelete}
+                style={{
+                  padding: '10px 24px',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  background: 'white',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                style={{
+                  padding: '10px 24px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  background: '#ef4444',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </>
       )}

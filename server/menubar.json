@@ -55,7 +55,8 @@
         { "code": "ADD_MEMBER_ROLE", "name": "Add Member Role", "description": "Create and assign member roles with specific permissions and access levels." },
         { "code": "EDIT_MEMBER_ROLE", "name": "Edit Member Role", "description": "Modify existing member roles and update their permissions and access rights." },
         { "code": "DELETE_MEMBER_ROLE", "name": "Delete Member Role", "description": "Remove member roles and revoke associated permissions from the system." },
-        { "code": "VIEW_MEMBER_LIST", "name": "View Member List", "description": "Access and view the complete list of members and their role assignments." }
+        { "code": "VIEW_MEMBER_LIST", "name": "View Member List", "description": "Access and view the complete list of members and their role assignments." },
+        { "code": "MANAGE_USERS", "name": "Manage Users", "description": "Access user management interface to view, edit, and manage user accounts." }
       ]
     },
     {

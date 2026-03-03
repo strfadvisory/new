@@ -2,9 +2,14 @@ const mongoose = require('mongoose');
 const User = require('./models/User');
 require('dotenv').config();
 
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://localhost:27017/your-database';
+
 const createSuperAdmin = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://mongo:27017/myapp');
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(MONGODB_URI);
+      console.log('Connected to MongoDB for seeding');
+    }
     
     // Delete existing super admin if exists
     await User.deleteOne({ email: 'admin@reservefundadvisory.com' });
@@ -31,11 +36,18 @@ const createSuperAdmin = async () => {
     console.log('Super admin created successfully');
     console.log('Email: admin@reservefundadvisory.com');
     console.log('Password: Admin@123');
-    process.exit(0);
   } catch (error) {
     console.error('Error creating super admin:', error);
-    process.exit(1);
+    throw error;
   }
 };
 
-createSuperAdmin();
+// Run if called directly
+if (require.main === module) {
+  createSuperAdmin().finally(() => {
+    mongoose.disconnect();
+    process.exit(0);
+  });
+}
+
+module.exports = createSuperAdmin;
