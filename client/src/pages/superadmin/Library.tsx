@@ -38,7 +38,7 @@ const Library: React.FC<LibraryProps> = ({ selectedItem, onEdit, onDelete }) => 
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
               }}>
                 <img 
-                  src={selectedItem.thumbnail} 
+                  src={selectedItem.thumbnail || 'https://via.placeholder.com/160x90?text=No+Thumbnail'} 
                   alt={selectedItem.title}
                   style={{ 
                     width: '160px', 
@@ -204,7 +204,7 @@ const Library: React.FC<LibraryProps> = ({ selectedItem, onEdit, onDelete }) => 
                     maxHeight: '500px',
                     display: 'block'
                   }}
-                  poster={selectedItem.thumbnail}
+                  poster={selectedItem.thumbnail || 'https://via.placeholder.com/640x360?text=No+Thumbnail'}
                 >
                   <source src={selectedItem.videoUrl} type="video/mp4" />
                   <source src={selectedItem.videoUrl} type="video/webm" />

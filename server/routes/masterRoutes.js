@@ -1,14 +1,19 @@
 const express = require("express");
 const router = express.Router();
 const masterDataService = require("../services/masterDataService");
+const Library = require("../models/Library");
 const { protect } = require("../middleware/authMiddleware.jsx");
 
-router.get("/api/master", protect, (req, res) => {
+router.get("/api/master", protect, async (req, res) => {
   try {
     const masterData = masterDataService.masterData;
+    const libraryVideos = await Library.find({ isActive: true });
 
     if (req.user.isSuperAdmin) {
-      res.json(masterData);
+      res.json({
+        ...masterData,
+        videos: libraryVideos
+      });
     } else {
       const userPermissions = req.user.roleId?.permissions || [];
       const userNextSteps = req.user.roleId?.nextSteps || [];
@@ -23,8 +28,10 @@ router.get("/api/master", protect, (req, res) => {
       // Filter nextSteps
       const filteredNextSteps = masterData.nextSteps.filter(step => userNextSteps.includes(step.id));
 
-      // Filter videos
-      const filteredVideos = masterData.videos.filter(video => userVideos.includes(video.id));
+      // Filter videos from library based on user permissions
+      const filteredVideos = libraryVideos.filter(video => 
+        userVideos.includes(video._id.toString())
+      );
 
       res.json({
         ...masterData,

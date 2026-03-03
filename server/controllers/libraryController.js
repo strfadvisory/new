@@ -1,4 +1,5 @@
 const Library = require('../models/Library');
+const { generateYouTubeThumbnail } = require('../utils/thumbnailUtils');
 
 // Get all library items
 const getLibraryItems = async (req, res) => {
@@ -28,10 +29,12 @@ const createLibraryItem = async (req, res) => {
   try {
     const { title, description, thumbnail, videoUrl } = req.body;
     
+    const autoThumbnail = generateYouTubeThumbnail(videoUrl);
+    
     const newItem = new Library({
       title,
       description,
-      thumbnail,
+      thumbnail: thumbnail || autoThumbnail,
       videoUrl
     });
 
@@ -47,9 +50,11 @@ const updateLibraryItem = async (req, res) => {
   try {
     const { title, description, thumbnail, videoUrl, isActive } = req.body;
     
+    const autoThumbnail = generateYouTubeThumbnail(videoUrl);
+    
     const updatedItem = await Library.findByIdAndUpdate(
       req.params.id,
-      { title, description, thumbnail, videoUrl, isActive, updatedAt: Date.now() },
+      { title, description, thumbnail: thumbnail || autoThumbnail, videoUrl, isActive, updatedAt: Date.now() },
       { new: true, runValidators: true }
     );
 

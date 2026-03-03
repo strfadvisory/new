@@ -1,5 +1,6 @@
 const Role = require('../models/Role');
 const User = require('../models/User');
+const Library = require('../models/Library');
 const masterDataService = require('../services/masterDataService');
 
 const createRole = async (req, res) => {
@@ -151,7 +152,15 @@ const getUserVideos = async (req, res) => {
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const role = user.roleId;
-    const videos = role?.videos?.map(id => masterDataService.getVideoById(id)).filter(Boolean) || [];
+    if (!role || !role.videos || role.videos.length === 0) {
+      return res.json({ videos: [] });
+    }
+
+    // Fetch videos from Library collection using the IDs stored in role.videos
+    const videos = await Library.find({ 
+      _id: { $in: role.videos },
+      isActive: true 
+    });
 
     res.json({ videos });
   } catch (error) {
