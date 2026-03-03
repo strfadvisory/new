@@ -10,6 +10,7 @@ const roleRoutes = require('./routes/roleRoutes');
 const userRoutes = require('./routes/userRoutes');
 const menuRoutes = require('./routes/menuRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
+const masterRoutes = require('./routes/masterRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -52,6 +53,7 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/library', libraryRoutes);
+app.use('/', masterRoutes);
 app.use('/api', itemRoutes);
 
 // Error handling

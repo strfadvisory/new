@@ -2,7 +2,7 @@
   "modules": [
     {
       "module": "SIMULATOR_MANAGEMENT",
-      "displayName": "Simulator Management",
+      "displayName": "Simulator Management 1",
       "permissions": [
         { "code": "ACCESS_SIMULATOR", "name": "Access Simulator", "description": "Grants permission-based access to the Simulator module and its associated data." },
         { "code": "UPLOAD_MODEL", "name": "Upload Model", "description": "Allows authorized users to upload and validate structured simulation models." },

@@ -4,7 +4,12 @@ import RoleManager from './superadmin/RoleManager';
 import '../Dashboard.css';
 import './superadmin/AllCompanies.css';
 
-const UserRoleManagerLayout: React.FC = () => {
+interface DashboardRoleManagerProps {
+  user: any;
+  onLogout: () => void;
+}
+
+const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLogout }) => {
   const [isSlidebarOpen, setIsSlidebarOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -479,4 +484,4 @@ const UserRoleManagerLayout: React.FC = () => {
   );
 };
 
-export default UserRoleManagerLayout;
+export default DashboardRoleManager;

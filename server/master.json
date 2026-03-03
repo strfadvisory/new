@@ -1,0 +1,128 @@
+{
+  "_id": "MASTER_ACCESS_V1",
+  "version": 1,
+  "permissions": [
+    {
+      "id": "MOD_001",
+      "key": "SIMULATOR_MANAGEMENT",
+      "displayName": "Simulator Management",
+      "permissions": [
+        { "id": "PERM_001", "code": "ACCESS_SIMULATOR", "name": "Access Simulator" },
+        { "id": "PERM_002", "code": "UPLOAD_MODEL", "name": "Upload Model" },
+        { "id": "PERM_003", "code": "CREATE_VERSION", "name": "Create Version" },
+        { "id": "PERM_004", "code": "EDIT_OWN_VERSION", "name": "Edit Own Version" },
+        { "id": "PERM_005", "code": "EDIT_OTHER_VERSIONS", "name": "Edit Other Versions" },
+        { "id": "PERM_006", "code": "PUBLISH_VERSION", "name": "Publish Version" },
+        { "id": "PERM_007", "code": "ACCESS_SIMULATOR_PLAYGROUND", "name": "Access Simulator Playground" },
+        { "id": "PERM_008", "code": "DOWNLOAD_REPORT", "name": "Download Report" },
+        { "id": "PERM_009", "code": "VIEW_REPORT", "name": "View Report" },
+        { "id": "PERM_010", "code": "TRANSFER_ASSOCIATION", "name": "Transfer Association" }
+      ]
+    },
+    {
+      "id": "MOD_002",
+      "key": "INVITATION_ONBOARDING",
+      "displayName": "Invitation & Onboarding",
+      "permissions": [
+        { "id": "PERM_011", "code": "INVITE_MEMBERS", "name": "Invite Members" },
+        { "id": "PERM_012", "code": "INVITE_PROPERTY_MANAGERS", "name": "Invite Property Managers" },
+        { "id": "PERM_013", "code": "INVITE_MANAGERS", "name": "Invite Managers" },
+        { "id": "PERM_014", "code": "INVITE_SUPER_ADMIN", "name": "Invite Super Admin" },
+        { "id": "PERM_015", "code": "VIEW_INVITED_MANAGERS_STATUS", "name": "View Invited Managers Status" }
+      ]
+    },
+    {
+      "id": "MOD_003",
+      "key": "COMPANY_CONTROL",
+      "displayName": "Company Control",
+      "permissions": [
+        { "id": "PERM_016", "code": "CREATE_COMPANY", "name": "Create Company" },
+        { "id": "PERM_017", "code": "EDIT_COMPANY", "name": "Edit Company" },
+        { "id": "PERM_018", "code": "DELETE_COMPANY", "name": "Delete Company" }
+      ]
+    },
+    {
+      "id": "MOD_004",
+      "key": "ASSOCIATION_CONTROL",
+      "displayName": "Association Control",
+      "permissions": [
+        { "id": "PERM_019", "code": "CREATE_SINGLE_ASSOCIATION", "name": "Create Single Association" },
+        { "id": "PERM_020", "code": "CREATE_MULTIPLE_ASSOCIATIONS", "name": "Create Multiple Associations" },
+        { "id": "PERM_021", "code": "EDIT_ASSOCIATION", "name": "Edit Association" },
+        { "id": "PERM_022", "code": "DELETE_ASSOCIATION", "name": "Delete Association" }
+      ]
+    },
+    {
+      "id": "MOD_005",
+      "key": "USER_MANAGEMENT",
+      "displayName": "User Management",
+      "permissions": [
+        { "id": "PERM_023", "code": "ADD_MEMBER_ROLE", "name": "Add Member Role" },
+        { "id": "PERM_024", "code": "EDIT_MEMBER_ROLE", "name": "Edit Member Role" },
+        { "id": "PERM_025", "code": "DELETE_MEMBER_ROLE", "name": "Delete Member Role" },
+        { "id": "PERM_026", "code": "VIEW_MEMBER_LIST", "name": "View Member List" },
+        { "id": "PERM_027", "code": "MANAGE_USERS", "name": "Manage Users" }
+      ]
+    },
+    {
+      "id": "MOD_006",
+      "key": "ROLE_MANAGEMENT",
+      "displayName": "Role Management",
+      "permissions": [
+        { "id": "PERM_028", "code": "CREATE_ROLE", "name": "Create Role" },
+        { "id": "PERM_029", "code": "EDIT_ROLE", "name": "Edit Role" },
+        { "id": "PERM_030", "code": "DELETE_ROLE", "name": "Delete Role" },
+        { "id": "PERM_031", "code": "ASSIGN_PERMISSIONS", "name": "Assign Permissions" }
+      ]
+    },
+    {
+      "id": "MOD_007",
+      "key": "BANKING_SERVICES",
+      "displayName": "Banking Services",
+      "permissions": [
+        { "id": "PERM_032", "code": "MANAGE_CD_PLANS", "name": "Manage CD Plans" },
+        { "id": "PERM_033", "code": "MANAGE_LOAN_OFFERS", "name": "Manage Loan Offers" }
+      ]
+    }
+  ],
+  "nextSteps": [
+    {
+      "id": "NS_001",
+      "title": "Invite Advisory",
+      "icon": "user",
+      "permissionIds": ["PERM_011"]
+    },
+    {
+      "id": "NS_002",
+      "title": "Invite a Association",
+      "icon": "building",
+      "permissionIds": ["PERM_019"]
+    },
+    {
+      "id": "NS_003",
+      "title": "Upload Reserve Study Data",
+      "icon": "file",
+      "permissionIds": ["PERM_002"]
+    },
+    {
+      "id": "NS_004",
+      "title": "Schedule Meeting with Expert",
+      "icon": "calendar",
+      "permissionIds": ["PERM_001"]
+    }
+  ],
+  "videos": [
+    {
+      "id": "VID_001",
+      "title": "Simulator Introduction",
+      "thumbnail": "from_db",
+      "permissionIds": ["PERM_001"]
+    },
+    {
+      "id": "VID_002",
+      "title": "How to Upload Model",
+      "thumbnail": "from_db",
+      "permissionIds": ["PERM_002"]
+    }
+  ]
+}

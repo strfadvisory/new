@@ -2,7 +2,7 @@
   "modules": [
     {
       "module": "SIMULATOR_MANAGEMENT",
-      "displayName": "Simulator Management",
+      "displayName": "  Simulator Management 1",
       "roles": {
         "permissions": {
           "ACCESS_SIMULATOR": false,

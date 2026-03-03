@@ -20,7 +20,7 @@ import Associations from './pages/Associations';
 import Users from './pages/Users';
 import Banking from './pages/Banking';
 import UserManagement from './pages/UserManagement';
-import UserRoleManagerLayout from './pages/UserRoleManagerLayout';
+import DashboardRoleManager from './pages/DashboardRoleManager';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -162,12 +162,14 @@ function App() {
         <Route path="/dashboard" element={user && !user.isSuperAdmin ? <DashboardLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}>
           <Route index element={<Dashboard user={user} onLogout={handleLogout} />} />
           <Route path="simulator" element={<Simulator />} />
+          <Route path="simulator-management" element={<Simulator />} />
           <Route path="invitations" element={<Invitations />} />
           <Route path="companies" element={<Companies />} />
           <Route path="associations" element={<Associations />} />
           <Route path="user-management" element={<UserManagement />} />
           <Route path="banking" element={<Banking />} />
-          <Route path="role-manager" element={<UserRoleManagerLayout />} />
+          <Route path="role-manager" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
+          <Route path="role-management" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
         </Route>
         <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard') : '/login'} replace />} />
       </Routes>
