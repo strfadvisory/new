@@ -61,7 +61,12 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/master.json`)
+    const token = localStorage.getItem('token');
+    fetch(`${API_BASE_URL}/api/master`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to load master data');
