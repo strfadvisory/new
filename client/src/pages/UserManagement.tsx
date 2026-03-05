@@ -114,7 +114,10 @@ const UserManagement: React.FC = () => {
     <div className="companies-container">
       <div className="companies-left-panel">
         <div className="companies-header">
-          <button className="add-new-btn">+ Add New</button>
+          <div className="header-top">
+            <h2 className="results-title">{filteredUsers.length} Results founded</h2>
+            <a href="#" className="add-new-link">+ Add New</a>
+          </div>
           <input
             type="text"
             placeholder="Search by name"
@@ -123,7 +126,7 @@ const UserManagement: React.FC = () => {
             className="companies-search"
           />
         </div>
-        <div className="results-count">{filteredUsers.length} Results founded</div>
+        
         <div className="companies-list">
           {loading ? (
             <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>
@@ -134,9 +137,18 @@ const UserManagement: React.FC = () => {
                 className={`company-item ${selectedUser?._id === user._id ? 'active' : ''}`}
                 onClick={() => setSelectedUser(user)}
               >
-                <div className="company-name">{user.firstName} {user.lastName}</div>
-                <div className="company-type">{user.designation}</div>
-                <div className="company-desc">{user.email}</div>
+                <div className="company-logo">
+                  {user.companyProfile?.logoId ? (
+                    <img src={`${API_BASE_URL}/api/auth/file/${user.companyProfile.logoId}`} alt="User Logo" />
+                  ) : (
+                    <i className="fas fa-user" style={{ color: '#64748b', fontSize: '20px' }}></i>
+                  )}
+                </div>
+                <div className="company-info">
+                  <div className="company-name">{user.firstName} {user.lastName}</div>
+                  <div className="company-level">{user.designation}</div>
+                  <div className="company-address">{user.email}</div>
+                </div>
               </div>
             ))
           )}
