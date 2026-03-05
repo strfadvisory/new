@@ -66,6 +66,11 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [accordionState, setAccordionState] = useState<{
+    permissions: { [key: string]: boolean }
+  }>({
+    permissions: {}
+  });
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -236,42 +241,61 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
             {selectedRole.description || 'Configure permissions and settings for this role'}
           </p>
 
-          {masterData?.permissions.map((module: Module) => (
-            <div key={module.id} className="module-card">
-              <div className="module-header">
-                <span className="module-title">{module.displayName}</span>
-              </div>
-              <div className="permissions-list">
-                {module.permissions.map((permission: Permission) => (
-                  <div key={permission.id} className="permission-item">
-                    <div className="permission-content">
-                      <div className="permission-info">
-                        <h4 className="permission-name">{permission.name}</h4>
-                      </div>
-                      <div className="permission-controls">
-                        <label className="toggle-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={selectedPermissions.includes(permission.id)} 
-                            onChange={() => {
-                              const newPermissions = selectedPermissions.includes(permission.id)
-                                ? selectedPermissions.filter(p => p !== permission.id)
-                                : [...selectedPermissions, permission.id];
-                              setSelectedPermissions(newPermissions);
-                              setHasChanges(true);
-                            }}
-                          />
-                          <span className="toggle-slider"></span>
-                        </label>
-                      </div>
+          <div className="accordion-container">
+            {/* Permissions Accordion */}
+            {masterData?.permissions.map((module: Module) => (
+              <div key={module.id} className="accordion-panel">
+                <div 
+                  className="accordion-header"
+                  onClick={() => setAccordionState(prev => ({ 
+                    ...prev, 
+                    permissions: { 
+                      ...prev.permissions, 
+                      [module.id]: !(prev.permissions as any)[module.id] 
+                    } 
+                  }))}
+                >
+                  <div className="accordion-title">
+                    <span>{module.displayName}</span>
+                  </div>
+                  <i className={`fas fa-chevron-${(accordionState.permissions as any)[module.id] ? 'up' : 'down'} accordion-icon`}></i>
+                </div>
+                {(accordionState.permissions as any)[module.id] && (
+                  <div className="accordion-content">
+                    <div className="permissions-list">
+                      {module.permissions.map((permission: Permission) => (
+                        <div key={permission.id} className="permission-item">
+                          <div className="permission-content">
+                            <div className="permission-info">
+                              <h4 className="permission-name">{permission.name}</h4>
+                            </div>
+                            <div className="permission-controls">
+                              <label className="toggle-switch">
+                                <input 
+                                  type="checkbox" 
+                                  checked={selectedPermissions.includes(permission.id)} 
+                                  onChange={() => {
+                                    const newPermissions = selectedPermissions.includes(permission.id)
+                                      ? selectedPermissions.filter(p => p !== permission.id)
+                                      : [...selectedPermissions, permission.id];
+                                    setSelectedPermissions(newPermissions);
+                                    setHasChanges(true);
+                                  }}
+                                />
+                                <span className="toggle-slider"></span>
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
 
-          <div className="next-steps-section">
+          <div className="next-steps-section" style={{ marginTop: '24px' }}>
             <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#1f2937', marginBottom: '24px' }}>Next Steps</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {masterData?.nextSteps.length > 0 ? masterData.nextSteps.map((step: NextStep) => (
@@ -304,42 +328,42 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
             </div>
           </div>
 
-          <div className="videos-section">
+          <div className="videos-section" style={{ marginTop: '24px' }}>
             <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#1f2937', marginBottom: '24px' }}>Videos</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '60px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {masterData?.videos.length > 0 ? masterData.videos.map((video: Video) => (
-                <div key={video._id} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', border: '1px solid #e5e7eb' }}>
+                <div 
+                  key={video._id} 
+                  style={{ display: 'flex', alignItems: 'center', padding: '24px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}
+                >
                   <div 
-                    style={{ background: '#f3f4f6', borderRadius: '8px', height: '180px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: video.thumbnail ? `url(${video.thumbnail})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer' }}
+                    style={{ width: '48px', height: '48px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                     onClick={() => {
                       setCurrentVideo(video);
                       setShowVideoModal(true);
                     }}
                   >
-                    <div style={{ width: '60px', height: '60px', background: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className="fas fa-play" style={{ color: 'white', fontSize: '24px' }}></i>
-                    </div>
+                    <i className="fas fa-play" style={{ fontSize: '24px', color: '#1f2937' }}></i>
                   </div>
-                  <h3 style={{ fontSize: '16px', fontWeight: '500', color: '#1f2937', marginBottom: '8px' }}>{video.title}</h3>
-                  <p style={{ fontSize: '14px', color: '#6b7280', margin: '8px 0 16px 0' }}>{video.description}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: '1px solid #e5e7eb' }}>
-                    <span style={{ fontSize: '13px', color: '#6b7280' }}>Include in role</span>
-                    <input 
-                      type="checkbox" 
-                      checked={selectedVideos.includes(video._id)}
-                      onChange={() => {
-                        const newVideos = selectedVideos.includes(video._id)
-                          ? selectedVideos.filter(v => v !== video._id)
-                          : [...selectedVideos, video._id];
-                        setSelectedVideos(newVideos);
-                        setHasChanges(true);
-                      }}
-                      style={{ width: '20px', height: '20px', cursor: 'pointer' }}
-                    />
+                  <div style={{ flex: 1, marginLeft: '20px' }}>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>{video.title}</h3>
+                    <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>{video.description}</p>
                   </div>
+                  <input 
+                    type="checkbox" 
+                    checked={selectedVideos.includes(video._id)}
+                    onChange={() => {
+                      const newVideos = selectedVideos.includes(video._id)
+                        ? selectedVideos.filter(v => v !== video._id)
+                        : [...selectedVideos, video._id];
+                      setSelectedVideos(newVideos);
+                      setHasChanges(true);
+                    }}
+                    style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+                  />
                 </div>
               )) : (
-                <p style={{ color: '#6b7280', textAlign: 'center', padding: '20px', gridColumn: '1 / -1' }}>No videos available</p>
+                <p style={{ color: '#6b7280', textAlign: 'center', padding: '20px' }}>No videos available</p>
               )}
             </div>
           </div>

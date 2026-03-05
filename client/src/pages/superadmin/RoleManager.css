@@ -1,3 +1,59 @@
+/* Accordion Styles */
+.accordion-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 24px;
+  border: 1px solid #d1d5db;
+}
+
+.accordion-panel {
+  background: white;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.accordion-panel:last-child {
+  border-bottom: none;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  cursor: pointer;
+  background: #fafafa;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 500;
+}
+
+.accordion-header:hover {
+  background: #f5f5f5;
+}
+
+.accordion-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: 0.025em;
+}
+
+.accordion-icon {
+  font-size: 14px;
+  color: #6b7280;
+  transition: transform 0.2s ease;
+}
+
+.accordion-content {
+  padding: 0 24px;
+  background: white;
+}
+
+.accordion-content .permissions-list {
+  border-top: none;
+  padding-top: 0;
+}
+
 /* Role Manager Specific Styles */
 .role-manager-container {
   padding: 24px;
