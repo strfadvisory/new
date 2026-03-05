@@ -1,4 +1,5 @@
 import React from 'react';
+import SimulatorSubheader from '../components/SimulatorSubheader';
 
 const Simulators: React.FC = () => {
   const simulators = [
@@ -8,7 +9,9 @@ const Simulators: React.FC = () => {
   ];
 
   return (
-    <div className="p-4">
+    <div>
+      <SimulatorSubheader />
+      <div className="p-4">
       <h1>Simulators</h1>
       <p>Manage and run financial simulators for reserve fund analysis.</p>
       
@@ -44,6 +47,7 @@ const Simulators: React.FC = () => {
           </table>
         </div>
       </div>
+    </div>
     </div>
   );
 };

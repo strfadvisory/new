@@ -49,7 +49,7 @@ router.get('/profile', protect, async (req, res) => {
 
 router.get('/users', protect, async (req, res) => {
   try {
-    const users = await User.find({ 'companyProfile.companyName': { $exists: true, $ne: null } })
+    const users = await User.find({ createdBy: req.user._id })
       .populate('roleId', 'name')
       .select('-password -otp -otpExpiry');
     res.json(users);

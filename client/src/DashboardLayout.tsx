@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard.css';
 import { API_ENDPOINTS } from './config';
+import SimulatorSubheader from './components/SimulatorSubheader';
 
 interface DashboardLayoutProps {
   user: any;
@@ -76,6 +77,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout }) => 
         </header>
         
         <div className="dashboard-content">
+          <SimulatorSubheader />
           <Outlet />
         </div>
       </div>

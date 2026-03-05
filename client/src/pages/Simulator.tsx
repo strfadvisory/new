@@ -115,7 +115,8 @@ const Simulator: React.FC = () => {
 
   return (
     <div className="fluid-content" style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 0' }}>
-      <div style={{ marginBottom: '40px' }}>
+ 
+      <div style={{ marginBottom: '40px' }}> 
         <h1 style={{ fontSize: '32px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>Welcome, {user?.firstName}</h1>
         <p style={{ fontSize: '16px', color: '#6b7280' }}>Choose your Company type you like to signup</p>
       </div>
