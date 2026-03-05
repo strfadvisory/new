@@ -396,13 +396,21 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         <div className="dashboard-content">
           <div className="main-content">
             {currentPage !== 'companies' && currentPage !== 'simulators' && <div className="companies-left-panel">
-              <div className="companies-header">
+              {/* <div className="companies-header">
                 <button className="add-new-btn" onClick={handleAddNew}>+ Add New</button>
                 <input type="text" placeholder="Search by name" className="companies-search" />
               </div>
               <div className="results-count">
                 {currentPage === 'library' ? libraryItems.length : roles.length} Results founded
-              </div>
+              </div> */}
+
+               <div className="companies-header">
+          <div className="header-top">
+            <h2 className="results-title">    {currentPage === 'library' ? libraryItems.length : roles.length} Results founded </h2>
+            <a href="#" className="add-new-link" onClick={handleAddNew}>+ Add New</a>
+          </div>
+               <input type="text" placeholder="Search by name" className="companies-search" />
+        </div>
               
               <div className="companies-list">
                 {currentPage === 'library' ? (

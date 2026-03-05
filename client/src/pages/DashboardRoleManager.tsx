@@ -227,11 +227,11 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
     <div className="main-content">
       <div className="companies-left-panel">
         <div className="companies-header">
+          <div className="results-count">
+            {roles.length} Results
+          </div>
           <button className="add-new-btn" onClick={handleAddNew}>+ Add New</button>
           <input type="text" placeholder="Search by name" className="companies-search" />
-        </div>
-        <div className="results-count">
-          {roles.length} Results founded
         </div>
         
         <div className="companies-list">
