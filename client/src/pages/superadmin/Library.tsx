@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface LibraryItem {
   _id: string;
@@ -17,12 +17,41 @@ interface LibraryProps {
 }
 
 const Library: React.FC<LibraryProps> = ({ selectedItem, onEdit, onDelete }) => {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const toggleDropdown = () => {
+    setDropdownOpen(!dropdownOpen);
+  };
+
+  const handleEdit = () => {
+    onEdit(selectedItem!);
+    setDropdownOpen(false);
+  };
+
+  const handleDelete = () => {
+    onDelete(selectedItem!._id);
+    setDropdownOpen(false);
+  };
   return (
-    <div className="companies-right-content" style={{ padding: '32px', height: '100vh', overflow: 'auto' }}>
+    <div className="companies-right-panel" style={{ padding: '32px', height: '100vh', overflow: 'auto', background: 'white' }}>
       {selectedItem ? (
-        <div className="library-details">
+        <div className="library-details" style={{ maxWidth: '800px', margin: '0 auto' }}>
           {/* Header Section */}
-          <div className="library-header" style={{
+          <div className="company-detail-header" style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
@@ -31,38 +60,48 @@ const Library: React.FC<LibraryProps> = ({ selectedItem, onEdit, onDelete }) => 
             borderBottom: '1px solid #e5e7eb'
           }}>
             <div className="library-info" style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-              <div className="library-thumbnail" style={{
-                flexShrink: 0,
+              <div className="logobox" style={{
+                width: '80px',
+                height: '80px',
                 borderRadius: '12px',
                 overflow: 'hidden',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+                background: '#f1f5f9',
+                border: '1px solid #e2e8f0'
               }}>
                 <img 
-                  src={selectedItem.thumbnail || 'https://via.placeholder.com/160x90?text=No+Thumbnail'} 
+                  src={selectedItem.thumbnail || '/logo.png'} 
                   alt={selectedItem.title}
                   style={{ 
-                    width: '160px', 
-                    height: '90px', 
+                    width: '100%', 
+                    height: '100%', 
                     objectFit: 'cover',
                     display: 'block'
                   }}
                 />
               </div>
-              <div className="library-meta" style={{ flex: 1 }}>
-                <h1 style={{ 
-                  fontSize: '28px', 
-                  fontWeight: '700', 
-                  color: '#111827',
-                  margin: '0 0 12px 0',
+              <div className="companybox" style={{ flex: 1 }}>
+                <h1 className="company-detail-title" style={{ 
+                  fontSize: '24px', 
+                  fontWeight: '600', 
+                  color: '#1f2937',
+                  margin: '0 0 8px 0',
                   lineHeight: '1.2'
                 }}>
                   {selectedItem.title}
                 </h1>
-                <p style={{ 
-                  fontSize: '16px',
-                  color: '#6b7280', 
-                  margin: '0 0 16px 0',
-                  lineHeight: '1.5'
+                <p className="company-level" style={{ 
+                  fontSize: '13px',
+                  color: '#0ea5e9', 
+                  margin: '0 0 8px 0',
+                  fontWeight: '600'
+                }}>
+                  Library Content
+                </p>
+                <p className="company-address" style={{ 
+                  fontSize: '13px',
+                  color: '#64748b', 
+                  margin: '0 0 12px 0',
+                  lineHeight: '1.3'
                 }}>
                   {selectedItem.description}
                 </p>
@@ -70,9 +109,9 @@ const Library: React.FC<LibraryProps> = ({ selectedItem, onEdit, onDelete }) => 
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '20px',
-                  fontSize: '14px',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
                   fontWeight: '500',
                   backgroundColor: selectedItem.isActive ? '#dcfce7' : '#fee2e2',
                   color: selectedItem.isActive ? '#166534' : '#dc2626'
@@ -88,123 +127,68 @@ const Library: React.FC<LibraryProps> = ({ selectedItem, onEdit, onDelete }) => 
               </div>
             </div>
             
-            <div className="library-actions" style={{ display: 'flex', gap: '12px', flexShrink: 0 }}>
-              <button 
-                className="edit-btn"
-                onClick={() => onEdit(selectedItem)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid #d1d5db',
-                  backgroundColor: '#ffffff',
-                  color: '#374151',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f9fafb';
-                  e.currentTarget.style.borderColor = '#9ca3af';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#ffffff';
-                  e.currentTarget.style.borderColor = '#d1d5db';
-                }}
-              >
-                <i className="fas fa-edit"></i>
-                Edit
+            <div className="custom-dropdown" ref={dropdownRef}>
+              <button className="dropdown-btn" onClick={toggleDropdown}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 13C12.5523 13 13 12.5523 13 12C13 11.4477 12.5523 11 12 11C11.4477 11 11 11.4477 11 12C11 12.5523 11.4477 13 12 13Z" fill="currentColor"/>
+                  <path d="M12 6C12.5523 6 13 5.55228 13 5C13 4.44772 12.5523 4 12 4C11.4477 4 11 4.44772 11 5C11 5.55228 11.4477 6 12 6Z" fill="currentColor"/>
+                  <path d="M12 20C12.5523 20 13 19.5523 13 19C13 18.4477 12.5523 18 12 18C11.4477 18 11 18.4477 11 19C11 19.5523 11.4477 20 12 20Z" fill="currentColor"/>
+                </svg>
               </button>
-              <button 
-                className="delete-btn"
-                onClick={() => onDelete(selectedItem._id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid #fca5a5',
-                  backgroundColor: '#fef2f2',
-                  color: '#dc2626',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = '#fee2e2';
-                  e.currentTarget.style.borderColor = '#f87171';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = '#fef2f2';
-                  e.currentTarget.style.borderColor = '#fca5a5';
-                }}
-              >
-                <i className="fas fa-trash"></i>
-                Delete
-              </button>
+              {dropdownOpen && (
+                <div className="dropdown-content">
+                  <button className="dropdown-option" onClick={handleEdit}>
+                    <i className="fas fa-edit" style={{ marginRight: '8px' }}></i>
+                    Edit
+                  </button>
+                  <button className="dropdown-option danger" onClick={handleDelete}>
+                    <i className="fas fa-trash" style={{ marginRight: '8px' }}></i>
+                    Delete
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Video Section */}
-          <div className="video-section">
-            <div className="section-header" style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              marginBottom: '20px'
-            }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '10px',
-                backgroundColor: '#3b82f6',
+          <div className="detail-section">
+            <div className="section-header">
+              <h3 className="detail-label" style={{
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1f2937',
+                margin: 0,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white'
+                gap: '8px'
               }}>
-                <i className="fas fa-play" style={{ fontSize: '16px' }}></i>
-              </div>
-              <h2 style={{ 
-                fontSize: '20px', 
-                fontWeight: '600',
-                color: '#111827',
-                margin: 0
-              }}>
+                <i className="fas fa-play" style={{ color: '#0e519b', fontSize: '16px' }}></i>
                 Video Content
-              </h2>
+              </h3>
             </div>
             
             <div className="video-container" style={{ 
-              backgroundColor: '#f8fafc',
-              borderRadius: '16px',
-              padding: '24px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+              backgroundColor: '#fafbfc',
+              borderRadius: '8px',
+              padding: '20px',
+              border: '1px solid #e2e8f0'
             }}>
               <div className="video-wrapper" style={{
                 position: 'relative',
-                borderRadius: '12px',
+                borderRadius: '8px',
                 overflow: 'hidden',
-                backgroundColor: '#000000',
-                boxShadow: '0 8px 25px rgba(0, 0, 0, 0.15)'
+                backgroundColor: '#000000'
               }}>
                 <video 
                   controls 
                   style={{ 
                     width: '100%', 
                     height: 'auto',
-                    minHeight: '300px',
-                    maxHeight: '500px',
+                    minHeight: '280px',
+                    maxHeight: '400px',
                     display: 'block'
                   }}
-                  poster={selectedItem.thumbnail || 'https://via.placeholder.com/640x360?text=No+Thumbnail'}
+                  poster={selectedItem.thumbnail || '/logo.png'}
                 >
                   <source src={selectedItem.videoUrl} type="video/mp4" />
                   <source src={selectedItem.videoUrl} type="video/webm" />
@@ -214,44 +198,31 @@ const Library: React.FC<LibraryProps> = ({ selectedItem, onEdit, onDelete }) => 
               </div>
               
               <div className="video-info" style={{ 
-                marginTop: '20px',
-                padding: '16px',
+                marginTop: '16px',
+                padding: '12px',
                 backgroundColor: '#ffffff',
-                borderRadius: '8px',
-                border: '1px solid #e5e7eb'
+                borderRadius: '6px',
+                border: '1px solid #f1f5f9'
               }}>
-                <div style={{ 
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '8px'
+                <div className="detail-label" style={{ 
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: '#1e293b',
+                  marginBottom: '6px'
                 }}>
-                  <i className="fas fa-link" style={{ color: '#6b7280', fontSize: '14px' }}></i>
-                  <span style={{ fontSize: '14px', fontWeight: '500', color: '#374151' }}>Video URL:</span>
+                  Video URL
                 </div>
                 <a 
                   href={selectedItem.videoUrl} 
                   target="_blank" 
                   rel="noopener noreferrer" 
+                  className="detail-value"
                   style={{ 
-                    color: '#3b82f6',
+                    color: '#0079FF',
                     textDecoration: 'none',
-                    fontSize: '14px',
+                    fontSize: '13px',
                     wordBreak: 'break-all',
-                    padding: '8px 12px',
-                    backgroundColor: '#eff6ff',
-                    borderRadius: '6px',
-                    display: 'inline-block',
-                    border: '1px solid #dbeafe',
-                    transition: 'all 0.2s ease'
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.backgroundColor = '#dbeafe';
-                    e.currentTarget.style.textDecoration = 'underline';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.backgroundColor = '#eff6ff';
-                    e.currentTarget.style.textDecoration = 'none';
+                    display: 'block'
                   }}
                 >
                   {selectedItem.videoUrl}
@@ -270,37 +241,37 @@ const Library: React.FC<LibraryProps> = ({ selectedItem, onEdit, onDelete }) => 
           textAlign: 'center'
         }}>
           <div className="empty-state" style={{
-            padding: '48px',
-            borderRadius: '16px',
-            backgroundColor: '#f9fafb',
-            border: '2px dashed #d1d5db',
-            maxWidth: '400px'
+            padding: '40px',
+            borderRadius: '12px',
+            backgroundColor: '#fafbfc',
+            border: '1px dashed #e2e8f0',
+            maxWidth: '360px'
           }}>
             <div style={{
-              width: '80px',
-              height: '80px',
+              width: '64px',
+              height: '64px',
               borderRadius: '50%',
-              backgroundColor: '#e5e7eb',
+              backgroundColor: '#f1f5f9',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 24px'
+              margin: '0 auto 20px'
             }}>
-              <i className="fas fa-video" style={{ fontSize: '32px', color: '#9ca3af' }}></i>
+              <i className="fas fa-video" style={{ fontSize: '24px', color: '#64748b' }}></i>
             </div>
             <h3 style={{
-              fontSize: '20px',
+              fontSize: '18px',
               fontWeight: '600',
-              color: '#374151',
-              margin: '0 0 12px 0'
+              color: '#1e293b',
+              margin: '0 0 8px 0'
             }}>
               Select a Library Item
             </h3>
             <p style={{
-              fontSize: '16px',
-              color: '#6b7280',
+              fontSize: '14px',
+              color: '#64748b',
               margin: 0,
-              lineHeight: '1.5'
+              lineHeight: '1.4'
             }}>
               Choose a library item from the left panel to view and manage video content
             </p>
