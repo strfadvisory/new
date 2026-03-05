@@ -1,23 +1,77 @@
-# Product Overview
+# STRF - Reserve Fund Advisory Platform
 
-## Project Purpose
-A full-stack web application built with React TypeScript frontend and Express.js backend, designed as a CRUD application with MongoDB database integration. The project uses Docker containerization for deployment and development.
+## Project Overview
+STRF is a comprehensive full-stack MERN application designed for Reserve Fund Advisory services. The platform provides a complete user management system with role-based access control, document library management, and administrative capabilities.
+
+## Core Value Proposition
+- **Professional Advisory Platform**: Streamlined interface for reserve fund advisory services
+- **Multi-tenant Architecture**: Support for multiple organizations and user roles
+- **Document Management**: Centralized library system for advisory materials and resources
+- **Secure Authentication**: JWT-based authentication with role-based permissions
 
 ## Key Features
-- **React TypeScript Frontend**: Modern UI built with React 18 and TypeScript for type safety
-- **Express.js REST API**: Backend server providing RESTful endpoints for data operations
-- **MongoDB Integration**: NoSQL database using Mongoose ODM for data persistence
-- **Docker Containerization**: Complete Docker setup with docker-compose for easy deployment
-- **CORS Support**: Cross-origin resource sharing enabled for client-server communication
-- **Item Management**: CRUD operations for managing items through dedicated routes and controllers
+
+### User Management & Authentication
+- User registration with comprehensive profile creation
+- Multi-step authentication with OTP verification
+- Role-based access control (Super Admin, Admin, User roles)
+- Company/organization selection and management
+- Profile management with address validation
+
+### Document Library System
+- Centralized document repository
+- File upload and thumbnail generation
+- Categorized content organization
+- Video content support with next steps
+- Search and filtering capabilities
+
+### Administrative Dashboard
+- Super Admin controls for system-wide management
+- User role assignment and permission management
+- Company profile administration
+- System monitoring and configuration
+
+### Banking Integration
+- Banking module for financial operations
+- Transaction management capabilities
+- Financial reporting features
 
 ## Target Users
-- Developers building full-stack JavaScript/TypeScript applications
-- Teams requiring containerized microservices architecture
-- Projects needing MongoDB-backed REST APIs with React frontends
+
+### Primary Users
+- **Reserve Fund Advisors**: Professional advisors managing client portfolios
+- **Property Managers**: Managing reserve funds for properties
+- **Board Members**: Accessing advisory materials and reports
+
+### Administrative Users
+- **Super Administrators**: System-wide management and configuration
+- **Company Administrators**: Organization-level user and content management
+- **Content Managers**: Library and document management
 
 ## Use Cases
-- Item catalog management
-- Data-driven web applications
-- Learning full-stack development patterns
-- Prototyping MERN stack applications with TypeScript
+
+### Advisory Services
+- Client onboarding and profile management
+- Document sharing and collaboration
+- Advisory material distribution
+- Progress tracking and reporting
+
+### Document Management
+- Upload and organize advisory documents
+- Share resources with specific user groups
+- Maintain version control of materials
+- Generate thumbnails for visual content
+
+### User Administration
+- Manage user roles and permissions
+- Control access to sensitive information
+- Monitor user activity and engagement
+- Maintain organizational structure
+
+## Technical Capabilities
+- **Responsive Design**: Mobile-friendly interface with Bootstrap integration
+- **Real-time Validation**: Form validation with API integration
+- **File Management**: Secure file upload with thumbnail generation
+- **API Integration**: RESTful API architecture
+- **Docker Deployment**: Containerized deployment for scalability
+- **Database Management**: MongoDB with Mongoose ODM

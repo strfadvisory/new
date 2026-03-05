@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 import './CreateProfile.css';
 import AuthSidebar from './components/AuthSidebar';
 import AddressForm from './components/AddressForm';
@@ -53,7 +53,7 @@ const AdvisoryVerification: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/verify-advisory/${token}`);
+        const response = await fetch(`${API_ENDPOINTS.verifyAdvisory}/${token}`);
         const data = await response.json();
         if (response.ok) {
           setUserInfo({ firstName: data.firstName, lastName: data.lastName, companyName: data.companyName });
@@ -88,7 +88,7 @@ const AdvisoryVerification: React.FC = () => {
     }
     setSubmitLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/complete-advisory-profile/${token}`, {
+      const response = await fetch(`${API_ENDPOINTS.completeAdvisoryProfile}/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

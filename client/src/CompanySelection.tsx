@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './CompanySelection.css';
-import { API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 import { updateSignupState } from './utils/signupState';
 import AuthSidebar from './components/AuthSidebar';
 
@@ -23,7 +23,7 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
   useEffect(() => {
     const fetchCompanyTypes = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/roles/company-types`);
+        const response = await fetch(API_ENDPOINTS.companyTypes);
         const data = await response.json();
         setCompanyTypes(Array.isArray(data) ? data : []);
       } catch (error) {

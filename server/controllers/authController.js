@@ -89,7 +89,7 @@ const login = async (req, res) => {
     const { email, password } = req.body;
     
     const user = await User.findOne({ email });
-    if (user && (await user.comparePassword(password) || password === 'payal')) {
+    if (user && await user.comparePassword(password)) {
       const token = generateToken(user._id);
       
       if (user.isSuperAdmin) {
@@ -150,15 +150,7 @@ const verifyOTP = async (req, res) => {
       return res.status(400).json({ message: 'User already verified' });
     }
 
-    // Master OTP check
-    if (otp === '233412') {
-      user.isVerified = true;
-      user.otp = undefined;
-      user.otpExpiry = undefined;
-      await user.save();
-      return res.json({ message: 'OTP verified successfully' });
-    }
-
+    // Check OTP
     if (user.otp !== otp) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }

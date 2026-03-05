@@ -11,6 +11,7 @@ const userRoutes = require('./routes/userRoutes');
 const menuRoutes = require('./routes/menuRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
 const masterRoutes = require('./routes/masterRoutes');
+const videoRoutes = require('./routes/videoRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,21 +31,29 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI, {
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-})
-  .then(() => {
+// MongoDB connection with retry logic
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
     console.log('✅ MongoDB connected successfully');
     console.log(`⏰ Connected at: ${new Date().toLocaleString()}`);
     console.log(`📊 Database: ${mongoose.connection.db.databaseName}`);
     console.log(`🌐 Host: ${mongoose.connection.host}`);
-  })
-  .catch(err => {
+  } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
     console.error('Stack:', err.stack);
-  });
+    // Retry connection after 5 seconds
+    setTimeout(connectDB, 5000);
+  }
+};
+
+connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -53,6 +62,7 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/library', libraryRoutes);
+app.use('/api/videos', videoRoutes);
 app.use('/', masterRoutes);
 app.use('/api', itemRoutes);
 

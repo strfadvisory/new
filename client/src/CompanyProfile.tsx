@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
-import { API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 import { updateSignupState, getSignupState, getCompanyFormData, updateCompanyFormData, CompanyFormData, clearSignupState } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
 import AuthSidebar from './components/AuthSidebar';
@@ -66,7 +66,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
     if (checked) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+        const response = await fetch(API_ENDPOINTS.profile, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -130,7 +130,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
         formDataToSend.append('logo', logo);
       }
       
-      const response = await fetch(`${API_BASE_URL}/api/auth/company-profile`, {
+      const response = await fetch(API_ENDPOINTS.companyProfile, {
         method: 'POST',
         headers: { 
           'Authorization': `Bearer ${token}`

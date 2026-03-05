@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { API_BASE_URL } from '../config';
+import { API_ENDPOINTS } from '../config';
 import './RoleForm.css';
 
 interface RoleFormProps {
@@ -28,7 +28,7 @@ const RoleForm: React.FC<RoleFormProps> = ({ onClose, onRoleCreated }) => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/roles`, {
+      const response = await fetch(API_ENDPOINTS.roles, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

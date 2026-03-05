@@ -9,7 +9,8 @@
     "run-dev": "nodemon --watch . --ext js,jsx,json --ignore node_modules/ --ignore uploads/ index.jsx",
     "delete:users": "node deleteUsers.js",
     "clear": "node clearAndSeed.js",
-    "update:thumbnails": "node updateThumbnails.js"
+    "update:thumbnails": "node updateThumbnails.js",
+    "migrate": "node runAllMigrations.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

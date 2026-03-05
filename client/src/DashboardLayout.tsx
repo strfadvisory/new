@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import './Dashboard.css';
-import { API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 
 interface DashboardLayoutProps {
   user: any;
@@ -17,7 +17,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout }) => 
     const fetchPermissions = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/user-permissions`, {
+        const response = await fetch(API_ENDPOINTS.userPermissions, {
           headers: {
             'Authorization': `Bearer ${token}`
           }

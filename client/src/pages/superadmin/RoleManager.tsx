@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
 import { API_BASE_URL } from '../../config';
 import './RoleManager.css';
@@ -65,6 +65,24 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [currentVideo, setCurrentVideo] = useState<Video | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -144,6 +162,13 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
   const handleEdit = () => {
     if (!selectedRole?._id) return;
     onEdit({ ...selectedRole, permissions: selectedPermissions } as Role);
+    setDropdownOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (!selectedRole?._id) return;
+    onDelete(selectedRole._id);
+    setDropdownOpen(false);
   };
 
   return (
@@ -181,21 +206,28 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                   </button>
                 </>
               ) : (
-                <>
-                  <button 
-                    onClick={() => onDelete(selectedRole._id)}
-                    className="btn btn-danger"
-                    style={{ marginRight: '8px' }}
+                <div className="custom-dropdown" ref={dropdownRef}>
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="dropdown-btn"
                   >
-                    Delete Role
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="1"/>
+                      <circle cx="12" cy="5" r="1"/>
+                      <circle cx="12" cy="19" r="1"/>
+                    </svg>
                   </button>
-                  <button 
-                    onClick={handleEdit}
-                    className="btn btn-secondary"
-                  >
-                    Edit Role
-                  </button>
-                </>
+                  {dropdownOpen && (
+                    <div className="dropdown-content">
+                      <button onClick={handleEdit} className="dropdown-option">
+                        Edit Role
+                      </button>
+                      <button onClick={handleDelete} className="dropdown-option danger">
+                        Delete Role
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>

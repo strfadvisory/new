@@ -17,6 +17,8 @@ const Simulator: React.FC = () => {
   });
   const [childRoles, setChildRoles] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [currentVideo, setCurrentVideo] = useState<any>(null);
 
   useEffect(() => {
     // Get user from localStorage
@@ -62,14 +64,15 @@ const Simulator: React.FC = () => {
     const fetchChildRoles = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/child-roles`, {
+        const response = await fetch(`${API_BASE_URL}/api/roles`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         const data = await response.json();
         if (response.ok) {
-          setChildRoles(data.childRoles || []);
+          const userRoles = data.filter((role: any) => role.type === 'User');
+          setChildRoles(userRoles);
         }
       } catch (error) {
         console.error('Error fetching child roles:', error);
@@ -120,7 +123,13 @@ const Simulator: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '60px' }}>
         {videos.length > 0 ? videos.map((video, index) => (
           <div key={index} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ background: '#f3f4f6', borderRadius: '8px', height: '180px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: `url(${video.image})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+            <div 
+              style={{ background: '#f3f4f6', borderRadius: '8px', height: '180px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: `url(${video.image})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer' }}
+              onClick={() => {
+                setCurrentVideo(video);
+                setShowVideoModal(true);
+              }}
+            >
               <div style={{ width: '60px', height: '60px', background: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <i className="fas fa-play" style={{ color: 'white', fontSize: '24px' }}></i>
               </div>
@@ -187,6 +196,37 @@ const Simulator: React.FC = () => {
                 {inviteLoading ? <><i className="fas fa-spinner fa-spin"></i> Sending...</> : 'Invite'}
               </button>
             </form>
+          </div>
+        </>
+      )}
+
+      {showVideoModal && currentVideo && (
+        <>
+          <div 
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000 }}
+            onClick={() => setShowVideoModal(false)}
+          ></div>
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'white', borderRadius: '12px', padding: '20px', width: '80vw', height: '80vh', maxWidth: '900px', maxHeight: '600px', zIndex: 1001, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>{currentVideo.title}</h3>
+              <button 
+                onClick={() => setShowVideoModal(false)}
+                style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#6b7280' }}
+              >
+                ×
+              </button>
+            </div>
+            <video 
+              controls 
+              autoPlay
+              style={{ width: '100%', height: 'calc(100% - 60px)', borderRadius: '8px', objectFit: 'contain' }}
+              src={currentVideo.videoUrl}
+            >
+              Your browser does not support the video tag.
+            </video>
+            {currentVideo.description && (
+              <p style={{ marginTop: '12px', fontSize: '14px', color: '#6b7280' }}>{currentVideo.description}</p>
+            )}
           </div>
         </>
       )}

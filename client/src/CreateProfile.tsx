@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import './CreateProfile.css';
-import { API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 import { updateSignupState, getSignupState, getFormData, updateFormData, SignupFormData } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
 import AuthSidebar from './components/AuthSidebar';
@@ -203,7 +203,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
     setEmailValidation({ valid: null, message: '', checking: true });
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/validate/email`, {
+      const response = await fetch(API_ENDPOINTS.validateEmail, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -238,7 +238,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
     setLoading(true);
     try {
       const state = getSignupState();
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      const response = await fetch(API_ENDPOINTS.register, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

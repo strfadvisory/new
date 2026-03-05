@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import './Login.css';
-import { API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 import AuthSidebar from './components/AuthSidebar';
 
 interface LoginProps {
@@ -19,7 +19,7 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const response = await fetch(API_ENDPOINTS.login, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './Dashboard.css';
-import { API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 
 interface DashboardProps {
   user: any;
@@ -29,7 +29,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     const fetchNextSteps = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/user-nextsteps`, {
+        const response = await fetch(API_ENDPOINTS.userNextsteps, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -46,7 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     const fetchVideos = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/user-videos`, {
+        const response = await fetch(API_ENDPOINTS.userVideos, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -63,7 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     const fetchChildRoles = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/child-roles`, {
+        const response = await fetch(API_ENDPOINTS.childRoles, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -90,7 +90,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_BASE_URL}/api/roles/user-nextstep`, {
+      await fetch(API_ENDPOINTS.userNextstep, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setInviteLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/auth/invite-advisory`, {
+      const response = await fetch(API_ENDPOINTS.inviteAdvisory, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import { updateSignupState, getSignupState, clearSignupState, getFormData } from './utils/signupState';
-import { API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 import SignupStateDebug from './components/SignupStateDebug';
 import Login from './Login';
 import CompanySelection from './CompanySelection';
@@ -79,7 +79,7 @@ function App() {
       // Fetch user permissions to get first navigation item
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/user-permissions`, {
+        const response = await fetch(API_ENDPOINTS.userPermissions, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -121,7 +121,7 @@ function App() {
     // Fetch user permissions to get first navigation item
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/roles/user-permissions`, {
+      const response = await fetch(API_ENDPOINTS.userPermissions, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

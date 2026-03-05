@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './CreateProfile.css';
-import { API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 import { updateSignupState, getSignupState, getFormData } from './utils/signupState';
 import Breadcrumb from './components/Breadcrumb';
 import AuthSidebar from './components/AuthSidebar';
@@ -59,7 +59,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ onVerify, onBack, onN
     
     setResending(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/resend-otp`, {
+      const response = await fetch(API_ENDPOINTS.resendOtp, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -99,7 +99,7 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ onVerify, onBack, onN
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/verify-otp`, {
+      const response = await fetch(API_ENDPOINTS.verifyOtp, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp: otpCode })
