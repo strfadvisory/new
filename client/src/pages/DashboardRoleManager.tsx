@@ -227,10 +227,10 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
     <div className="main-content">
       <div className="companies-left-panel">
         <div className="companies-header">
-          <div className="results-count">
-            {roles.length} Results
+          <div className="header-top">
+            <h2 className="results-title">{roles.length} Results founded</h2>
+            <a href="#" className="add-new-link" onClick={handleAddNew}>+ Add New</a>
           </div>
-          <button className="add-new-btn" onClick={handleAddNew}>+ Add New</button>
           <input type="text" placeholder="Search by name" className="companies-search" />
         </div>
         
@@ -268,19 +268,18 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
                     setSelectedRole(role);
                   }
                 }}
-                style={{ 
-                  cursor: 'pointer', 
-                  padding: '12px 16px',
-                  marginBottom: '1px',
-                  background: selectedRole?._id === role._id ? '#f0f9ff' : 'white',
-                  transition: 'all 0.15s ease'
-                }}
               >
-                <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '4px' }}>
-                  {role.name}
+                <div className="company-logo">
+                  {role.icon ? (
+                    <img src={role.icon} alt={role.name} />
+                  ) : (
+                    <i className="fas fa-user-shield" style={{ color: '#64748b', fontSize: '20px' }}></i>
+                  )}
                 </div>
-                <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.4' }}>
-                  {role.description || 'User Role'}
+                <div className="company-info">
+                  <div className="company-name">{role.name}</div>
+                  <div className="company-level">{role.name.toLowerCase().includes('association') ? 'Associations' : 'Level 1'}</div>
+                  <div className="company-address">{role.description || 'Master Role'}</div>
                 </div>
               </div>
             );
