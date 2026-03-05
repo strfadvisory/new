@@ -411,30 +411,17 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                       key={item._id}
                       className={`company-item ${selectedLibraryItem?._id === item._id ? 'active' : ''}`}
                       onClick={() => setSelectedLibraryItem(item)}
-                      style={{ cursor: 'pointer' }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                      <div className="company-logo">
                         <img 
-                          src={item.thumbnail} 
+                          src={item.thumbnail || '/logo.png'} 
                           alt={item.title}
-                          style={{ 
-                            width: '60px', 
-                            height: '40px', 
-                            objectFit: 'cover', 
-                            borderRadius: '4px',
-                            border: '1px solid #e5e7eb'
-                          }}
                         />
-                        <div className="company-name">{item.title}</div>
                       </div>
-                      <div className="company-desc">{item.description}</div>
-                      <div className="company-status" style={{ 
-                        fontSize: '12px', 
-                        color: item.isActive ? '#10b981' : '#ef4444',
-                        marginTop: '8px',
-                        fontWeight: '500'
-                      }}>
-                        {item.isActive ? 'Active' : 'Inactive'}
+                      <div className="company-info">
+                        <div className="company-name">{item.title}</div>
+                        <div className="company-level associations">Associations</div>
+                        <div className="company-address">{item.description}</div>
                       </div>
                     </div>
                   ))
@@ -469,19 +456,18 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                             setSelectedRole(role);
                           }
                         }}
-                        style={{ 
-                          cursor: 'pointer', 
-                          padding: '12px 16px',
-                          marginBottom: '1px',
-                          background: selectedRole?._id === role._id ? '#f0f9ff' : 'white',
-                          transition: 'all 0.15s ease'
-                        }}
                       >
-                        <div style={{ fontWeight: '600', fontSize: '14px', color: '#111827', marginBottom: '4px' }}>
-                          {role.name}
+                        <div className="company-logo">
+                          {role.icon ? (
+                            <img src={role.icon} alt={role.name} />
+                          ) : (
+                            <i className="fas fa-user-shield" style={{ color: '#64748b', fontSize: '20px' }}></i>
+                          )}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.4' }}>
-                          {role.description || 'Master Role'}
+                        <div className="company-info">
+                          <div className="company-name">{role.name}</div>
+                          <div className="company-level">{role.name.toLowerCase().includes('association') ? 'Associations' : 'Level 1'}</div>
+                          <div className="company-address">{role.description || 'Master Role'}</div>
                         </div>
                       </div>
                     );
