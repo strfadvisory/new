@@ -125,7 +125,10 @@ const AllCompanies: React.FC = () => {
     <div className="companies-container">
       <div className="companies-left-panel">
         <div className="companies-header">
-          <button className="add-new-btn">+ Add New</button>
+          <div className="header-top">
+            <h2 className="results-title">{filteredUsers.length} Results founded</h2>
+            <a href="#" className="add-new-link">+ Add New</a>
+          </div>
           <input
             type="text"
             placeholder="Search by name"
@@ -134,7 +137,6 @@ const AllCompanies: React.FC = () => {
             className="companies-search"
           />
         </div>
-        <div className="results-count">{filteredUsers.length} Results founded</div>
         <div className="companies-list">
           {isLoading ? (
             <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>
