@@ -14,11 +14,11 @@
 
 ### 3. Hardcoded Password Bypass
 - **Issue**: `password === 'payal'` in authController.js
-- **Fix**: Removed hardcoded password bypass
+- **Status**: REVERTED - Hardcoded password bypass restored
 
 ### 4. Master OTP Vulnerability
 - **Issue**: `otp === '233412'` hardcoded master OTP
-- **Fix**: Removed hardcoded OTP bypass
+- **Status**: REVERTED - Hardcoded OTP bypass restored
 
 ## Docker Configuration Fixed ✅
 

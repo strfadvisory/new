@@ -88,11 +88,11 @@ function App() {
         if (response.ok && data.menu && data.menu.length > 0) {
           navigate(data.menu[0].path);
         } else {
-          navigate('/dashboard');
+          navigate('/dashboard/simulator');
         }
       } catch (error) {
         console.error('Error fetching permissions:', error);
-        navigate('/dashboard');
+        navigate('/dashboard/simulator');
       }
     }
   };
@@ -130,11 +130,11 @@ function App() {
       if (response.ok && data.menu && data.menu.length > 0) {
         navigate(data.menu[0].path);
       } else {
-        navigate('/dashboard');
+        navigate('/dashboard/simulator');
       }
     } catch (error) {
       console.error('Error fetching permissions:', error);
-      navigate('/dashboard');
+      navigate('/dashboard/simulator');
     }
   };
 
@@ -152,7 +152,7 @@ function App() {
     <div className="App">
       {/* {  <SignupStateDebug />  } */}
       <Routes>
-        <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard'} replace />} />
+        <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator'} replace />} />
         <Route path="/signup" element={<CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />} />
         <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} onNavigate={(step) => navigate(step)} />} />
         <Route path="/verify-otp" element={<OTPVerification onVerify={handleOTPVerified} onBack={handleBackToProfile} onNavigate={(step) => navigate(step)} />} />
@@ -171,7 +171,7 @@ function App() {
           <Route path="role-manager" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
           <Route path="role-management" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
         </Route>
-        <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard') : '/login'} replace />} />
+        <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator') : '/login'} replace />} />
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
     </div>
