@@ -35,7 +35,7 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
     if (selectedRole?._id) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/${selectedRole._id}`, {
+        const response = await fetch(`${API_BASE_URL}/roles/${selectedRole._id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -56,7 +56,7 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
   const fetchRoles = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/roles`, {
+      const response = await fetch(`${API_BASE_URL}/roles`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -66,7 +66,7 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
           const firstRole = data[0];
           const isValidId = firstRole._id && firstRole._id.match(/^[0-9a-fA-F]{24}$/);
           if (isValidId) {
-            const roleResponse = await fetch(`${API_BASE_URL}/api/roles/${firstRole._id}`, {
+            const roleResponse = await fetch(`${API_BASE_URL}/roles/${firstRole._id}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             const freshRole = roleResponse.ok ? await roleResponse.json() : firstRole;
@@ -146,7 +146,7 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
     if (roleToDelete) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/${roleToDelete}`, {
+        const response = await fetch(`${API_BASE_URL}/roles/${roleToDelete}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -178,7 +178,7 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
     try {
       const token = localStorage.getItem('token');
       
-      let url = `${API_BASE_URL}/api/roles`;
+      let url = `${API_BASE_URL}/roles`;
       let method = 'POST';
       const submitData: any = { 
         name: formData.name,
@@ -189,7 +189,7 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
       };
       
       if (editMode && formData._id) {
-        url = `${API_BASE_URL}/api/roles/${formData._id}`;
+        url = `${API_BASE_URL}/roles/${formData._id}`;
         method = 'PUT';
       }
       
@@ -251,7 +251,7 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
                   
                   try {
                     const token = localStorage.getItem('token');
-                    const response = await fetch(`${API_BASE_URL}/api/roles/${role._id}`, {
+                    const response = await fetch(`${API_BASE_URL}/roles/${role._id}`, {
                       headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (response.ok) {
@@ -403,7 +403,7 @@ const DashboardRoleManager: React.FC<DashboardRoleManagerProps> = ({ user, onLog
                           if (editMode && formData._id) {
                             try {
                               const token = localStorage.getItem('token');
-                              await fetch(`${API_BASE_URL}/api/roles/${formData._id}`, {
+                              await fetch(`${API_BASE_URL}/roles/${formData._id}`, {
                                 method: 'PUT',
                                 headers: {
                                   'Content-Type': 'application/json',

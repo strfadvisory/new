@@ -24,7 +24,7 @@ const UserManagement: React.FC = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/users`, {
+      const response = await fetch(`${API_BASE_URL}/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -39,7 +39,7 @@ const UserManagement: React.FC = () => {
   const handleStatusChange = async (userId: string, newStatus: string) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`${API_BASE_URL}/api/users/${userId}/status`, {
+      await fetch(`${API_BASE_URL}/users/${userId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

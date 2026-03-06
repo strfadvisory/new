@@ -38,7 +38,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
 
   const fetchChildRoles = async () => {
     try {
-      const roles = await apiService.get('/api/roles/child-roles');
+      const roles = await apiService.get('/roles/child-roles');
       setChildRoles(Array.isArray(roles) ? roles : []);
     } catch (error) {
       console.error('Error fetching roles:', error);
@@ -50,7 +50,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     e.preventDefault();
     setInviteLoading(true);
     try {
-      await apiService.post('/api/auth/invite-advisory', inviteData);
+      await apiService.post('/auth/invite-advisory', inviteData);
       console.log('Invitation sent successfully');
       setInviteData({
         selectedRole: '',

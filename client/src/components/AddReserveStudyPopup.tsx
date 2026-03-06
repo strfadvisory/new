@@ -57,7 +57,7 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
         formData.append('associationName', selectedAssociation);
       }
 
-      await apiService.uploadFile('/api/reserve-studies', formData);
+      await apiService.uploadFile('/reserve-studies', formData);
 
       setStudyName('');
       setSelectedFile(null);

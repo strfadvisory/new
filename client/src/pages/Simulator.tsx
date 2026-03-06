@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { toast } from 'react-toastify';
-import { API_BASE_URL } from '../config';
+import {
+  useUserNextsteps,
+  useUserVideos,
+  useRoles,
+  useInviteAdvisory
+} from '../hooks/queries';
 
 const Simulator: React.FC = () => {
-  const [nextSteps, setNextSteps] = useState<any[]>([]);
-  const [videos, setVideos] = useState<any[]>([]);
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteTitle, setInviteTitle] = useState('');
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteData, setInviteData] = useState({
     selectedRole: '',
@@ -15,99 +17,39 @@ const Simulator: React.FC = () => {
     adminEmail: '',
     designation: ''
   });
-  const [childRoles, setChildRoles] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [currentVideo, setCurrentVideo] = useState<any>(null);
 
-  useEffect(() => {
+  // React Query hooks
+  const { data: nextStepsData } = useUserNextsteps();
+  const { data: videosData } = useUserVideos();
+  const { data: rolesData } = useRoles();
+  const inviteMutation = useInviteAdvisory();
+
+  // Extract data from API responses
+  const nextSteps = nextStepsData?.nextSteps || [];
+  const videos = videosData?.videos || [];
+  const childRoles = rolesData?.filter((role: any) => role.type === 'User') || [];
+
+  React.useEffect(() => {
     // Get user from localStorage
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
     }
-
-    const fetchNextSteps = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/user-nextsteps`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setNextSteps(data.nextSteps || []);
-        }
-      } catch (error) {
-        console.error('Error fetching next steps:', error);
-      }
-    };
-
-    const fetchVideos = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/user-videos`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setVideos(data.videos || []);
-        }
-      } catch (error) {
-        console.error('Error fetching videos:', error);
-      }
-    };
-
-    const fetchChildRoles = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          const userRoles = data.filter((role: any) => role.type === 'User');
-          setChildRoles(userRoles);
-        }
-      } catch (error) {
-        console.error('Error fetching child roles:', error);
-      }
-    };
-
-    fetchNextSteps();
-    fetchVideos();
-    fetchChildRoles();
   }, []);
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setInviteLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/auth/invite-advisory`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(inviteData)
-      });
-      const data = await response.json();
-      if (response.ok) {
-        toast.success('Invitation sent successfully!');
-        setShowInviteModal(false);
-        setInviteData({ selectedRole: '', firstName: '', lastName: '', adminEmail: '', designation: '' });
-      } else {
-        toast.error(data.message || 'Failed to send invitation');
-      }
-    } catch (error) {
-      console.error('Error sending invitation:', error);
-      toast.error('Failed to send invitation');
+      await inviteMutation.mutateAsync(inviteData);
+      toast.success('Invitation sent successfully!');
+      setShowInviteModal(false);
+      setInviteData({ selectedRole: '', firstName: '', lastName: '', adminEmail: '', designation: '' });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to send invitation');
     } finally {
       setInviteLoading(false);
     }
@@ -153,7 +95,6 @@ const Simulator: React.FC = () => {
               className="step-card"
               onClick={() => {
                 if (step.title === 'Invite Advisory') {
-                  setInviteTitle(step.title);
                   setShowInviteModal(true);
                 }
               }}

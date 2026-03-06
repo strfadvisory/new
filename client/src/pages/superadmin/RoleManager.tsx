@@ -91,7 +91,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    fetch(`${API_BASE_URL}/api/master`, {
+    fetch(`${API_BASE_URL}/master`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -142,7 +142,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
         videos: selectedVideos
       };
       
-      const response = await fetch(`${API_BASE_URL}/api/roles/${selectedRole._id}`, {
+      const response = await fetch(`${API_BASE_URL}/roles/${selectedRole._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

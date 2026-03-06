@@ -44,7 +44,7 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
     if (selectedAssociation?._id) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/associations/${selectedAssociation._id}`, {
+        const response = await fetch(`${API_BASE_URL}/associations/${selectedAssociation._id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -65,7 +65,7 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
   const fetchAssociations = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/associations`, {
+      const response = await fetch(`${API_BASE_URL}/associations`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -75,7 +75,7 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
           const firstAssociation = data[0];
           const isValidId = firstAssociation._id && firstAssociation._id.match(/^[0-9a-fA-F]{24}$/);
           if (isValidId) {
-            const associationResponse = await fetch(`${API_BASE_URL}/api/associations/${firstAssociation._id}`, {
+            const associationResponse = await fetch(`${API_BASE_URL}/associations/${firstAssociation._id}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             const freshAssociation = associationResponse.ok ? await associationResponse.json() : firstAssociation;
@@ -116,7 +116,7 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
     if (associationToDelete) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/associations/${associationToDelete}`, {
+        const response = await fetch(`${API_BASE_URL}/associations/${associationToDelete}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -171,7 +171,7 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
                   
                   try {
                     const token = localStorage.getItem('token');
-                    const response = await fetch(`${API_BASE_URL}/api/associations/${association._id}`, {
+                    const response = await fetch(`${API_BASE_URL}/associations/${association._id}`, {
                       headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (response.ok) {

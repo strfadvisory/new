@@ -136,7 +136,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get<User[]>('/api/auth/users');
+      const data = await apiService.get<User[]>('/auth/users');
       const usersWithRoles = Array.isArray(data) ? data.map(user => ({
         ...user,
         role: user.role || (Math.random() > 0.5 ? 'Manager' : 'Member')
@@ -165,7 +165,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   const fetchCompanies = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get<Company[]>('/api/roles/company-types');
+      const data = await apiService.get<Company[]>('/roles/company-types');
       setCompanies(Array.isArray(data) ? data : [
         { _id: '1', name: 'DemoTech Solutions' },
         { _id: '2', name: 'SampleCorp Ltd.' },
@@ -204,7 +204,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   const fetchAssociations = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get<Association[]>('/api/associations');
+      const data = await apiService.get<Association[]>('/associations');
       setAssociations(Array.isArray(data) ? data : [
         { _id: '1', name: 'Homeowners Association A', type: 'HOA' },
         { _id: '2', name: 'Community Board B', type: 'Community' },
@@ -233,7 +233,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   const fetchReserveStudies = async () => {
     setLoading(true);
     try {
-      let url = '/api/reserve-studies';
+      let url = '/reserve-studies';
       if (associationFilter) {
         url += `?association=${encodeURIComponent(associationFilter)}`;
       }
@@ -643,7 +643,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
 
   const fetchUsers = async () => {
     try {
-      const data = await apiService.get<User[]>('/api/auth/users');
+      const data = await apiService.get<User[]>('/auth/users');
       setUsers(Array.isArray(data) ? data.slice(0, 3) : []);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -653,7 +653,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
 
   const fetchDropdownUsers = async () => {
     try {
-      const data = await apiService.get<User[]>('/api/auth/users');
+      const data = await apiService.get<User[]>('/auth/users');
       const usersWithRoles = Array.isArray(data) ? data.map(user => ({
         ...user,
         role: user.role || (Math.random() > 0.5 ? 'Manager' : 'Member')

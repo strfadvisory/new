@@ -45,7 +45,7 @@ const UserManagement: React.FC = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/auth/users`, {
+      const response = await fetch(`${API_BASE_URL}/auth/users`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -64,7 +64,7 @@ const UserManagement: React.FC = () => {
     if (!selectedUser?._id) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/auth/remove-logo/${selectedUser._id}`, {
+      const response = await fetch(`${API_BASE_URL}/auth/remove-logo/${selectedUser._id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -85,7 +85,7 @@ const UserManagement: React.FC = () => {
     if (!selectedUser?._id) return;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/auth/user/${selectedUser._id}`, {
+      const response = await fetch(`${API_BASE_URL}/auth/user/${selectedUser._id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -140,7 +140,7 @@ const UserManagement: React.FC = () => {
               >
                 <div className="company-logo">
                   {user.companyProfile?.logoId ? (
-                    <img src={`${API_BASE_URL}/api/auth/file/${user.companyProfile.logoId}`} alt="User Logo" />
+                    <img src={`${API_BASE_URL}/auth/file/${user.companyProfile.logoId}`} alt="User Logo" />
                   ) : (
                     <i className="fas fa-user" style={{ color: '#64748b', fontSize: '20px' }}></i>
                   )}
@@ -201,7 +201,7 @@ const UserManagement: React.FC = () => {
                   <div style={{ width: '80px', height: '80px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     {selectedUser.companyProfile?.logoId ? (
                       <>
-                        <img src={`${API_BASE_URL}/api/auth/file/${selectedUser.companyProfile.logoId}`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
+                        <img src={`${API_BASE_URL}/auth/file/${selectedUser.companyProfile.logoId}`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
                         <button onClick={handleRemoveLogo} style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '12px' }}>×</button>
                       </>
                     ) : (

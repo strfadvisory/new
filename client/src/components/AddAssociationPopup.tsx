@@ -73,7 +73,7 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
     try {
       const token = localStorage.getItem('token');
       
-      let url = `${API_BASE_URL}/api/associations`;
+      let url = `${API_BASE_URL}/associations`;
       let method = 'POST';
       const submitData: any = { 
         name: formData.name,
@@ -90,7 +90,7 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
       };
       
       if (isEditMode && formData._id) {
-        url = `${API_BASE_URL}/api/associations/${formData._id}`;
+        url = `${API_BASE_URL}/associations/${formData._id}`;
         method = 'PUT';
       }
       

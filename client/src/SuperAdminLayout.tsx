@@ -53,7 +53,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const fetchLibraryItems = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/library`, {
+      const response = await fetch(`${API_BASE_URL}/library`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -72,7 +72,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     if (selectedRole?._id) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/roles/${selectedRole._id}`, {
+        const response = await fetch(`${API_BASE_URL}/roles/${selectedRole._id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -93,7 +93,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const fetchRoles = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/roles`, {
+      const response = await fetch(`${API_BASE_URL}/roles`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
@@ -103,7 +103,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
           const firstRole = data[0];
           const isValidId = firstRole._id && firstRole._id.match(/^[0-9a-fA-F]{24}$/);
           if (isValidId) {
-            const roleResponse = await fetch(`${API_BASE_URL}/api/roles/${firstRole._id}`, {
+            const roleResponse = await fetch(`${API_BASE_URL}/roles/${firstRole._id}`, {
               headers: { 'Authorization': `Bearer ${token}` }
             });
             const freshRole = roleResponse.ok ? await roleResponse.json() : firstRole;
@@ -199,7 +199,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/roles/default-permissions`, {
+      const response = await fetch(`${API_BASE_URL}/roles/default-permissions`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -227,9 +227,9 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         let url;
         
         if (currentPage === 'library') {
-          url = `${API_BASE_URL}/api/library/${roleToDelete}`;
+          url = `${API_BASE_URL}/library/${roleToDelete}`;
         } else {
-          url = `${API_BASE_URL}/api/roles/${roleToDelete}`;
+          url = `${API_BASE_URL}/roles/${roleToDelete}`;
         }
         
         const response = await fetch(url, {
@@ -275,11 +275,11 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
           isActive: formData.status
         };
         
-        let url = `${API_BASE_URL}/api/library`;
+        let url = `${API_BASE_URL}/library`;
         let method = 'POST';
         
         if (editMode && formData._id) {
-          url = `${API_BASE_URL}/api/library/${formData._id}`;
+          url = `${API_BASE_URL}/library/${formData._id}`;
           method = 'PUT';
         }
         
@@ -309,7 +309,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         return;
       }
       
-      let url = `${API_BASE_URL}/api/roles`;
+      let url = `${API_BASE_URL}/roles`;
       let method = 'POST';
       const submitData: any = { 
         name: formData.name,
@@ -320,7 +320,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       };
       
       if (editMode && formData._id) {
-        url = `${API_BASE_URL}/api/roles/${formData._id}`;
+        url = `${API_BASE_URL}/roles/${formData._id}`;
         method = 'PUT';
       }
       
@@ -427,7 +427,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                           
                           try {
                             const token = localStorage.getItem('token');
-                            const response = await fetch(`${API_BASE_URL}/api/roles/${role._id}`, {
+                            const response = await fetch(`${API_BASE_URL}/roles/${role._id}`, {
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
                             if (response.ok) {
@@ -615,8 +615,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                             try {
                               const token = localStorage.getItem('token');
                               const url = currentPage === 'library' 
-                                ? `${API_BASE_URL}/api/library/${formData._id}`
-                                : `${API_BASE_URL}/api/roles/${formData._id}`;
+                                ? `${API_BASE_URL}/library/${formData._id}`
+                                : `${API_BASE_URL}/roles/${formData._id}`;
                               await fetch(url, {
                                 method: 'PUT',
                                 headers: {
