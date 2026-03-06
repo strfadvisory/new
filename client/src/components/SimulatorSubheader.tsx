@@ -578,7 +578,10 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
                 padding: '12px 16px',
                 borderTop: '1px solid #f3f4f6',
                 background: '#f9fafb',
-                marginTop: 'auto'
+                marginTop: 'auto',
+                   position: 'absolute',
+                    bottom:'0px',
+                    width:'100%'
               }}>
                 <button 
                   onClick={() => {
@@ -592,7 +595,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
                     fontSize: '14px',
                     fontWeight: '500',
                     cursor: 'pointer',
-                    padding: '0'
+                    padding: '0',
+                 
                   }}
                 >
                   + Send Invite
