@@ -21,6 +21,7 @@ import Users from './pages/Users';
 import Banking from './pages/Banking';
 import UserManagement from './pages/UserManagement';
 import DashboardRoleManager from './pages/DashboardRoleManager';
+import AssociationControl from './pages/AssociationControl';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -175,6 +176,7 @@ function App() {
           <Route path="banking" element={<Banking />} />
           <Route path="role-manager" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
           <Route path="role-management" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
+          <Route path="association-control" element={<AssociationControl user={user} onLogout={handleLogout} />} />
         </Route>
         <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator') : '/login'} replace />} />
       </Routes>

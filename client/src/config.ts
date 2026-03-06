@@ -37,6 +37,9 @@ export const API_ENDPOINTS = {
   // Library endpoints
   library: `${API_BASE_URL}/api/library`,
   
+  // Association endpoints
+  associations: `${API_BASE_URL}/api/associations`,
+  
   // Master endpoints
   master: `${API_BASE_URL}/api/master`,
   

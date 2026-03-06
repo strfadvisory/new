@@ -12,6 +12,7 @@ const menuRoutes = require('./routes/menuRoutes');
 const libraryRoutes = require('./routes/libraryRoutes');
 const masterRoutes = require('./routes/masterRoutes');
 const videoRoutes = require('./routes/videoRoutes');
+const associationRoutes = require('./routes/associationRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -63,6 +64,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/library', libraryRoutes);
 app.use('/api/videos', videoRoutes);
+app.use('/api/associations', associationRoutes);
 app.use('/', masterRoutes);
 app.use('/api', itemRoutes);
 
