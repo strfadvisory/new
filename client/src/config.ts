@@ -22,6 +22,7 @@ export const API_ENDPOINTS = {
   adminUsers: `${API_BASE_URL}/api/users/admins`,
   companies: `${API_BASE_URL}/api/users/companies`,
   userStatus: `${API_BASE_URL}/api/users/:id/status`,
+  createCompanyProfile: `${API_BASE_URL}/api/users/create-company-profile`,
   
   // Role endpoints
   roles: `${API_BASE_URL}/api/roles`,

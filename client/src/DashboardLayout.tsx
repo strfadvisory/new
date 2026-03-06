@@ -8,12 +8,22 @@ import DashboardHeader from './components/DashboardHeader';
 interface DashboardLayoutProps {
   user: any;
   onLogout: () => void;
+  onUserUpdate?: (updatedUser: any) => void;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout }) => {
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUserUpdate }) => {
   const [menu, setMenu] = useState<any[]>([]);
+  const [currentUser, setCurrentUser] = useState(user);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleUserUpdate = (updatedUser: any) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+    if (onUserUpdate) {
+      onUserUpdate(updatedUser);
+    }
+  };
 
   useEffect(() => {
     const fetchPermissions = async () => {
@@ -45,7 +55,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout }) => 
   return (
     <div className="dashboard-container-no-sidebar">
       <div className="dashboard-main">
-        <DashboardHeader user={user} menu={menu} onLogout={onLogout} />
+        <DashboardHeader 
+          user={currentUser} 
+          menu={menu} 
+          onLogout={onLogout} 
+          onUserUpdate={handleUserUpdate}
+        />
         
         <div className="dashboard-content">
           <SimulatorSubheader />

@@ -155,11 +155,50 @@ const getCompanies = async (req, res) => {
   }
 };
 
+const createCompanyProfile = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Create default company profile if it doesn't exist
+    if (!user.companyProfile || !user.companyProfile.companyName) {
+      const defaultCompanyProfile = {
+        companyName: `${user.firstName} ${user.lastName} Company`,
+        description: 'Default company profile',
+        contactPerson: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        phone: user.phone || '',
+        zipCode: user.address?.zipCode || '',
+        state: user.address?.state || '',
+        city: user.address?.city || '',
+        address1: user.address?.address1 || '',
+        address2: user.address?.address2 || ''
+      };
+
+      user.companyProfile = defaultCompanyProfile;
+      await user.save();
+    }
+
+    res.json({ 
+      message: 'Company profile created successfully', 
+      companyProfile: user.companyProfile 
+    });
+  } catch (error) {
+    console.error('Error creating company profile:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllUsers,
   updateUserStatus,
   getUserById,
   updateUser,
   getAdminUsers,
-  getCompanies
+  getCompanies,
+  createCompanyProfile
 };

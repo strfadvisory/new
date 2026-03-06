@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { API_ENDPOINTS } from '../config';
 
 interface DashboardHeaderProps {
   user: any;
@@ -7,6 +8,7 @@ interface DashboardHeaderProps {
   onLogout: () => void;
   isSuperAdmin?: boolean;
   headerTabs?: Array<{ id: string; label: string; path: string }>;
+  onUserUpdate?: (updatedUser: any) => void;
 }
 
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({ 
@@ -14,11 +16,42 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   menu = [], 
   onLogout, 
   isSuperAdmin = false, 
-  headerTabs = [] 
+  headerTabs = [],
+  onUserUpdate
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentPage = location.pathname.split('/').pop() || '';
+  const [companyName, setCompanyName] = useState(user?.companyProfile?.companyName || 'Company name');
+
+  useEffect(() => {
+    const createCompanyProfileIfNeeded = async () => {
+      if (!isSuperAdmin && (!user?.companyProfile?.companyName)) {
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(API_ENDPOINTS.createCompanyProfile, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setCompanyName(data.companyProfile.companyName);
+            if (onUserUpdate) {
+              onUserUpdate({ ...user, companyProfile: data.companyProfile });
+            }
+          }
+        } catch (error) {
+          console.error('Error creating company profile:', error);
+        }
+      }
+    };
+
+    createCompanyProfileIfNeeded();
+  }, [user, isSuperAdmin, onUserUpdate]);
 
   return (
     <header className="dashboard-header">
@@ -30,7 +63,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               {isSuperAdmin ? 'Super Admin' : (user?.companyType || 'User')}
             </div>
             <div className="company-subtitle">
-              {isSuperAdmin ? '' : (user?.companyProfile?.companyName || 'Company name')}
+              {isSuperAdmin ? '' : companyName}
             </div>
           </div>
         </div>

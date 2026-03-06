@@ -138,6 +138,11 @@ function App() {
     }
   };
 
+  const handleUserUpdate = (updatedUser: any) => {
+    setUser(updatedUser);
+    localStorage.setItem('user', JSON.stringify(updatedUser));
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -159,7 +164,7 @@ function App() {
         <Route path="/company-profile" element={<CompanyProfile onComplete={handleCompanyProfileComplete} onNavigate={(step) => navigate(step)} />} />
         <Route path="/verify-advisory/:token" element={<AdvisoryVerification />} />
         <Route path="/admin/*" element={user?.isSuperAdmin ? <SuperAdminLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
-        <Route path="/dashboard" element={user && !user.isSuperAdmin ? <DashboardLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />}>
+        <Route path="/dashboard" element={user && !user.isSuperAdmin ? <DashboardLayout user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /> : <Navigate to="/login" replace />}>
           <Route index element={<Dashboard user={user} onLogout={handleLogout} />} />
           <Route path="simulator" element={<Simulator />} />
           <Route path="simulator-management" element={<Simulator />} />
