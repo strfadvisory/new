@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { API_ENDPOINTS } from '../config';
 import { apiService } from '../services/ApiService';
 import InviteMemberModal from './InviteMemberModal';
+import AddAssociationPopup from './AddAssociationPopup';
 import './SimulatorSubheader.css';
 
 interface Company {
@@ -758,90 +759,13 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
         title="Invite Member"
       />
       
-      {showCreateAssociationPopup && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            backgroundColor: 'white',
-            borderRadius: '10px',
-            padding: '24px',
-            width: '400px',
-            maxWidth: '90vw'
-          }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600' }}>Create an Association</h3>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Association Name</label>
-              <input 
-                type="text" 
-                placeholder="Enter association name"
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '6px',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Type</label>
-              <select style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                fontSize: '14px'
-              }}>
-                <option value="HOA">HOA</option>
-                <option value="Community">Community</option>
-                <option value="Management">Management</option>
-                <option value="Council">Council</option>
-                <option value="Committee">Committee</option>
-              </select>
-            </div>
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button 
-                onClick={() => setShowCreateAssociationPopup(false)}
-                style={{
-                  padding: '8px 16px',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '6px',
-                  background: 'white',
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => {
-                  console.log('Creating association...');
-                  setShowCreateAssociationPopup(false);
-                }}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderRadius: '6px',
-                  background: '#0e519b',
-                  color: 'white',
-                  cursor: 'pointer'
-                }}
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AddAssociationPopup
+        isOpen={showCreateAssociationPopup}
+        onClose={() => setShowCreateAssociationPopup(false)}
+        onSuccess={() => {
+          setShowCreateAssociationPopup(false);
+        }}
+      />
     </div>
   );
 };
