@@ -10,6 +10,7 @@ import SystemSettings from './pages/superadmin/SystemSettings';
 import RoleManager from './pages/superadmin/RoleManager';
 import Library from './pages/superadmin/Library';
 import { API_BASE_URL } from './config';
+import DashboardHeader from './components/DashboardHeader';
 
 interface SuperAdminLayoutProps {
   user: any;
@@ -362,36 +363,12 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   return (
     <div  >
       <div className="dashboard-main">
-        <header className="dashboard-header">
-          <div className="header-left">
-            <div className="logo" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
-              <img src="/logo.png" alt="Reserve Fund Advisory" style={{ height: '40px' }} />
-              <div className="logo-text">
-                <div className="company-name">Super Admin</div>
-                <div className="company-subtitle">Association name</div>
-              </div>
-            </div>
-            <nav className="header-nav">
-              {headerTabs.map((tab) => (
-                <span 
-                  key={tab.id} 
-                  className={`nav-link ${currentPage === tab.id ? 'active' : ''}`}
-                  onClick={() => navigate(tab.path)}
-                >
-                  {tab.label}
-                </span>
-              ))}
-            </nav>
-          </div>
-          <div className="header-right">
-            <div className="user-menu">
-            
-              <button onClick={onLogout} className="logout-btn">
-                Logout 
-              </button>
-            </div>
-          </div>
-        </header>
+        <DashboardHeader 
+          user={user} 
+          onLogout={onLogout} 
+          isSuperAdmin={true}
+          headerTabs={headerTabs}
+        />
         
         <div className="dashboard-content">
           <div className="main-content">
