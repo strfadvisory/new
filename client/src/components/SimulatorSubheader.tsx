@@ -3,7 +3,19 @@ import { API_ENDPOINTS } from '../config';
 import { apiService } from '../services/ApiService';
 import InviteMemberModal from './InviteMemberModal';
 import AddAssociationPopup from './AddAssociationPopup';
+import AddReserveStudyPopup from './AddReserveStudyPopup';
 import './SimulatorSubheader.css';
+
+interface ReserveStudy {
+  _id: string;
+  studyName: string;
+  fileName: string;
+  createdAt: string;
+  uploadedBy: {
+    firstName: string;
+    lastName: string;
+  };
+}
 
 interface Company {
   _id: string;
@@ -35,10 +47,13 @@ interface DropdownProps {
   showCompanyList?: boolean;
   showUserList?: boolean;
   showAssociationsList?: boolean;
+  showReserveStudyList?: boolean;
   bottomButtonText?: string;
   onBottomButtonClick?: () => void;
   selectedValue?: string;
   onSelectionChange?: (value: string) => void;
+  refreshTrigger?: number;
+  associationFilter?: string;
 }
 
 const Dropdown: React.FC<DropdownProps> = ({ 
@@ -49,15 +64,19 @@ const Dropdown: React.FC<DropdownProps> = ({
   showCompanyList = false,
   showUserList = false,
   showAssociationsList = false,
+  showReserveStudyList = false,
   bottomButtonText = '+ Add New Associations',
   onBottomButtonClick,
   selectedValue,
-  onSelectionChange
+  onSelectionChange,
+  refreshTrigger,
+  associationFilter
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [associations, setAssociations] = useState<Association[]>([]);
+  const [reserveStudies, setReserveStudies] = useState<ReserveStudy[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showUserPopup, setShowUserPopup] = useState(false);
@@ -65,7 +84,29 @@ const Dropdown: React.FC<DropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if ((showCompanyList || showUserList || showAssociationsList) && isOpen) {
+    if (refreshTrigger && refreshTrigger > 0) {
+      if (showAssociationsList) {
+        setAssociations([]);
+        fetchAssociations();
+      }
+      if (showReserveStudyList) {
+        setReserveStudies([]);
+        fetchReserveStudies();
+      }
+    }
+  }, [refreshTrigger]);
+
+  useEffect(() => {
+    if (showReserveStudyList && associationFilter !== undefined) {
+      setReserveStudies([]);
+      if (associationFilter) {
+        fetchReserveStudies();
+      }
+    }
+  }, [associationFilter, showReserveStudyList]);
+
+  useEffect(() => {
+    if ((showCompanyList || showUserList || showAssociationsList || showReserveStudyList) && isOpen) {
       if (showCompanyList && companies.length === 0) {
         fetchCompanies();
       }
@@ -75,8 +116,11 @@ const Dropdown: React.FC<DropdownProps> = ({
       if (showAssociationsList && associations.length === 0) {
         fetchAssociations();
       }
+      if (showReserveStudyList && reserveStudies.length === 0) {
+        fetchReserveStudies();
+      }
     }
-  }, [isOpen, showCompanyList, showUserList, showAssociationsList, companies.length, users.length, associations.length]);
+  }, [isOpen, showCompanyList, showUserList, showAssociationsList, showReserveStudyList, companies.length, users.length, associations.length, reserveStudies.length]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -115,7 +159,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   };
 
   const filteredUsers = users.filter(user =>
-    `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+    `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const fetchCompanies = async () => {
@@ -154,7 +198,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   };
 
   const filteredCompanies = companies.filter(company =>
-    company.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (company.name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const fetchAssociations = async () => {
@@ -183,11 +227,32 @@ const Dropdown: React.FC<DropdownProps> = ({
   };
 
   const filteredAssociations = associations.filter(association =>
-    association.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (association.name || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const fetchReserveStudies = async () => {
+    setLoading(true);
+    try {
+      let url = '/api/reserve-studies';
+      if (associationFilter) {
+        url += `?association=${encodeURIComponent(associationFilter)}`;
+      }
+      const response = await apiService.get<{data: ReserveStudy[]}>(url);
+      setReserveStudies(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching reserve studies:', error);
+      setReserveStudies([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredReserveStudies = reserveStudies.filter(study =>
+    (study.studyName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleDropdownClick = () => {
-    if (showCompanyList || showUserList || showAssociationsList) {
+    if (showCompanyList || showUserList || showAssociationsList || showReserveStudyList) {
       setIsOpen(!isOpen);
     } else if (onClick) {
       onClick();
@@ -226,7 +291,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         <i className="fas fa-chevron-down" style={{ fontSize: '16px' }}></i>
       </div>
 
-      {(showCompanyList || showUserList || showAssociationsList) && isOpen && (
+      {(showCompanyList || showUserList || showAssociationsList || showReserveStudyList) && isOpen && (
         <div style={{
           position: 'absolute',
           top: '40px',
@@ -258,7 +323,7 @@ const Dropdown: React.FC<DropdownProps> = ({
           </div>
           
           <div style={{
-            maxHeight: '300px',
+            maxHeight: '280px',
             overflowY: 'auto'
           }}>
             {loading ? (
@@ -369,6 +434,69 @@ const Dropdown: React.FC<DropdownProps> = ({
                   No associations found
                 </div>
               )
+            ) : showReserveStudyList ? (
+              filteredReserveStudies.length > 0 ? (
+                filteredReserveStudies.map((study, index) => (
+                  <div
+                    key={study._id}
+                    style={{
+                      padding: '12px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      cursor: 'pointer',
+                      borderBottom: index < filteredReserveStudies.length - 1 ? '1px solid #f3f4f6' : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9fafb';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'white';
+                    }}
+                    onClick={() => {
+                      console.log('Selected reserve study:', study.studyName);
+                      if (onSelectionChange) {
+                        onSelectionChange(study.studyName);
+                      }
+                      setIsOpen(false);
+                    }}
+                  >
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: '#0e519b',
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      <i className="fas fa-file-excel"></i>
+                    </div>
+                    <div>
+                      <div style={{
+                        fontSize: '14px',
+                        color: '#111827',
+                        fontWeight: '500'
+                      }}>
+                        {study.studyName}
+                      </div>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#6b7280'
+                      }}>
+                        {study.fileName}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+                  No reserve studies found
+                </div>
+              )
             ) : filteredCompanies.length > 0 ? (
               filteredCompanies.map((company, index) => (
                 <div
@@ -440,7 +568,7 @@ const Dropdown: React.FC<DropdownProps> = ({
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#374151',
+                color: '#0e519b',
                 fontSize: '14px',
                 fontWeight: '500',
                 cursor: 'pointer',
@@ -479,10 +607,20 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserMenu, setSelectedUserMenu] = useState<string | null>(null);
   const [showCreateAssociationPopup, setShowCreateAssociationPopup] = useState(false);
+  const [showAddReserveStudyPopup, setShowAddReserveStudyPopup] = useState(false);
   const [selectedAssociation, setSelectedAssociation] = useState<string>('');
   const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [refreshAssociations, setRefreshAssociations] = useState(0);
+  const [refreshReserveStudies, setRefreshReserveStudies] = useState(0);
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (selectedAssociation) {
+      setSelectedCompany('');
+      setRefreshReserveStudies(prev => prev + 1);
+    }
+  }, [selectedAssociation]);
 
   useEffect(() => {
     fetchUsers();
@@ -528,7 +666,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   };
 
   const filteredDropdownUsers = dropdownUsers.filter(user =>
-    `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+    `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
   return (
     <div className="simulator-subheader">
@@ -541,14 +679,18 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           onBottomButtonClick={() => setShowCreateAssociationPopup(true)}
           selectedValue={selectedAssociation}
           onSelectionChange={setSelectedAssociation}
+          refreshTrigger={refreshAssociations}
         />
         <Dropdown 
-          label="Role" 
+          label="Reserve Studies" 
           icon={<div />} 
-          showCompanyList={true} 
-          bottomButtonText="+ Add New Reserver Study"
+          showReserveStudyList={true} 
+          bottomButtonText="+ Add New Reserve Study"
+          onBottomButtonClick={() => setShowAddReserveStudyPopup(true)}
           selectedValue={selectedCompany}
           onSelectionChange={setSelectedCompany}
+          refreshTrigger={refreshReserveStudies}
+          associationFilter={selectedAssociation}
         />
       
         <div ref={viewMenuRef} className="view-menu-container">
@@ -622,7 +764,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
                   }}
                 />
               </div>
-              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
                 {filteredDropdownUsers.length > 0 ? (
                   filteredDropdownUsers.map((user, index) => (
                     <div
@@ -764,7 +906,18 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
         onClose={() => setShowCreateAssociationPopup(false)}
         onSuccess={() => {
           setShowCreateAssociationPopup(false);
+          setRefreshAssociations(prev => prev + 1);
         }}
+      />
+      
+      <AddReserveStudyPopup
+        isOpen={showAddReserveStudyPopup}
+        onClose={() => setShowAddReserveStudyPopup(false)}
+        onSuccess={() => {
+          setShowAddReserveStudyPopup(false);
+          setRefreshReserveStudies(prev => prev + 1);
+        }}
+        selectedAssociation={selectedAssociation}
       />
     </div>
   );

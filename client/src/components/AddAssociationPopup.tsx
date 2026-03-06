@@ -123,8 +123,10 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
       <div className="modal-overlay" onClick={onClose}></div>
       <div className="association-modal">
         <div className="modal-header">
-          <h2>{isEditMode ? 'Edit Association' : 'Create an Associations'}</h2>
-          <p>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
+          <div className="modal-header-row" style={{display:'block'}} >
+            <h2>{isEditMode ? 'Edit Association' : 'Create an Associations'}</h2>
+            <p>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
+          </div>
           <button className="close-btn" onClick={onClose}>
             <i className="fas fa-times"></i>
           </button>
