@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import '../pages/superadmin/AllCompanies.css';
-import { API_BASE_URL } from '../config';
+import { useOrgUsers } from '../hooks/queries/useAuth';
 
 interface User {
   _id: string;
@@ -21,32 +21,18 @@ interface User {
 }
 
 const Users: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  // Use React Query hook
+  const { data: users = [], isLoading: loading } = useOrgUsers();
 
-  const fetchUsers = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/auth/org-users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-        if (data.length > 0) setSelectedUser(data[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
+  // Set first user as selected when data loads
+  React.useEffect(() => {
+    if (users.length > 0 && !selectedUser) {
+      setSelectedUser(users[0]);
     }
-  };
+  }, [users, selectedUser]);
 
   const getFullAddress = (user: User) => {
     const addr = user.address;
@@ -54,7 +40,7 @@ const Users: React.FC = () => {
     return `${addr.address1 || ''} ${addr.address2 || ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.zipCode || ''}`.trim();
   };
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter((user: User) => 
     `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -75,7 +61,7 @@ const Users: React.FC = () => {
           {loading ? (
             <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>
           ) : (
-            filteredUsers.map((user) => (
+            filteredUsers.map((user: User) => (
               <div
                 key={user._id}
                 className={`company-item ${selectedUser?._id === user._id ? 'active' : ''}`}

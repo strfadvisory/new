@@ -2,11 +2,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../../api/services';
 import { QUERY_KEYS } from '../../api/config';
 
+interface User {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role?: string;
+  status?: string;
+}
+
 // Users Query Hooks
 
 // Get all users
 export const useUsers = () => {
-  return useQuery({
+  return useQuery<User[]>({
     queryKey: QUERY_KEYS.USERS.ALL,
     queryFn: usersApi.getAllUsers,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -15,7 +24,7 @@ export const useUsers = () => {
 
 // Get admin users
 export const useAdminUsers = () => {
-  return useQuery({
+  return useQuery<User[]>({
     queryKey: QUERY_KEYS.USERS.ADMINS,
     queryFn: usersApi.getAdminUsers,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -32,8 +41,8 @@ export const useCompanies = () => {
 };
 
 // Get user by ID
-export const useUser = (userId, enabled = true) => {
-  return useQuery({
+export const useUser = (userId: string, enabled = true) => {
+  return useQuery<User>({
     queryKey: QUERY_KEYS.USERS.BY_ID(userId),
     queryFn: () => usersApi.getUserById(userId),
     enabled: enabled && !!userId,
@@ -47,7 +56,7 @@ export const useUser = (userId, enabled = true) => {
 export const useUpdateUserStatus = () => {
   const queryClient = useQueryClient();
   
-  return useMutation({
+  return useMutation<any, Error, { userId: string; status: string }>({
     mutationFn: ({ userId, status }) => usersApi.updateUserStatus(userId, status),
     onSuccess: (data, variables) => {
       // Invalidate users queries
@@ -74,7 +83,7 @@ export const useCreateCompanyProfile = () => {
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
   
-  return useMutation({
+  return useMutation<User, Error, { userId: string; userData: Partial<User> }>({
     mutationFn: ({ userId, userData }) => usersApi.updateUser(userId, userData),
     onSuccess: (data, variables) => {
       // Invalidate users queries
@@ -89,7 +98,7 @@ export const useUpdateUser = () => {
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
   
-  return useMutation({
+  return useMutation<any, Error, string>({
     mutationFn: usersApi.deleteUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USERS.ALL });

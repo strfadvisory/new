@@ -6,7 +6,7 @@ const AuthSidebar: React.FC = () => {
       <div className="logo">
         <img src="/logo.png" alt="Reserve Fund Advisory" className="logo-image" />
       </div>
-      <div className="contact-info">
+      <div className="contact-info" style={{ color: 'white' }}>
         <div className="contact-item">
           <i className="fas fa-envelope"></i> info@reservefundadvisory.com
         </div>

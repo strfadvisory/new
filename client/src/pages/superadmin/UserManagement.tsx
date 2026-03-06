@@ -1,53 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { API_BASE_URL } from '../../config';
+import React, { useState } from 'react';
+import { useUsers, useUpdateUserStatus } from '../../hooks/queries/useUsers';
 
 interface User {
   _id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  company: string;
-  role: string;
-  status: 'Active' | 'Inactive' | 'Suspended';
-  createdAt: string;
+  company?: string;
+  role?: string;
+  status?: string;
 }
 
 const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setUsers(data);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // React Query hooks
+  const { data: users = [], isLoading: loading } = useUsers();
+  const updateStatusMutation = useUpdateUserStatus();
 
   const handleStatusChange = async (userId: string, newStatus: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await fetch(`${API_BASE_URL}/users/${userId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      fetchUsers();
+      await updateStatusMutation.mutateAsync({ userId, status: newStatus });
     } catch (error) {
       console.error('Error updating user status:', error);
     }
@@ -86,10 +60,10 @@ const UserManagement: React.FC = () => {
           <tbody>
             {users.map(user => (
               <tr key={user._id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#1f2937' }}>{user.name}</td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#1f2937' }}>{user.firstName} {user.lastName}</td>
                 <td style={{ padding: '12px 16px', fontSize: '14px', color: '#6b7280' }}>{user.email}</td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#6b7280' }}>{user.company}</td>
-                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#6b7280' }}>{user.role}</td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#6b7280' }}>{user.role || 'N/A'}</td>
+                <td style={{ padding: '12px 16px', fontSize: '14px', color: '#6b7280' }}>{user.role || 'N/A'}</td>
                 <td style={{ padding: '12px 16px' }}>
                   <span style={{
                     padding: '4px 8px',

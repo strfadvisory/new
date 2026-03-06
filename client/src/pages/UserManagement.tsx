@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import './superadmin/AllCompanies.css';
-import { API_BASE_URL } from '../config';
+import { useAuthUsers, useRemoveLogo, useDeleteUser } from '../hooks/queries/useAuth';
 
 interface User {
   _id: string;
@@ -31,46 +31,27 @@ interface User {
 }
 
 const UserManagement: React.FC = () => {
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  // React Query hooks
+  const { data: users = [], isLoading: loading } = useAuthUsers();
+  const removeLogoMutation = useRemoveLogo();
+  const deleteUserMutation = useDeleteUser();
 
-  const fetchUsers = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/auth/users`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-        if (data.length > 0) setSelectedUser(data[0]);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
+  // Set first user as selected when data loads
+  React.useEffect(() => {
+    if (users.length > 0 && !selectedUser) {
+      setSelectedUser(users[0]);
     }
-  };
+  }, [users, selectedUser]);
 
   const handleRemoveLogo = async () => {
     if (!selectedUser?._id) return;
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/auth/remove-logo/${selectedUser._id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        fetchUsers();
-      }
+      await removeLogoMutation.mutateAsync(selectedUser._id);
     } catch (error) {
       console.error('Error removing logo:', error);
     }
@@ -84,16 +65,9 @@ const UserManagement: React.FC = () => {
   const confirmDelete = async () => {
     if (!selectedUser?._id) return;
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/auth/user/${selectedUser._id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const updatedUsers = users.filter(u => u._id !== selectedUser._id);
-        setUsers(updatedUsers);
-        setSelectedUser(updatedUsers.length > 0 ? updatedUsers[0] : null);
-      }
+      await deleteUserMutation.mutateAsync(selectedUser._id);
+      const updatedUsers = users.filter((u: User) => u._id !== selectedUser._id);
+      setSelectedUser(updatedUsers.length > 0 ? updatedUsers[0] : null);
     } catch (error) {
       console.error('Error deleting user:', error);
     } finally {
@@ -107,7 +81,7 @@ const UserManagement: React.FC = () => {
     return `${addr.address1 || ''} ${addr.address2 || ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.zipCode || ''}`.trim();
   };
 
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter((user: User) => 
     `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -132,7 +106,7 @@ const UserManagement: React.FC = () => {
           {loading ? (
             <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>
           ) : (
-            filteredUsers.map((user) => (
+            filteredUsers.map((user: User) => (
               <div
                 key={user._id}
                 className={`company-item ${selectedUser?._id === user._id ? 'active' : ''}`}
@@ -140,7 +114,7 @@ const UserManagement: React.FC = () => {
               >
                 <div className="company-logo">
                   {user.companyProfile?.logoId ? (
-                    <img src={`${API_BASE_URL}/auth/file/${user.companyProfile.logoId}`} alt="User Logo" />
+                    <img src={`/api/auth/file/${user.companyProfile.logoId}`} alt="User Logo" />
                   ) : (
                     <i className="fas fa-user" style={{ color: '#64748b', fontSize: '20px' }}></i>
                   )}
@@ -201,7 +175,7 @@ const UserManagement: React.FC = () => {
                   <div style={{ width: '80px', height: '80px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                     {selectedUser.companyProfile?.logoId ? (
                       <>
-                        <img src={`${API_BASE_URL}/auth/file/${selectedUser.companyProfile.logoId}`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
+                        <img src={`/api/auth/file/${selectedUser.companyProfile.logoId}`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
                         <button onClick={handleRemoveLogo} style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '12px' }}>×</button>
                       </>
                     ) : (

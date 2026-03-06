@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { toast } from 'react-toastify';
-import { API_BASE_URL } from '../../config';
+import { useMaster } from '../../hooks/queries/useMaster';
+import { useUpdateRole } from '../../hooks/queries/useRoles';
 import './RoleManager.css';
 
 interface Role {
@@ -58,7 +59,6 @@ interface RoleManagerProps {
 }
 
 const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelete, onRoleUpdate, isUserContext = false }) => {
-  const [masterData, setMasterData] = useState<any>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [selectedNextSteps, setSelectedNextSteps] = useState<string[]>([]);
@@ -72,6 +72,10 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     permissions: {}
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // React Query hooks
+  const { data: masterData } = useMaster();
+  const updateRoleMutation = useUpdateRole();
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -89,33 +93,7 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     };
   }, [dropdownOpen]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    fetch(`${API_BASE_URL}/master`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to load master data');
-        }
-        return response.json();
-      })
-      .then(data => {
-        console.log('Master data loaded:', data);
-        setMasterData(data);
-      })
-      .catch(error => {
-        console.error('Error loading master data:', error);
-        // Fallback to empty structure
-        setMasterData({
-          permissions: [],
-          nextSteps: [],
-          videos: []
-        });
-      });
-  }, []);
+
 
   useEffect(() => {
     if (selectedRole && masterData) {
@@ -135,32 +113,22 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
     }
 
     try {
-      const token = localStorage.getItem('token');
       const updateData = {
         permissions: selectedPermissions,
         nextSteps: selectedNextSteps,
         videos: selectedVideos
       };
       
-      const response = await fetch(`${API_BASE_URL}/roles/${selectedRole._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updateData)
+      await updateRoleMutation.mutateAsync({
+        roleId: selectedRole._id,
+        roleData: updateData
       });
       
-      if (response.ok) {
-        toast.success('Role updated successfully!');
-        setHasChanges(false);
-        if (onRoleUpdate) onRoleUpdate();
-      } else {
-        const error = await response.json();
-        toast.error(`Failed to save: ${error.message}`);
-      }
-    } catch (error) {
-      toast.error('Network error: Failed to save changes');
+      toast.success('Role updated successfully!');
+      setHasChanges(false);
+      if (onRoleUpdate) onRoleUpdate();
+    } catch (error: any) {
+      toast.error(`Failed to save: ${error.response?.data?.message || error.message}`);
     }
   };
 
