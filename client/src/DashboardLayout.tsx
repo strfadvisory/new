@@ -52,6 +52,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
     fetchPermissions();
   }, [navigate, location.pathname]);
 
+  // Check if current route is simulator page
+  const isSimulatorPage = location.pathname === '/dashboard/simulator' || location.pathname === '/dashboard/simulator-management';
+
   return (
     <div className="dashboard-container-no-sidebar">
       <div className="dashboard-main">
@@ -63,7 +66,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
         />
         
         <div className="dashboard-content">
-          <SimulatorSubheader />
+          {isSimulatorPage && <SimulatorSubheader />}
           <Outlet />
         </div>
       </div>

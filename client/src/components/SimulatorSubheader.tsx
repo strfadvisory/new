@@ -11,6 +11,13 @@ interface Company {
   icon?: string;
 }
 
+interface Association {
+  _id: string;
+  name: string;
+  type?: string;
+  description?: string;
+}
+
 interface User {
   _id: string;
   firstName: string;
@@ -26,7 +33,11 @@ interface DropdownProps {
   style?: React.CSSProperties;
   showCompanyList?: boolean;
   showUserList?: boolean;
+  showAssociationsList?: boolean;
   bottomButtonText?: string;
+  onBottomButtonClick?: () => void;
+  selectedValue?: string;
+  onSelectionChange?: (value: string) => void;
 }
 
 const Dropdown: React.FC<DropdownProps> = ({ 
@@ -36,11 +47,16 @@ const Dropdown: React.FC<DropdownProps> = ({
   style,
   showCompanyList = false,
   showUserList = false,
-  bottomButtonText = '+ Add New Associations'
+  showAssociationsList = false,
+  bottomButtonText = '+ Add New Associations',
+  onBottomButtonClick,
+  selectedValue,
+  onSelectionChange
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [associations, setAssociations] = useState<Association[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showUserPopup, setShowUserPopup] = useState(false);
@@ -48,15 +64,18 @@ const Dropdown: React.FC<DropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if ((showCompanyList || showUserList) && isOpen) {
+    if ((showCompanyList || showUserList || showAssociationsList) && isOpen) {
       if (showCompanyList && companies.length === 0) {
         fetchCompanies();
       }
       if (showUserList && users.length === 0) {
         fetchUsers();
       }
+      if (showAssociationsList && associations.length === 0) {
+        fetchAssociations();
+      }
     }
-  }, [isOpen, showCompanyList, showUserList, companies.length, users.length]);
+  }, [isOpen, showCompanyList, showUserList, showAssociationsList, companies.length, users.length, associations.length]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -137,8 +156,37 @@ const Dropdown: React.FC<DropdownProps> = ({
     company.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const fetchAssociations = async () => {
+    setLoading(true);
+    try {
+      const data = await apiService.get<Association[]>('/api/associations');
+      setAssociations(Array.isArray(data) ? data : [
+        { _id: '1', name: 'Homeowners Association A', type: 'HOA' },
+        { _id: '2', name: 'Community Board B', type: 'Community' },
+        { _id: '3', name: 'Property Management Group', type: 'Management' },
+        { _id: '4', name: 'Residents Council', type: 'Council' },
+        { _id: '5', name: 'Building Committee', type: 'Committee' }
+      ]);
+    } catch (error) {
+      console.error('Error fetching associations:', error);
+      setAssociations([
+        { _id: '1', name: 'Homeowners Association A', type: 'HOA' },
+        { _id: '2', name: 'Community Board B', type: 'Community' },
+        { _id: '3', name: 'Property Management Group', type: 'Management' },
+        { _id: '4', name: 'Residents Council', type: 'Council' },
+        { _id: '5', name: 'Building Committee', type: 'Committee' }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredAssociations = associations.filter(association =>
+    association.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const handleDropdownClick = () => {
-    if (showCompanyList || showUserList) {
+    if (showCompanyList || showUserList || showAssociationsList) {
       setIsOpen(!isOpen);
     } else if (onClick) {
       onClick();
@@ -173,11 +221,11 @@ const Dropdown: React.FC<DropdownProps> = ({
             background: '#e5e7eb'
           }}></div>
         )}
-        {label}
+        {selectedValue || label}
         <i className="fas fa-chevron-down" style={{ fontSize: '16px' }}></i>
       </div>
 
-      {(showCompanyList || showUserList) && isOpen && (
+      {(showCompanyList || showUserList || showAssociationsList) && isOpen && (
         <div style={{
           position: 'absolute',
           top: '40px',
@@ -265,6 +313,61 @@ const Dropdown: React.FC<DropdownProps> = ({
                   No users found
                 </div>
               )
+            ) : showAssociationsList ? (
+              filteredAssociations.length > 0 ? (
+                filteredAssociations.map((association, index) => (
+                  <div
+                    key={association._id}
+                    style={{
+                      padding: '12px 16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      cursor: 'pointer',
+                      borderBottom: index < filteredAssociations.length - 1 ? '1px solid #f3f4f6' : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f9fafb';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'white';
+                    }}
+                    onClick={() => {
+                      console.log('Selected association:', association.name);
+                      if (onSelectionChange) {
+                        onSelectionChange(association.name);
+                      }
+                      setIsOpen(false);
+                    }}
+                  >
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: '#374151',
+                      color: 'white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      {association.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{
+                      fontSize: '14px',
+                      color: '#111827',
+                      fontWeight: '500'
+                    }}>
+                      {association.name}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#6b7280' }}>
+                  No associations found
+                </div>
+              )
             ) : filteredCompanies.length > 0 ? (
               filteredCompanies.map((company, index) => (
                 <div
@@ -285,6 +388,9 @@ const Dropdown: React.FC<DropdownProps> = ({
                   }}
                   onClick={() => {
                     console.log('Selected company:', company.name);
+                    if (onSelectionChange) {
+                      onSelectionChange(company.name);
+                    }
                     setIsOpen(false);
                   }}
                 >
@@ -323,15 +429,23 @@ const Dropdown: React.FC<DropdownProps> = ({
             borderTop: '1px solid #f3f4f6',
             background: '#f9fafb'
           }}>
-            <button style={{
-              background: 'none',
-              border: 'none',
-              color: '#374151',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              padding: '0'
-            }}>
+            <button 
+              onClick={() => {
+                if (onBottomButtonClick) {
+                  onBottomButtonClick();
+                }
+                setIsOpen(false);
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#374151',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                padding: '0'
+              }}
+            >
               {showUserList ? '+ Send Invite' : bottomButtonText}
             </button>
           </div>
@@ -363,6 +477,9 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [dropdownUsers, setDropdownUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUserMenu, setSelectedUserMenu] = useState<string | null>(null);
+  const [showCreateAssociationPopup, setShowCreateAssociationPopup] = useState(false);
+  const [selectedAssociation, setSelectedAssociation] = useState<string>('');
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -415,8 +532,24 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   return (
     <div className="simulator-subheader">
       <div className="left-section">
-        <Dropdown label="Stepssevers-M3235" icon={<div />} />
-        <Dropdown label="Stepssevers-M3235" icon={<div />} showCompanyList={true} bottomButtonText="+ Add New Reserver Study" />
+        <Dropdown 
+          label="Associations" 
+          icon={<div />} 
+          showAssociationsList={true} 
+          bottomButtonText="+ Create an Associations" 
+          onBottomButtonClick={() => setShowCreateAssociationPopup(true)}
+          selectedValue={selectedAssociation}
+          onSelectionChange={setSelectedAssociation}
+        />
+        <Dropdown 
+          label="Role" 
+          icon={<div />} 
+          showCompanyList={true} 
+          bottomButtonText="+ Add New Reserver Study"
+          selectedValue={selectedCompany}
+          onSelectionChange={setSelectedCompany}
+        />
+      
         <div ref={viewMenuRef} className="view-menu-container">
           <button className="view-menu-button" onClick={() => setShowViewMenu(!showViewMenu)}>
             Change View <i className="fas fa-chart-bar"></i>
@@ -624,6 +757,91 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
         onClose={() => setShowInvitePopup(false)} 
         title="Invite Member"
       />
+      
+      {showCreateAssociationPopup && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '10px',
+            padding: '24px',
+            width: '400px',
+            maxWidth: '90vw'
+          }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: '600' }}>Create an Association</h3>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Association Name</label>
+              <input 
+                type="text" 
+                placeholder="Enter association name"
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '500' }}>Type</label>
+              <select style={{
+                width: '100%',
+                padding: '8px 12px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                fontSize: '14px'
+              }}>
+                <option value="HOA">HOA</option>
+                <option value="Community">Community</option>
+                <option value="Management">Management</option>
+                <option value="Council">Council</option>
+                <option value="Committee">Committee</option>
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+              <button 
+                onClick={() => setShowCreateAssociationPopup(false)}
+                style={{
+                  padding: '8px 16px',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: '6px',
+                  background: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  console.log('Creating association...');
+                  setShowCreateAssociationPopup(false);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderRadius: '6px',
+                  background: '#0e519b',
+                  color: 'white',
+                  cursor: 'pointer'
+                }}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
