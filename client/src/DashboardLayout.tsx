@@ -16,7 +16,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
   const [menu, setMenu] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState(user);
   const [showCalculator, setShowCalculator] = useState(false);
-  const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '' });
+  const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '', excelData: null as any });
   const [selectedAssociation, setSelectedAssociation] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [isResetting, setIsResetting] = useState(false);
@@ -28,7 +28,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
     setShowCalculator(false);
     setSelectedAssociation('');
     setSelectedCompany('');
-    setCalculatorData({ association: '', reserveStudy: '' });
+    setCalculatorData({ association: '', reserveStudy: '', excelData: null });
     // Reset the flag after a brief delay
     setTimeout(() => setIsResetting(false), 200);
   };
@@ -43,8 +43,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
     setSelectedCompany(value);
   };
 
-  const handleShowCalculator = (association: string, reserveStudy: string) => {
-    setCalculatorData({ association, reserveStudy });
+  const handleShowCalculator = (association: string, reserveStudy: string, excelData?: any) => {
+    setCalculatorData({ association, reserveStudy, excelData });
     setShowCalculator(true);
   };
 
@@ -111,7 +111,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
           {showCalculator ? (
             <CalculatorPage 
               association={calculatorData.association} 
-              reserveStudy={calculatorData.reserveStudy} 
+              reserveStudy={calculatorData.reserveStudy}
+              excelData={calculatorData.excelData}
             />
           ) : (
             <Outlet />

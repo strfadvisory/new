@@ -51,7 +51,7 @@ interface DropdownProps {
   bottomButtonText?: string;
   onBottomButtonClick?: () => void;
   selectedValue?: string;
-  onSelectionChange?: (value: string) => void;
+  onSelectionChange?: (value: string, studyId?: string) => void;
   refreshTrigger?: number;
   associationFilter?: string;
 }
@@ -251,6 +251,20 @@ const Dropdown: React.FC<DropdownProps> = ({
     (study.studyName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleDeleteReserveStudy = async (studyId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this reserve study?')) {
+      return;
+    }
+    try {
+      await apiService.delete(`/reserve-studies/${studyId}`);
+      setReserveStudies(prev => prev.filter(s => s._id !== studyId));
+    } catch (error) {
+      console.error('Error deleting reserve study:', error);
+      alert('Failed to delete reserve study');
+    }
+  };
+
   const handleDropdownClick = () => {
     if (showCompanyList || showUserList || showAssociationsList || showReserveStudyList) {
       setIsOpen(!isOpen);
@@ -443,7 +457,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                       padding: '12px 16px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '12px',
+                      justifyContent: 'space-between',
                       cursor: 'pointer',
                       borderBottom: index < filteredReserveStudies.length - 1 ? '1px solid #f3f4f6' : 'none'
                     }}
@@ -456,40 +470,58 @@ const Dropdown: React.FC<DropdownProps> = ({
                     onClick={() => {
                       console.log('Selected reserve study:', study.studyName);
                       if (onSelectionChange) {
-                        onSelectionChange(study.studyName);
+                        onSelectionChange(study.studyName, study._id);
                       }
                       setIsOpen(false);
                     }}
                   >
-                    <div style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      background: '#0e519b',
-                      color: 'white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '12px',
-                      fontWeight: '600'
-                    }}>
-                      <i className="fas fa-file-excel"></i>
-                    </div>
-                    <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <div style={{
-                        fontSize: '14px',
-                        color: '#111827',
-                        fontWeight: '500'
-                      }}>
-                        {study.studyName}
-                      </div>
-                      <div style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: '#0e519b',
+                        color: 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                         fontSize: '12px',
-                        color: '#6b7280'
+                        fontWeight: '600'
                       }}>
-                        {study.fileName}
+                        <i className="fas fa-file-excel"></i>
+                      </div>
+                      <div>
+                        <div style={{
+                          fontSize: '14px',
+                          color: '#111827',
+                          fontWeight: '500'
+                        }}>
+                          {study.studyName}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#6b7280'
+                        }}>
+                          {study.fileName}
+                        </div>
                       </div>
                     </div>
+                    <i 
+                      className="fas fa-trash" 
+                      onClick={(e) => handleDeleteReserveStudy(study._id, e)}
+                      style={{
+                        color: '#ef4444',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        padding: '8px'
+                      }}
+                      onMouseEnter={(e) => {
+                        (e.target as HTMLElement).style.color = '#dc2626';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.target as HTMLElement).style.color = '#ef4444';
+                      }}
+                    />
                   </div>
                 ))
               ) : (
@@ -590,11 +622,11 @@ interface SimulatorSubheaderProps {
   onUndo?: () => void;
   onRedo?: () => void;
   onSave?: () => void;
-  onShowCalculator?: (association: string, reserveStudy: string) => void;
+  onShowCalculator?: (association: string, reserveStudy: string, excelData?: any) => void;
   selectedAssociation?: string;
   selectedCompany?: string;
   onAssociationChange?: (value: string) => void;
-  onCompanyChange?: (value: string) => void;
+  onCompanyChange?: (value: string, studyId?: string) => void;
 }
 
 const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
@@ -620,14 +652,25 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [showAddReserveStudyPopup, setShowAddReserveStudyPopup] = useState(false);
   const [refreshAssociations, setRefreshAssociations] = useState(0);
   const [refreshReserveStudies, setRefreshReserveStudies] = useState(0);
+  const [selectedStudyId, setSelectedStudyId] = useState<string>('');
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (selectedAssociation && selectedCompany && onShowCalculator) {
-      onShowCalculator(selectedAssociation, selectedCompany);
-    }
-  }, [selectedAssociation, selectedCompany]);
+    const fetchExcelData = async () => {
+      if (selectedAssociation && selectedCompany && selectedStudyId && onShowCalculator) {
+        try {
+          const response = await apiService.get<any>(`/reserve-studies/${selectedStudyId}/data`);
+          console.log('Excel Data:', response);
+          onShowCalculator(selectedAssociation, selectedCompany, response.data);
+        } catch (error) {
+          console.error('Error fetching Excel data:', error);
+          onShowCalculator(selectedAssociation, selectedCompany);
+        }
+      }
+    };
+    fetchExcelData();
+  }, [selectedAssociation, selectedCompany, selectedStudyId]);
 
   useEffect(() => {
     if (selectedAssociation && onCompanyChange) {
@@ -682,6 +725,16 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const filteredDropdownUsers = dropdownUsers.filter(user =>
     `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleCompanyChange = (value: string, studyId?: string) => {
+    if (onCompanyChange) {
+      onCompanyChange(value, studyId);
+    }
+    if (studyId) {
+      setSelectedStudyId(studyId);
+    }
+  };
+
   return (
     <div className="simulator-subheader">
       <div className="left-section">
@@ -702,7 +755,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           bottomButtonText="+ Add New Reserve Study"
           onBottomButtonClick={() => setShowAddReserveStudyPopup(true)}
           selectedValue={selectedCompany}
-          onSelectionChange={onCompanyChange}
+          onSelectionChange={handleCompanyChange}
           refreshTrigger={refreshReserveStudies}
           associationFilter={selectedAssociation}
         />
@@ -726,6 +779,24 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
                 <i className="fas fa-calendar view-menu-icon"></i>
                 Monthly
               </div>
+              <div className="view-menu-item" onClick={async () => {
+                try {
+                  const token = localStorage.getItem('token');
+                  const response = await fetch('http://localhost:5001/api/reserve-studies/69ac7619ae2658e3392e8fcf/data', {
+                    headers: {
+                      'Authorization': `Bearer ${token}`
+                    }
+                  });
+                  const data = await response.json();
+                  console.log('Response 663:', data);
+                  if (onShowCalculator) {
+                    onShowCalculator(selectedAssociation, selectedCompany, data);
+                  }
+                  setShowViewMenu(false);
+                } catch (error) {
+                  console.error('Error:', error);
+                }
+              }}>Test API</div>
             </div>
           )}
         </div>

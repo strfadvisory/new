@@ -33,7 +33,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const [iconPreview, setIconPreview] = useState<string>('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [showCalculator, setShowCalculator] = useState(false);
-  const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '' });
+  const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '', excelData: null as any });
   const [selectedAssociation, setSelectedAssociation] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
   const [formData, setFormData] = useState({
@@ -48,8 +48,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
 
   const currentPage = location.pathname.split('/').pop() || 'role-manager';
 
-  const handleShowCalculator = (association: string, reserveStudy: string) => {
-    setCalculatorData({ association, reserveStudy });
+  const handleShowCalculator = (association: string, reserveStudy: string, excelData?: any) => {
+    setCalculatorData({ association, reserveStudy, excelData });
     setShowCalculator(true);
   };
 
@@ -57,7 +57,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     setShowCalculator(false);
     setSelectedAssociation('');
     setSelectedCompany('');
-    setCalculatorData({ association: '', reserveStudy: '' });
+    setCalculatorData({ association: '', reserveStudy: '', excelData: null });
   };
 
   const handleAssociationChange = (value: string) => {
@@ -81,7 +81,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       setShowCalculator(false);
       setSelectedAssociation('');
       setSelectedCompany('');
-      setCalculatorData({ association: '', reserveStudy: '' });
+      setCalculatorData({ association: '', reserveStudy: '', excelData: null });
     }
   }, [location.pathname]);
 
@@ -511,7 +511,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
               {showCalculator ? (
                 <CalculatorPage 
                   association={calculatorData.association} 
-                  reserveStudy={calculatorData.reserveStudy} 
+                  reserveStudy={calculatorData.reserveStudy}
+                  excelData={calculatorData.excelData}
                 />
               ) : (
                 <Routes>

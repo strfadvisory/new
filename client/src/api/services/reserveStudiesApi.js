@@ -41,4 +41,10 @@ export const reserveStudiesApi = {
     const response = await apiClient.delete(`${API_ENDPOINTS.RESERVE_STUDIES.BASE}/${studyId}`);
     return response.data;
   },
+
+  // Get parsed reserve study data
+  getParsedReserveStudy: async (studyId) => {
+    const response = await apiClient.get(`${API_ENDPOINTS.RESERVE_STUDIES.BASE}/${studyId}/data`);
+    return response.data;
+  },
 };

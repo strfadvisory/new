@@ -1,4 +1,5 @@
 import React from 'react';
+import ParsedReserveStudyViewer from '../components/ParsedReserveStudyViewer';
 
 const Simulators: React.FC = () => {
   const simulators = [
@@ -7,11 +8,15 @@ const Simulators: React.FC = () => {
     { id: 3, name: 'Investment Analysis Simulator', status: 'Inactive', lastRun: '2024-01-10' }
   ];
 
+  const [selectedStudyId, setSelectedStudyId] = React.useState<string | null>('69ac7619ae2658e3392e8fcf');
+
   return (
     <div>
       <div className="p-4">
       <h1>Simulators</h1>
       <p>Manage and run financial simulators for reserve fund analysis.</p>
+      
+      {selectedStudyId && <ParsedReserveStudyViewer studyId={selectedStudyId} />}
       
       <div className="mt-4">
         <div className="d-flex justify-content-between align-items-center mb-3">

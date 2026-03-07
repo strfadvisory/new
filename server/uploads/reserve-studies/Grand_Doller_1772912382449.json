@@ -1,0 +1,278 @@
+{
+  "studyName": "Grand Doller",
+  "fileName": "GRAND DORAL.xlsx",
+  "data": {
+    "config": {
+      "PLEASE FILL OUT TEMPLATE AS IS, DO NOT MOVE TABLES OR ITEMS": null,
+      "Enter a unique name for your model": "GRAND DORAL",
+      "Total Number of Housing Units": 80,
+      "Beginning Reserve Funds (Dollar Amount)": null,
+      "SIRS Reserve Funds (Dollar Amount)": null,
+      "Inflation Rate Used in the Report": null,
+      "Average Monthly Fee per Unit": 501,
+      "Beginning Fiscal Year of the Report": 2023,
+      "Number of Years Covered in the Report": 30
+    },
+    "items": [
+      {
+        "itemName": "\"Gutters, 3\"\" Diam. Alum. \"",
+        "expectedLife": 25,
+        "remainingLife": 21,
+        "replacementCost": 15072,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "\"Windows, Metal Frame, Double Hung, 2'-8\"\" x 6'-8\"\" - Replace (per wi1nd/1o/w22) \"",
+        "expectedLife": 15,
+        "remainingLife": 11,
+        "replacementCost": 431040,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Asphalt Mill and Overlay (Resurface)",
+        "expectedLife": 25,
+        "remainingLife": 21,
+        "replacementCost": 26318,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Balcony, Seal/Repair Conc., Resecure Railings (Allowance)",
+        "expectedLife": 10,
+        "remainingLife": 6,
+        "replacementCost": 75000,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Ceramic and/or Porcelain Tile Flooring",
+        "expectedLife": 20,
+        "remainingLife": 16,
+        "replacementCost": 375422,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Concrete, Flatwork Repairs",
+        "expectedLife": 20,
+        "remainingLife": 16,
+        "replacementCost": 12950,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Cooling Tower, Galvanized, Blow Through, Centrifugal Type - 100 ton",
+        "expectedLife": 25,
+        "remainingLife": 21,
+        "replacementCost": 61646,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Corridor Renovations (allowance per SF of flooring - PT walls/ceiling1s/ 1o/n2ly2)",
+        "expectedLife": 10,
+        "remainingLife": 6,
+        "replacementCost": 90491,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "DW Packaged Booster Pump, Simplex - 7.5 HP",
+        "expectedLife": 20,
+        "remainingLife": 16,
+        "replacementCost": 23499,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Elevator, Hydraulic, Cab Doors",
+        "expectedLife": 20,
+        "remainingLife": 19,
+        "replacementCost": 9966,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Elevator, Hydraulic, Cabs - Refurbish",
+        "expectedLife": 20,
+        "remainingLife": 19,
+        "replacementCost": 26522,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Elevator, Hydraulic, Main Ram & Pump Assembly - Rebuild",
+        "expectedLife": 25,
+        "remainingLife": 24,
+        "replacementCost": 130000,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Elevator, Hydraulic, Shaftway Doors",
+        "expectedLife": 25,
+        "remainingLife": 24,
+        "replacementCost": 9900,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Exterior Caulking and Sealants",
+        "expectedLife": 10,
+        "remainingLife": 6,
+        "replacementCost": 21784,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Exterior Door, Glass Storm Door w/ Screen",
+        "expectedLife": 15,
+        "remainingLife": 11,
+        "replacementCost": 108000,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Façade Repairs (Allowance)",
+        "expectedLife": 10,
+        "remainingLife": 6,
+        "replacementCost": 150000,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "FF&E, Fitness Equipment, Cardio",
+        "expectedLife": 15,
+        "remainingLife": 13,
+        "replacementCost": 30000,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "FF&E, Fitness Equipment, Strength",
+        "expectedLife": 15,
+        "remainingLife": 13,
+        "replacementCost": 7500,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "FF&E, Pool, Furnishings",
+        "expectedLife": 10,
+        "remainingLife": 8,
+        "replacementCost": 12000,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Fire Alarm Panel",
+        "expectedLife": 15,
+        "remainingLife": 11,
+        "replacementCost": 11460,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Fire Alarm System",
+        "expectedLife": 15,
+        "remainingLife": 11,
+        "replacementCost": 32950,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Fire Pump/Jockey Pump, Electric - 500 GP",
+        "expectedLife": 20,
+        "remainingLife": 16,
+        "replacementCost": 36788,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Flashings and Sealants, Parapets/Roof Edges",
+        "expectedLife": 10,
+        "remainingLife": 6,
+        "replacementCost": 14406,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Fluid-Applied Waterproofing, Roof Membrane",
+        "expectedLife": 30,
+        "remainingLife": 26,
+        "replacementCost": 82455,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Generator, Gas",
+        "expectedLife": 25,
+        "remainingLife": 21,
+        "replacementCost": 96992,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Heat Exchanger, Plate & Frame, Fluid to Fluid - 400 GPM",
+        "expectedLife": 25,
+        "remainingLife": 21,
+        "replacementCost": 109420,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Management Office - Upgrades (Allowance)",
+        "expectedLife": 15,
+        "remainingLife": 11,
+        "replacementCost": 10000,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Multi-ply Bituminous Roof Membrane, Base-Coat Only",
+        "expectedLife": 20,
+        "remainingLife": 16,
+        "replacementCost": 37599,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Packaged A/C Unit, Chilled Water (Chiller Loop) - 20 Ton",
+        "expectedLife": 25,
+        "remainingLife": 21,
+        "replacementCost": 77174,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Paint and Seal Exterior",
+        "expectedLife": 10,
+        "remainingLife": 6,
+        "replacementCost": 45902,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Paint Stairs and Railings",
+        "expectedLife": 10,
+        "remainingLife": 6,
+        "replacementCost": 14560,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Pool, Filtration and Circulation Equipment",
+        "expectedLife": 11,
+        "remainingLife": 8,
+        "replacementCost": 15000,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Pool, Gunite Bot/Side - Re-Finish",
+        "expectedLife": 15,
+        "remainingLife": 10,
+        "replacementCost": 176800,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Remove/Reset Pavers",
+        "expectedLife": 40,
+        "remainingLife": 36,
+        "replacementCost": 274400,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Security, Camera",
+        "expectedLife": 15,
+        "remainingLife": 11,
+        "replacementCost": 24575,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Structural Repairs (allowance)",
+        "expectedLife": 10,
+        "remainingLife": 6,
+        "replacementCost": 10000,
+        "sirsType": "Non SIRS Item"
+      },
+      {
+        "itemName": "Trash Compactor, Chute Fed, 250 lbs./hr.",
+        "expectedLife": 20,
+        "remainingLife": 16,
+        "replacementCost": 27692,
+        "sirsType": "Non SIRS Item"
+      }
+    ]
+  }
+}

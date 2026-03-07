@@ -5,10 +5,17 @@ import LeftPanel from './LeftPanel';
 interface CalculatorPageProps {
   association?: string;
   reserveStudy?: string;
+  excelData?: any;
 }
 
-const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStudy }) => {
+const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStudy, excelData }) => {
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
+
+  React.useEffect(() => {
+    if (excelData) {
+      console.log('Calculator Page - Excel Data:', excelData);
+    }
+  }, [excelData]);
 
   const toggleLeftPanel = () => {
     setIsLeftPanelCollapsed(!isLeftPanelCollapsed);

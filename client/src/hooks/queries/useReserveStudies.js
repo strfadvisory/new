@@ -92,3 +92,13 @@ export const useDeleteReserveStudy = () => {
     },
   });
 };
+
+// Get parsed reserve study data
+export const useParsedReserveStudy = (studyId, enabled = true) => {
+  return useQuery({
+    queryKey: ['reserve-studies', 'parsed', studyId],
+    queryFn: () => reserveStudiesApi.getParsedReserveStudy(studyId),
+    enabled: enabled && !!studyId,
+    staleTime: 5 * 60 * 1000,
+  });
+};

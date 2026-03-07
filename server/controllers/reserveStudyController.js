@@ -2,6 +2,7 @@ const ReserveStudy = require('../models/ReserveStudy');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const XLSX = require('xlsx');
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -168,6 +169,87 @@ const downloadReserveStudy = async (req, res) => {
   }
 };
 
+// Parse reserve study Excel file
+function parseReserveStudy(filePath) {
+  const workbook = XLSX.readFile(filePath);
+  const sheet = workbook.Sheets["Manual entry"];
+
+  if (!sheet) {
+    throw new Error('"Manual entry" sheet not found');
+  }
+
+  const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+  // Parse configuration (first 9 rows)
+  const config = {};
+  data.slice(0, 9).forEach(row => {
+    if (row[0] && row[0] !== 'PLEASE FILL OUT TEMPLATE AS IS, DO NOT MOVE TABLES OR ITEMS') {
+      config[row[0]] = row[1] ?? 0;
+    }
+  });
+
+  // Find table header
+  const headerIndex = data.findIndex(row => row[0] === "Item Name");
+  if (headerIndex === -1) {
+    throw new Error("Item table header not found");
+  }
+
+  // Parse items
+  const items = [];
+  for (let i = headerIndex + 2; i < data.length; i++) {
+    const row = data[i];
+    if (!row || !row[0]) continue;
+
+    items.push({
+      itemName: row[0],
+      expectedLife: Number(row[1]) || 0,
+      remainingLife: Number(row[2]) || 0,
+      replacementCost: Number(row[3]) || 0,
+      sirsType: row[4] || 0
+    });
+  }
+
+  return { config, items };
+}
+
+// Get Excel data as JSON
+const getReserveStudyData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const study = await ReserveStudy.findById(id);
+
+    if (!study) {
+      return res.status(404).json({ message: 'Reserve study not found' });
+    }
+
+    if (!fs.existsSync(study.filePath)) {
+      return res.status(404).json({ message: 'Excel file not found' });
+    }
+
+    const parsedData = parseReserveStudy(study.filePath);
+    const jsonData = {
+      studyName: study.studyName,
+      fileName: study.fileName,
+      data: parsedData
+    };
+
+    // Console log
+    console.log(JSON.stringify(jsonData, null, 2));
+
+    res.json({
+      message: 'Reserve study data retrieved successfully',
+      ...jsonData
+    });
+  } catch (error) {
+    console.error('Error reading Excel data:', error);
+    res.status(500).json({ 
+      message: 'Failed to read Excel data',
+      error: error.message 
+    });
+  }
+};
+
 // Delete reserve study
 const deleteReserveStudy = async (req, res) => {
   try {
@@ -179,9 +261,13 @@ const deleteReserveStudy = async (req, res) => {
       return res.status(404).json({ message: 'Reserve study not found' });
     }
 
-    // Soft delete
-    study.status = 'archived';
-    await study.save();
+    // Delete the uploaded Excel file
+    if (study.filePath && fs.existsSync(study.filePath)) {
+      fs.unlinkSync(study.filePath);
+    }
+
+    // Delete from database
+    await ReserveStudy.findByIdAndDelete(id);
 
     res.json({ message: 'Reserve study deleted successfully' });
   } catch (error) {
@@ -195,6 +281,7 @@ module.exports = {
   createReserveStudy,
   getReserveStudies,
   getReserveStudy,
+  getReserveStudyData,
   downloadReserveStudy,
   deleteReserveStudy
 };

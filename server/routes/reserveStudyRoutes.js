@@ -5,6 +5,7 @@ const {
   createReserveStudy,
   getReserveStudies,
   getReserveStudy,
+  getReserveStudyData,
   downloadReserveStudy,
   deleteReserveStudy
 } = require('../controllers/reserveStudyController');
@@ -17,6 +18,7 @@ router.use(protect);
 router.post('/', upload.single('excelFile'), createReserveStudy);
 router.get('/', getReserveStudies);
 router.get('/:id', getReserveStudy);
+router.get('/:id/data', getReserveStudyData);
 router.get('/:id/download', downloadReserveStudy);
 router.delete('/:id', deleteReserveStudy);
 
