@@ -590,6 +590,11 @@ interface SimulatorSubheaderProps {
   onUndo?: () => void;
   onRedo?: () => void;
   onSave?: () => void;
+  onShowCalculator?: (association: string, reserveStudy: string) => void;
+  selectedAssociation?: string;
+  selectedCompany?: string;
+  onAssociationChange?: (value: string) => void;
+  onCompanyChange?: (value: string) => void;
 }
 
 const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
@@ -597,7 +602,12 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   onReset,
   onUndo,
   onRedo,
-  onSave
+  onSave,
+  onShowCalculator,
+  selectedAssociation = '',
+  selectedCompany = '',
+  onAssociationChange,
+  onCompanyChange
 }) => {
   const [showViewMenu, setShowViewMenu] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -608,19 +618,23 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [selectedUserMenu, setSelectedUserMenu] = useState<string | null>(null);
   const [showCreateAssociationPopup, setShowCreateAssociationPopup] = useState(false);
   const [showAddReserveStudyPopup, setShowAddReserveStudyPopup] = useState(false);
-  const [selectedAssociation, setSelectedAssociation] = useState<string>('');
-  const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [refreshAssociations, setRefreshAssociations] = useState(0);
   const [refreshReserveStudies, setRefreshReserveStudies] = useState(0);
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (selectedAssociation && selectedCompany && onShowCalculator) {
+      onShowCalculator(selectedAssociation, selectedCompany);
+    }
+  }, [selectedAssociation, selectedCompany, onShowCalculator]);
+
+  useEffect(() => {
     if (selectedAssociation) {
-      setSelectedCompany('');
+      onCompanyChange?.('');
       setRefreshReserveStudies(prev => prev + 1);
     }
-  }, [selectedAssociation]);
+  }, [selectedAssociation, onCompanyChange]);
 
   useEffect(() => {
     fetchUsers();
@@ -678,7 +692,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           bottomButtonText="+ Create an Associations" 
           onBottomButtonClick={() => setShowCreateAssociationPopup(true)}
           selectedValue={selectedAssociation}
-          onSelectionChange={setSelectedAssociation}
+          onSelectionChange={onAssociationChange}
           refreshTrigger={refreshAssociations}
         />
         <Dropdown 
@@ -688,7 +702,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           bottomButtonText="+ Add New Reserve Study"
           onBottomButtonClick={() => setShowAddReserveStudyPopup(true)}
           selectedValue={selectedCompany}
-          onSelectionChange={setSelectedCompany}
+          onSelectionChange={onCompanyChange}
           refreshTrigger={refreshReserveStudies}
           associationFilter={selectedAssociation}
         />

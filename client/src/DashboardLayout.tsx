@@ -4,6 +4,7 @@ import './Dashboard.css';
 import { API_ENDPOINTS } from './config';
 import SimulatorSubheader from './components/SimulatorSubheader';
 import DashboardHeader from './components/DashboardHeader';
+import CalculatorPage from './components/CalculatorPage';
 
 interface DashboardLayoutProps {
   user: any;
@@ -14,8 +15,30 @@ interface DashboardLayoutProps {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUserUpdate }) => {
   const [menu, setMenu] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState(user);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '' });
+  const [selectedAssociation, setSelectedAssociation] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleReset = () => {
+    setIsResetting(true);
+    setShowCalculator(false);
+    setSelectedAssociation('');
+    setSelectedCompany('');
+    setCalculatorData({ association: '', reserveStudy: '' });
+    // Reset the flag after a brief delay
+    setTimeout(() => setIsResetting(false), 200);
+  };
+
+  const handleShowCalculator = (association: string, reserveStudy: string) => {
+    if (!isResetting) {
+      setCalculatorData({ association, reserveStudy });
+      setShowCalculator(true);
+    }
+  };
 
   const handleUserUpdate = (updatedUser: any) => {
     setCurrentUser(updatedUser);
@@ -65,9 +88,26 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
           onUserUpdate={handleUserUpdate}
         />
         
-        <div className="dashboard-content">
-          {isSimulatorPage && <SimulatorSubheader />}
-          <Outlet />
+        <div className="dashboard-content"> 
+          {isSimulatorPage && (
+            <SimulatorSubheader 
+              onShowCalculator={handleShowCalculator} 
+              onReset={handleReset}
+              selectedAssociation={selectedAssociation}
+              selectedCompany={selectedCompany}
+              onAssociationChange={setSelectedAssociation}
+              onCompanyChange={setSelectedCompany}
+            />
+          )}   
+         
+          {showCalculator ? (
+            <CalculatorPage 
+              association={calculatorData.association} 
+              reserveStudy={calculatorData.reserveStudy} 
+            />
+          ) : (
+            <Outlet />
+          )}
         </div>
       </div>
     </div>

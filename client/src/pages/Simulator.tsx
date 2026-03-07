@@ -60,7 +60,7 @@ const Simulator: React.FC = () => {
  
       <div style={{ marginBottom: '40px' }}> 
         <h1 style={{ fontSize: '32px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>Welcome, {user?.firstName}</h1>
-        <p style={{ fontSize: '16px', color: '#6b7280' }}>Choose your Company type you like to signup</p>
+        <p style={{ fontSize: '16px', color: '#6b7280' }}>Choose your Company type you like to signup aw</p>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '60px' }}>
