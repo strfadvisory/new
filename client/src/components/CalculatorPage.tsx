@@ -9,16 +9,23 @@ interface CalculatorPageProps {
 }
 
 const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStudy, excelData }) => {
+  console.log('[CalculatorPage.tsx] Received props:', { association, reserveStudy, hasExcelData: !!excelData });
+  
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
-
+  const [selectedYearData, setSelectedYearData] = useState<any>(null);
+ 
   React.useEffect(() => {
-    if (excelData) {
-      console.log('Calculator Page - Excel Data:', excelData);
-    }
+    console.log('[CalculatorPage.tsx] excelData changed, resetting selectedYearData');
+    setSelectedYearData(null);
   }, [excelData]);
 
   const toggleLeftPanel = () => {
     setIsLeftPanelCollapsed(!isLeftPanelCollapsed);
+  };
+
+  const handleYearSelect = (yearData: any) => {
+    console.log('[CalculatorPage.tsx] Year selected:', yearData);
+    setSelectedYearData(yearData);
   };
 
   return (
@@ -35,7 +42,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
         overflow: 'hidden',
         height: '100vh'
       }}>
-        <LeftPanel isCollapsed={isLeftPanelCollapsed} onToggle={toggleLeftPanel} />
+        <LeftPanel isCollapsed={isLeftPanelCollapsed} onToggle={toggleLeftPanel} selectedYearData={selectedYearData} excelData={excelData} />
       </div>
       
       {/* Right Panel Container */}
@@ -72,7 +79,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
             →   <img src='/expend.png' /> 
           </button>
         )}
-        <FundGraph association={association} reserveStudy={reserveStudy} />
+        <FundGraph association={association} reserveStudy={reserveStudy} onYearSelect={handleYearSelect} excelData={excelData} />
       </div>
     </div>
   );

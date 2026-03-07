@@ -1,8 +1,12 @@
 import { useState } from "react";
+import React from "react";
+import { calculateFinancialProjections, calculateHealthScore, calculateOptimalFee, FinancialConfig, ReserveItem } from '../utils/financialCalculations';
 
 interface FundGraphProps {
   association?: string;
   reserveStudy?: string;
+  onYearSelect?: (yearData: any) => void;
+  excelData?: any;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -79,7 +83,7 @@ const VAL_H_BOT  = 48;  // 3rem
 // ─────────────────────────────────────────────────────────────────
 // GRAPH 1 — Monthly Fee Collection (unchanged)
 // ─────────────────────────────────────────────────────────────────
-function Graph1({ sel, onSel }: { sel: string | null; onSel: (value: string | null) => void }) {
+function Graph1({ sel, onSel, onYearSelect }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void }) {
   return (
     <div style={{ borderBottom:"2px solid #e8e8e8", background:"#fff" }}>
       <div style={{ padding:"12px 16px 6px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -92,7 +96,12 @@ function Graph1({ sel, onSel }: { sel: string | null; onSel: (value: string | nu
             const active = sel === `f${i}`;
             const h = FEE_HEIGHTS[i] ?? 28;
             return (
-              <div key={i} onClick={() => onSel(active ? null : `f${i}`)}
+              <div key={i} onClick={() => {
+                onSel(active ? null : `f${i}`);
+                if (onYearSelect) {
+                  onYearSelect({ year, value: '$150', pos: true });
+                }
+              }}
                 style={{ width:COL_W, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", cursor:"pointer", background:active?"#ddd":"transparent", borderRadius:6 }}>
                 <div style={{ height:16, display:"flex", alignItems:"center", justifyContent:"center", marginTop:6 }}>
                   <span style={{ fontSize:11, fontWeight:700, color:GREEN }}>15%</span>
@@ -133,7 +142,7 @@ function Graph1({ sel, onSel }: { sel: string | null; onSel: (value: string | nu
 //   negative-line-t-odd:  bottom:0, height:41.6px → extends UP (odd)
 //   negative-line-b:      top:0,    height:40px → extends DOWN
 // ─────────────────────────────────────────────────────────────────
-function Graph2({ sel, onSel }: { sel: string | null; onSel: (value: string | null) => void }) {
+function Graph2({ sel, onSel, onYearSelect, cashflowData = CASHFLOW }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void; cashflowData?: any[] }) {
   return (
     <div style={{ background:"#fff" }}>
       <div style={{ display:"flex", alignItems:"center", padding:"12px 16px 4px", gap:8, borderTop:"1px solid #f0f0f0" }}>
@@ -146,7 +155,7 @@ function Graph2({ sel, onSel }: { sel: string | null; onSel: (value: string | nu
 
       <div style={{ overflowX:"auto", padding:"0 16px 28px" }}>
         <div style={{ display:"inline-flex", flexDirection:"row" }}>
-          {CASHFLOW.map((d, i) => {
+          {cashflowData.map((d, i) => {
             const active  = sel === `c${i}`;
             const isPos   = d.pos;
             const isEven  = i % 2 === 0;
@@ -158,7 +167,12 @@ function Graph2({ sel, onSel }: { sel: string | null; onSel: (value: string | nu
             return (
               <div key={i}
                 data-positive={String(isPos)}
-                onClick={() => onSel(active ? null : `c${i}`)}
+                onClick={() => {
+                  onSel(active ? null : `c${i}`);
+                  if (onYearSelect) {
+                    onYearSelect(d);
+                  }
+                }}
                 style={{
                   width: COL_W, flexShrink:0, cursor:"pointer",
                   borderRadius:10, paddingTop:8, paddingBottom:8,
@@ -231,7 +245,7 @@ function Graph2({ sel, onSel }: { sel: string | null; onSel: (value: string | nu
                   width:"100%", height:YEAR_ROW_H,
                   background:"#9e9e9e",
                   position:"relative", textAlign:"center",
-                  borderRadius: i === 0 ? "8px 0 0 8px" : i === CASHFLOW.length-1 ? "0 8px 8px 0" : 0,
+                  borderRadius: i === 0 ? "8px 0 0 8px" : i === cashflowData.length-1 ? "0 8px 8px 0" : 0,
                 }}>
                   {/* Positive line: goes UP (bottom:0, visible only when pos) */}
                   {isPos && (
@@ -310,16 +324,87 @@ function Graph2({ sel, onSel }: { sel: string | null; onSel: (value: string | nu
 // ─────────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────────
-const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy }) => {
+const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData }) => {
   const [sel1, setSel1] = useState<string | null>(null);
   const [sel2, setSel2] = useState<string | null>(null);
-  const d2 = sel2 !== null ? CASHFLOW[parseInt(sel2.replace("c",""))] : null;
+  
+  React.useEffect(() => {
+    console.log('[FundGraph.tsx] excelData changed, resetting selections');
+    setSel1(null);
+    setSel2(null);
+  }, [excelData]);
+  
+  const cashflowData = React.useMemo(() => {
+    console.log('[FundGraph.tsx] Recalculating cashflowData with advanced analytics');
+    if (!excelData?.data) {
+      console.log('[FundGraph.tsx] No excelData, using default CASHFLOW');
+      return CASHFLOW;
+    }
+    
+    const config = excelData.data.config || {};
+    const items = excelData.data.items || [];
+    
+    const financialConfig: FinancialConfig = {
+      startingBalance: config['Beginning Reserve Funds (Dollar Amount)'] || 0,
+      monthlyFeePerUnit: config['Average Monthly Fee per Unit'] || 0,
+      totalUnits: config['Total Number of Housing Units'] || 1,
+      inflationRate: (config['Inflation Rate Used in the Report'] || 0) / 100,
+      currentYear: config['Beginning Fiscal Year of the Report'] || new Date().getFullYear(),
+      yearsToProject: 29
+    };
+    
+    const reserveItems: ReserveItem[] = items.map((item: any) => ({
+      itemName: item.itemName,
+      expectedLife: item.expectedLife,
+      remainingLife: item.remainingLife,
+      replacementCost: item.replacementCost,
+      sirsType: item.sirsType
+    }));
+    
+    console.log('[FundGraph.tsx] Financial Config:', financialConfig);
+    console.log('[FundGraph.tsx] Reserve Items:', reserveItems.length);
+    
+    const { projections, metrics } = calculateFinancialProjections(financialConfig, reserveItems);
+    const healthScore = calculateHealthScore(projections);
+    const optimalFee = calculateOptimalFee(financialConfig, reserveItems);
+    
+    console.log('[FundGraph.tsx] Financial Metrics:', metrics);
+    console.log('[FundGraph.tsx] Health Score:', healthScore.toFixed(2));
+    console.log('[FundGraph.tsx] Optimal Fee:', optimalFee);
+    
+    const balances = projections.map(p => p.closingBalance);
+    const maxAbsBalance = Math.max(...balances.map(b => Math.abs(b)));
+    
+    const generatedData = projections.map((proj, i) => {
+      const isPositive = proj.closingBalance >= 0;
+      const absBalance = Math.abs(proj.closingBalance);
+      const percentage = maxAbsBalance > 0 ? Math.min(100, (absBalance / maxAbsBalance) * 100) : 1;
+      
+      return {
+        year: proj.year,
+        value: `${proj.closingBalance >= 0 ? '$' : '-$'}${Math.abs(proj.closingBalance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+        pos: isPositive,
+        barPct: isPositive ? Math.max(1, Math.round(percentage)) : 1,
+        negPct: !isPositive ? Math.max(1, Math.round(percentage)) : 1,
+        projection: proj,
+        healthScore,
+        optimalFee,
+        metrics,
+        studyName: excelData.studyName || 'Reserve Study'
+      };
+    });
+    
+    console.log('[FundGraph.tsx] Generated data with analytics:', generatedData.slice(0, 3));
+    return generatedData;
+  }, [excelData]);
+  
+  const d2 = sel2 !== null ? cashflowData[parseInt(sel2.replace("c",""))] : null;
 
   return (
     <div style={{ fontFamily:"system-ui,sans-serif", background:"white", minHeight:"calc(100vh - 100px)" }}>
       <div style={{ background:"#fff", margin:"0px auto",    overflow:"hidden" }}>
 
-        <Graph1 sel={sel1} onSel={setSel1} />
+        <Graph1 sel={sel1} onSel={setSel1} onYearSelect={onYearSelect} />
 
         {d2 && (
           <div style={{
@@ -341,7 +426,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy }) => {
           </div>
         )}
 
-        <Graph2 sel={sel2} onSel={setSel2} />
+        <Graph2 sel={sel2} onSel={setSel2} onYearSelect={onYearSelect} cashflowData={cashflowData} />
 
         {/* <div style={{ padding:"8px 16px 14px", borderTop:"1px solid #f0f0f0", display:"flex", gap:20, alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
