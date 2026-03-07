@@ -120,7 +120,7 @@ const Dropdown: React.FC<DropdownProps> = ({
         fetchReserveStudies();
       }
     }
-  }, [isOpen, showCompanyList, showUserList, showAssociationsList, showReserveStudyList, companies.length, users.length, associations.length, reserveStudies.length]);
+  }, [isOpen, showCompanyList, showUserList, showAssociationsList, showReserveStudyList]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

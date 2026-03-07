@@ -83,7 +83,7 @@ function Graph1({ sel, onSel }: { sel: string | null; onSel: (value: string | nu
   return (
     <div style={{ borderBottom:"2px solid #e8e8e8", background:"#fff" }}>
       <div style={{ padding:"12px 16px 6px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontWeight:700, fontSize:15, color:"#111" }}>Monthly fee collection</span>
+        <span style={{ fontWeight:700, fontSize:15, color:"#111",  }}>Monthly fee collection</span>
         <span style={{ color:"#bbb", fontSize:16, cursor:"pointer", letterSpacing:3 }}>•••</span>
       </div>
       <div style={{ overflowX:"auto" }}>
@@ -316,8 +316,8 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy }) => {
   const d2 = sel2 !== null ? CASHFLOW[parseInt(sel2.replace("c",""))] : null;
 
   return (
-    <div style={{ fontFamily:"system-ui,sans-serif", background:"#f4f6f8", minHeight:"100vh" }}>
-      <div style={{ background:"#fff", margin:"20px auto", maxWidth:1400, borderRadius:16, boxShadow:"0 2px 16px rgba(0,0,0,.08)", overflow:"hidden" }}>
+    <div style={{ fontFamily:"system-ui,sans-serif", background:"white", minHeight:"calc(100vh - 100px)" }}>
+      <div style={{ background:"#fff", margin:"0px auto",    overflow:"hidden" }}>
 
         <Graph1 sel={sel1} onSel={setSel1} />
 
@@ -343,7 +343,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy }) => {
 
         <Graph2 sel={sel2} onSel={setSel2} />
 
-        <div style={{ padding:"8px 16px 14px", borderTop:"1px solid #f0f0f0", display:"flex", gap:20, alignItems:"center" }}>
+        {/* <div style={{ padding:"8px 16px 14px", borderTop:"1px solid #f0f0f0", display:"flex", gap:20, alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <div style={{ width:12, height:12, background:GREEN, borderRadius:2 }} />
             <span style={{ fontSize:11, color:"#6b7280" }}>Positive cash flow</span>
@@ -362,7 +362,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy }) => {
           <div style={{ fontSize: '14px', color: '#6b7280' }}>
             Reserve Study: <span style={{ color: '#1f2937', fontWeight: '500' }}>{reserveStudy || 'Not selected'}</span>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );
