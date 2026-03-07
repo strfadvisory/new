@@ -11,6 +11,8 @@ import RoleManager from './pages/superadmin/RoleManager';
 import Library from './pages/superadmin/Library';
 import { API_BASE_URL } from './config';
 import DashboardHeader from './components/DashboardHeader';
+import SimulatorSubheader from './components/SimulatorSubheader';
+import CalculatorPage from './components/CalculatorPage';
 
 interface SuperAdminLayoutProps {
   user: any;
@@ -30,6 +32,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const [selectedLibraryItem, setSelectedLibraryItem] = useState<any>(null);
   const [iconPreview, setIconPreview] = useState<string>('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '' });
+  const [selectedAssociation, setSelectedAssociation] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('');
   const [formData, setFormData] = useState({
     _id: '',
     name: '',
@@ -42,11 +48,39 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
 
   const currentPage = location.pathname.split('/').pop() || 'role-manager';
 
+  const handleShowCalculator = (association: string, reserveStudy: string) => {
+    setCalculatorData({ association, reserveStudy });
+    setShowCalculator(true);
+  };
+
+  const handleReset = () => {
+    setShowCalculator(false);
+    setSelectedAssociation('');
+    setSelectedCompany('');
+    setCalculatorData({ association: '', reserveStudy: '' });
+  };
+
+  const handleAssociationChange = (value: string) => {
+    setSelectedAssociation(value);
+  };
+
+  const handleCompanyChange = (value: string) => {
+    setSelectedCompany(value);
+  };
+
   React.useEffect(() => {
     if (currentPage === 'role-manager') {
       fetchRoles();
     } else if (currentPage === 'library') {
       fetchLibraryItems();
+    }
+    
+    // Reset calculator state when navigating away from simulators
+    if (currentPage !== 'simulators') {
+      setShowCalculator(false);
+      setSelectedAssociation('');
+      setSelectedCompany('');
+      setCalculatorData({ association: '', reserveStudy: '' });
     }
   }, [currentPage]);
 
@@ -371,6 +405,17 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         />
         
         <div className="dashboard-content">
+          {currentPage === 'simulators' && (
+            <SimulatorSubheader 
+              onShowCalculator={handleShowCalculator} 
+              onReset={handleReset}
+              selectedAssociation={selectedAssociation}
+              selectedCompany={selectedCompany}
+              onAssociationChange={handleAssociationChange}
+              onCompanyChange={handleCompanyChange}
+            />
+          )}
+          
           <div className="main-content">
             {currentPage !== 'companies' && currentPage !== 'simulators' && <div className="companies-left-panel">
               {/* <div className="companies-header">
@@ -462,16 +507,23 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
             </div>}
             
             <div className="companies-right-panel" style={currentPage === 'companies' || currentPage === 'simulators' ? { marginLeft: 0, width: '100%', flex: 1 } : { flex: 1 }}>
-              <Routes>
-                <Route path="" element={<Navigate to="simulators" replace />} />
-                <Route path="simulators" element={<SuperAdminDashboard />} />
-                <Route path="companies" element={<AllCompanies />} />
-                <Route path="users" element={<AllUsers />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="settings" element={<SystemSettings />} />
-                <Route path="role-manager" element={<RoleManager selectedRole={selectedRole} onEdit={handleEditRole} onDelete={handleDeleteRole} onRoleUpdate={handleRoleUpdate} isUserContext={false} />} />
-                <Route path="library" element={<Library selectedItem={selectedLibraryItem} onEdit={handleEditLibraryItem} onDelete={handleDeleteLibraryItem} />} />
-              </Routes>
+              {showCalculator ? (
+                <CalculatorPage 
+                  association={calculatorData.association} 
+                  reserveStudy={calculatorData.reserveStudy} 
+                />
+              ) : (
+                <Routes>
+                  <Route path="" element={<Navigate to="simulators" replace />} />
+                  <Route path="simulators" element={<SuperAdminDashboard />} />
+                  <Route path="companies" element={<AllCompanies />} />
+                  <Route path="users" element={<AllUsers />} />
+                  <Route path="analytics" element={<Analytics />} />
+                  <Route path="settings" element={<SystemSettings />} />
+                  <Route path="role-manager" element={<RoleManager selectedRole={selectedRole} onEdit={handleEditRole} onDelete={handleDeleteRole} onRoleUpdate={handleRoleUpdate} isUserContext={false} />} />
+                  <Route path="library" element={<Library selectedItem={selectedLibraryItem} onEdit={handleEditLibraryItem} onDelete={handleDeleteLibraryItem} />} />
+                </Routes>
+              )}
             </div>
           </div>
         </div>

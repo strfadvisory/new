@@ -631,10 +631,12 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
 
   useEffect(() => {
     if (selectedAssociation) {
-      onCompanyChange?.('');
+      if (onCompanyChange) {
+        onCompanyChange('');
+      }
       setRefreshReserveStudies(prev => prev + 1);
     }
-  }, [selectedAssociation, onCompanyChange]);
+  }, [selectedAssociation]);
 
   useEffect(() => {
     fetchUsers();

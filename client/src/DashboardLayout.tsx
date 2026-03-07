@@ -33,11 +33,19 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
     setTimeout(() => setIsResetting(false), 200);
   };
 
+  const handleAssociationChange = (value: string) => {
+    console.log('Association changed to:', value);
+    setSelectedAssociation(value);
+  };
+
+  const handleCompanyChange = (value: string) => {
+    console.log('Company changed to:', value);
+    setSelectedCompany(value);
+  };
+
   const handleShowCalculator = (association: string, reserveStudy: string) => {
-    if (!isResetting) {
-      setCalculatorData({ association, reserveStudy });
-      setShowCalculator(true);
-    }
+    setCalculatorData({ association, reserveStudy });
+    setShowCalculator(true);
   };
 
   const handleUserUpdate = (updatedUser: any) => {
@@ -95,8 +103,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
               onReset={handleReset}
               selectedAssociation={selectedAssociation}
               selectedCompany={selectedCompany}
-              onAssociationChange={setSelectedAssociation}
-              onCompanyChange={setSelectedCompany}
+              onAssociationChange={handleAssociationChange}
+              onCompanyChange={handleCompanyChange}
             />
           )}   
          

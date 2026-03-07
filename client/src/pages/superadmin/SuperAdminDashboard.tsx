@@ -1,10 +1,8 @@
 import React from 'react';
-import SimulatorSubheader from '../../components/SimulatorSubheader';
 
 const SuperAdminDashboard: React.FC = () => {
   return (
-    <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
-      <SimulatorSubheader /> 
+    <div style={{ background: '#f8fafc', minHeight: '100vh' }}> 
       
       <div style={{ padding: '40px' }}>
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
