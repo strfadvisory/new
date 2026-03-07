@@ -16,7 +16,7 @@ const associationRoutes = require('./routes/associationRoutes');
 const reserveStudyRoutes = require('./routes/reserveStudyRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // CORS configuration
 app.use(cors({

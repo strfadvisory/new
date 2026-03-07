@@ -627,13 +627,11 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
     if (selectedAssociation && selectedCompany && onShowCalculator) {
       onShowCalculator(selectedAssociation, selectedCompany);
     }
-  }, [selectedAssociation, selectedCompany, onShowCalculator]);
+  }, [selectedAssociation, selectedCompany]);
 
   useEffect(() => {
-    if (selectedAssociation) {
-      if (onCompanyChange) {
-        onCompanyChange('');
-      }
+    if (selectedAssociation && onCompanyChange) {
+      onCompanyChange('');
       setRefreshReserveStudies(prev => prev + 1);
     }
   }, [selectedAssociation]);

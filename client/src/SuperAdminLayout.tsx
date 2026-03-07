@@ -69,20 +69,21 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   };
 
   React.useEffect(() => {
-    if (currentPage === 'role-manager') {
+    const page = location.pathname.split('/').pop() || 'role-manager';
+    
+    if (page === 'role-manager') {
       fetchRoles();
-    } else if (currentPage === 'library') {
+    } else if (page === 'library') {
       fetchLibraryItems();
     }
     
-    // Reset calculator state when navigating away from simulators
-    if (currentPage !== 'simulators') {
+    if (page !== 'simulators') {
       setShowCalculator(false);
       setSelectedAssociation('');
       setSelectedCompany('');
       setCalculatorData({ association: '', reserveStudy: '' });
     }
-  }, [currentPage]);
+  }, [location.pathname]);
 
   const fetchLibraryItems = async () => {
     try {
