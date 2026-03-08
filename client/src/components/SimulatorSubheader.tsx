@@ -4,6 +4,7 @@ import { apiService } from '../services/ApiService';
 import InviteMemberModal from './InviteMemberModal';
 import AddAssociationPopup from './AddAssociationPopup';
 import AddReserveStudyPopup from './AddReserveStudyPopup';
+import { viewModeEmitter } from '../utils/eventEmitter';
 import './SimulatorSubheader.css';
 
 interface ReserveStudy {
@@ -617,7 +618,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 };
 
 interface SimulatorSubheaderProps {
-  onChangeView?: () => void;
+  onChangeView?: (viewMode: 'graph' | 'list') => void;
   onReset?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
@@ -641,7 +642,9 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   onAssociationChange,
   onCompanyChange
 }) => {
+  console.log('[SimulatorSubheader] Received props:', { onChangeView: !!onChangeView, onReset: !!onReset, selectedAssociation, selectedCompany });
   const [showViewMenu, setShowViewMenu] = useState(false);
+  const [selectedView, setSelectedView] = useState('Graph View');
   const [users, setUsers] = useState<User[]>([]);
   const [showInvitePopup, setShowInvitePopup] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -773,20 +776,29 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       
         <div ref={viewMenuRef} className="view-menu-container">
           <button className="view-menu-button" onClick={() => setShowViewMenu(!showViewMenu)}>
-            Change View <i className="fas fa-chart-bar"></i>
+            {selectedView} <i className={selectedView === 'Graph View' ? 'fas fa-chart-bar' : 'fas fa-list'}></i>
           </button>
           
           {showViewMenu && (
             <div className="view-menu">
-              <div className="view-menu-item" onClick={() => { console.log('Graph View selected'); setShowViewMenu(false); }}>
+              <div className="view-menu-item" onClick={() => { 
+                console.log('[SimulatorSubheader] Graph View clicked');
+                setSelectedView('Graph View');
+                setShowViewMenu(false);
+                viewModeEmitter.emit('viewModeChange', 'graph');
+              }}>
                 <i className="fas fa-chart-bar view-menu-icon"></i>
                 Graph View
               </div>
-              <div className="view-menu-item" onClick={() => { console.log('List View selected'); setShowViewMenu(false); }}>
+              <div className="view-menu-item" onClick={() => { 
+                console.log('[SimulatorSubheader] List View clicked');
+                setSelectedView('List View');
+                setShowViewMenu(false);
+                viewModeEmitter.emit('viewModeChange', 'list');
+              }}>
                 <i className="fas fa-list view-menu-icon"></i>
                 List View
               </div>
-         
             </div>
           )}
         </div>

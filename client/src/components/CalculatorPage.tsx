@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import FundGraph from './FundGraph';
 import LeftPanel from './LeftPanel';
+import { viewModeEmitter } from '../utils/eventEmitter';
 
 interface CalculatorPageProps {
   association?: string;
   reserveStudy?: string;
   excelData?: any;
+  viewMode?: 'graph' | 'list';
+  onViewModeChange?: (mode: 'graph' | 'list') => void;
 }
 
-const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStudy, excelData }) => {
-  console.log('[CalculatorPage.tsx] Received props:', { association, reserveStudy, hasExcelData: !!excelData });
+const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStudy, excelData, viewMode: propViewMode = 'graph', onViewModeChange }) => {
+  console.log('[CalculatorPage.tsx] Received props:', { association, reserveStudy, hasExcelData: !!excelData, propViewMode, onViewModeChange });
+  console.log('[CalculatorPage.tsx] ViewMode from parent:', propViewMode);
   
   // Console complete JSON data when received
   React.useEffect(() => {
@@ -29,7 +33,20 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
   
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [selectedYearData, setSelectedYearData] = useState<any>(null);
-  const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
+  const [viewMode, setViewMode] = useState<'graph' | 'list'>(propViewMode);
+
+  React.useEffect(() => {
+    const handleViewModeChange = (mode: 'graph' | 'list') => {
+      console.log('[CalculatorPage] Event received - ViewMode changed to:', mode);
+      setViewMode(mode);
+    };
+
+    viewModeEmitter.on('viewModeChange', handleViewModeChange);
+
+    return () => {
+      viewModeEmitter.off('viewModeChange', handleViewModeChange);
+    };
+  }, []);
  
   React.useEffect(() => {
     console.log('[CalculatorPage.tsx] excelData changed, resetting selectedYearData');
@@ -52,54 +69,8 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
       backgroundColor: '#f3f4f6',
       display: 'flex',
       position: 'relative'
-    }}>
-      {/* View Toggle Header */}
-      <div style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 1000,
-        display: 'flex',
-        gap: '8px',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        padding: '4px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        border: '1px solid #e5e7eb'
-      }}>
-        <button
-          onClick={() => setViewMode('graph')}
-          style={{
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            backgroundColor: viewMode === 'graph' ? '#3b82f6' : 'transparent',
-            color: viewMode === 'graph' ? 'white' : '#6b7280'
-          }}
-        >
-          Graph View
-        </button>
-        <button
-          onClick={() => setViewMode('list')}
-          style={{
-            padding: '8px 16px',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer',
-            fontSize: '14px',
-            fontWeight: '500',
-            backgroundColor: viewMode === 'list' ? '#3b82f6' : 'transparent',
-            color: viewMode === 'list' ? 'white' : '#6b7280'
-          }}
-        >
-          List View
-        </button>
-      </div>
-
-      {/* Left Panel Container - Only show in graph view */}
+    }}> 
+ 
       {viewMode === 'graph' && (
         <div style={{
           width: isLeftPanelCollapsed ? '0px' : '300px',

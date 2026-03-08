@@ -19,9 +19,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
   const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '', excelData: null as any });
   const [selectedAssociation, setSelectedAssociation] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
+  const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
   const [isResetting, setIsResetting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Debug viewMode changes
+  useEffect(() => {
+    console.log('[DashboardLayout] ViewMode state changed to:', viewMode);
+  }, [viewMode]);
+
+  // Check if current route is simulator page
+  const isSimulatorPage = location.pathname === '/dashboard/simulator' || location.pathname === '/dashboard/simulator-management';
+
+  console.log('[DashboardLayout] Render - Current viewMode:', viewMode, 'showCalculator:', showCalculator, 'isSimulatorPage:', isSimulatorPage);
 
   const handleReset = () => {
     setIsResetting(true);
@@ -41,6 +52,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
   const handleCompanyChange = (value: string) => {
     console.log('Company changed to:', value);
     setSelectedCompany(value);
+  };
+
+  const handleViewModeChange = (mode: 'graph' | 'list') => {
+    console.log('[DashboardLayout] ViewMode change requested:', mode);
+    console.log('[DashboardLayout] Current viewMode before change:', viewMode);
+    setViewMode(mode);
   };
 
   const handleShowCalculator = (association: string, reserveStudy: string, excelData?: any) => {
@@ -83,9 +100,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
     fetchPermissions();
   }, [navigate, location.pathname]);
 
-  // Check if current route is simulator page
-  const isSimulatorPage = location.pathname === '/dashboard/simulator' || location.pathname === '/dashboard/simulator-management';
-
   return (
     <div className="dashboard-container-no-sidebar">
       <div className="dashboard-main">
@@ -97,10 +111,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
         />
         
         <div className="dashboard-content"> 
-          {isSimulatorPage && (
+          {(isSimulatorPage || showCalculator) && (
             <SimulatorSubheader 
               onShowCalculator={handleShowCalculator} 
               onReset={handleReset}
+              onChangeView={handleViewModeChange}
               selectedAssociation={selectedAssociation}
               selectedCompany={selectedCompany}
               onAssociationChange={handleAssociationChange}
@@ -113,6 +128,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
               association={calculatorData.association} 
               reserveStudy={calculatorData.reserveStudy}
               excelData={calculatorData.excelData}
+              viewMode={viewMode}
+              onViewModeChange={handleViewModeChange}
             />
           ) : (
             <Outlet />
