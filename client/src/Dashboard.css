@@ -249,7 +249,92 @@ display: flex;
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 24px;
+  height: 100%;
+}
+
+.role-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.notification-icon {
+  cursor: pointer;
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.notification-icon:hover {
+  color: white;
+}
+
+.profile-menu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.profile-icon {
+  cursor: pointer;
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.profile-icon:hover {
+  color: white;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 8px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25);
+  min-width: 160px;
+  z-index: 1000;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  color: #374151;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background-color: #f9fafb;
+  color: #374151;
+}
+
+.dropdown-item i {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
 }
 
 .user-menu {

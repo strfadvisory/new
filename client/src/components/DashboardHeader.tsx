@@ -23,6 +23,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const location = useLocation();
   const currentPage = location.pathname.split('/').pop() || '';
   const [companyName, setCompanyName] = useState(user?.companyProfile?.companyName || 'Company name');
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   useEffect(() => {
     const createCompanyProfileIfNeeded = async () => {
@@ -94,11 +95,31 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         </nav>
       </div>
       <div className="header-right">
-        <div className="user-menu">
-          <i className="fas fa-user-circle"></i>
-          <button onClick={onLogout} className="logout-btn">
-            <i className="fas fa-sign-out-alt"></i>
-          </button>
+        <div className="role-name">
+          {user?.role === 'SUPER_ADMIN' ? 'Super Admin' : (user?.role || 'User')}
+        </div>
+        <div className="notification-icon">
+          <i className="fas fa-bell"></i>
+        </div>
+        <div className="profile-menu">
+          <div 
+            className="profile-icon" 
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+          >
+            <i className="fas fa-user-circle"></i>
+          </div>
+          {showProfileDropdown && (
+            <div className="profile-dropdown">
+              <div className="dropdown-item" onClick={() => navigate('/profile')}>
+                <i className="fas fa-user"></i>
+                My Profile
+              </div>
+              <div className="dropdown-item" onClick={onLogout}>
+                <i className="fas fa-sign-out-alt"></i>
+                Logout
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
