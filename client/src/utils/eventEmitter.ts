@@ -23,3 +23,12 @@ class EventEmitter {
 
 export const viewModeEmitter = new EventEmitter();
 export const studySelectionEmitter = new EventEmitter();
+export const reserveStudiesEmitter = new EventEmitter();
+
+// Utility function to refresh reserve studies dropdown
+export const refreshReserveStudiesDropdown = () => {
+  // Emit custom event that the dropdown component listens to
+  window.dispatchEvent(new CustomEvent('reserveStudiesUpdated'));
+  // Also emit through our event emitter for consistency
+  reserveStudiesEmitter.emit('refresh');
+};

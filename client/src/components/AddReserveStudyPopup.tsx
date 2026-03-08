@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { apiService } from '../services/ApiService';
+import { refreshReserveStudiesDropdown } from '../utils/eventEmitter';
 
 interface AddReserveStudyPopupProps {
   isOpen: boolean;
@@ -60,6 +61,9 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
       const response = await apiService.uploadFile('/reserve-studies', formData) as any;
       
       console.log('[AddReserveStudyPopup] Study created successfully:', response);
+      
+      // Trigger dropdown refresh immediately after successful API call
+      refreshReserveStudiesDropdown();
       
       const inputStudyName = studyName.trim();
       setStudyName('');

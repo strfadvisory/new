@@ -263,6 +263,22 @@ const Dropdown: React.FC<DropdownProps> = ({
     }
   };
 
+  // Listen for reserve studies updates
+  useEffect(() => {
+    const handleReserveStudiesUpdate = () => {
+      if (showReserveStudyList) {
+        fetchReserveStudies();
+      }
+    };
+
+    // Listen for global reserve studies update events
+    window.addEventListener('reserveStudiesUpdated', handleReserveStudiesUpdate);
+    
+    return () => {
+      window.removeEventListener('reserveStudiesUpdated', handleReserveStudiesUpdate);
+    };
+  }, [showReserveStudyList, associationFilter]);
+
   const filteredReserveStudies = reserveStudies.filter(study =>
     (study.studyName || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
