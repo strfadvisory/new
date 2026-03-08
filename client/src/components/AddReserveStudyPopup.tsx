@@ -4,7 +4,7 @@ import { apiService } from '../services/ApiService';
 interface AddReserveStudyPopupProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess: (newStudyId?: string, newStudyName?: string) => void;
   selectedAssociation?: string;
 }
 
@@ -57,11 +57,21 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
         formData.append('associationName', selectedAssociation);
       }
 
-      await apiService.uploadFile('/reserve-studies', formData);
-
+      const response = await apiService.uploadFile('/reserve-studies', formData) as any;
+      
+      console.log('[AddReserveStudyPopup] Study created successfully:', response);
+      
+      const inputStudyName = studyName.trim();
       setStudyName('');
       setSelectedFile(null);
-      onSuccess();
+      
+      // Verify response has required data
+      const studyId = response.data?._id || response._id;
+      const responseStudyName = response.data?.studyName || response.studyName || inputStudyName;
+      
+      console.log('[AddReserveStudyPopup] Extracted study data:', { studyId, studyName: responseStudyName });
+      
+      onSuccess(studyId, responseStudyName);
     } catch (error: any) {
       setError(error.response?.data?.message || 'Failed to create reserve study');
     } finally {

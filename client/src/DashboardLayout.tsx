@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from './config';
 import SimulatorSubheader from './components/SimulatorSubheader';
 import DashboardHeader from './components/DashboardHeader';
 import CalculatorPage from './components/CalculatorPage';
+import { studySelectionEmitter } from './utils/eventEmitter';
 
 interface DashboardLayoutProps {
   user: any;
@@ -29,6 +30,34 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
     console.log('[DashboardLayout] ViewMode state changed to:', viewMode);
   }, [viewMode]);
 
+  // Listen for new study selection events with enhanced handling
+  useEffect(() => {
+    const handleNewStudyAdded = (data: { studyId: string; studyName: string; association: string }) => {
+      console.log('[DashboardLayout] New study added event received:', data);
+      
+      // Update local state to match the new study
+      setSelectedAssociation(data.association);
+      setSelectedCompany(data.studyName);
+      setViewMode('graph');
+      
+      // Force calculator to show immediately
+      setShowCalculator(true);
+      setCalculatorData({
+        association: data.association,
+        reserveStudy: data.studyName,
+        excelData: null
+      });
+      
+      console.log('[DashboardLayout] Calculator forced to show for new study');
+    };
+
+    studySelectionEmitter.on('newStudyAdded', handleNewStudyAdded);
+
+    return () => {
+      studySelectionEmitter.off('newStudyAdded', handleNewStudyAdded);
+    };
+  }, []);
+
   // Check if current route is simulator page
   const isSimulatorPage = location.pathname === '/dashboard/simulator' || location.pathname === '/dashboard/simulator-management';
 
@@ -49,9 +78,15 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
     setSelectedAssociation(value);
   };
 
-  const handleCompanyChange = (value: string) => {
-    console.log('Company changed to:', value);
+  const handleCompanyChange = (value: string, studyId?: string) => {
+    console.log('[DashboardLayout] Company change:', { value, studyId });
     setSelectedCompany(value);
+    
+    if (studyId) {
+      // When a study is selected, immediately show calculator
+      console.log('[DashboardLayout] Study selected, showing calculator');
+      handleShowCalculator(selectedAssociation, value);
+    }
   };
 
   const handleViewModeChange = (mode: 'graph' | 'list') => {

@@ -189,12 +189,17 @@ const getReserveStudyData = async (req, res) => {
   try {
     const { id } = req.params;
     
+    console.log(`[getReserveStudyData] Fetching data for study ID: ${id}`);
+    
     const study = await ReserveStudy.findById(id);
 
     if (!study) {
+      console.log(`[getReserveStudyData] Study not found: ${id}`);
       return res.status(404).json({ message: 'Reserve study not found' });
     }
 
+    console.log(`[getReserveStudyData] Found study: ${study.studyName}`);
+    
     const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'reserve-studies' });
     const downloadStream = bucket.openDownloadStream(study.fileId);
     
@@ -213,14 +218,14 @@ const getReserveStudyData = async (req, res) => {
           data: parsedData
         };
 
-        console.log(JSON.stringify(jsonData, null, 2));
+        console.log(`[getReserveStudyData] Successfully parsed data for: ${study.studyName}`);
 
         res.json({
           message: 'Reserve study data retrieved successfully',
           ...jsonData
         });
       } catch (parseError) {
-        console.error('Error parsing Excel data:', parseError);
+        console.error('[getReserveStudyData] Error parsing Excel data:', parseError);
         res.status(500).json({ 
           message: 'Failed to parse Excel data',
           error: parseError.message 
@@ -229,11 +234,11 @@ const getReserveStudyData = async (req, res) => {
     });
 
     downloadStream.on('error', (error) => {
-      console.error('Error reading file from GridFS:', error);
+      console.error('[getReserveStudyData] Error reading file from GridFS:', error);
       res.status(404).json({ message: 'Excel file not found' });
     });
   } catch (error) {
-    console.error('Error reading Excel data:', error);
+    console.error('[getReserveStudyData] Error reading Excel data:', error);
     res.status(500).json({ 
       message: 'Failed to read Excel data',
       error: error.message 

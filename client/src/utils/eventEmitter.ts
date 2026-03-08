@@ -22,3 +22,4 @@ class EventEmitter {
 }
 
 export const viewModeEmitter = new EventEmitter();
+export const studySelectionEmitter = new EventEmitter();

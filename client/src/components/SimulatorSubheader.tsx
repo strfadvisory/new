@@ -4,7 +4,7 @@ import { apiService } from '../services/ApiService';
 import InviteMemberModal from './InviteMemberModal';
 import AddAssociationPopup from './AddAssociationPopup';
 import AddReserveStudyPopup from './AddReserveStudyPopup';
-import { viewModeEmitter } from '../utils/eventEmitter';
+import { viewModeEmitter, studySelectionEmitter } from '../utils/eventEmitter';
 import './SimulatorSubheader.css';
 
 interface ReserveStudy {
@@ -239,7 +239,22 @@ const Dropdown: React.FC<DropdownProps> = ({
         url += `?association=${encodeURIComponent(associationFilter)}`;
       }
       const response = await apiService.get<{data: ReserveStudy[]}>(url);
-      setReserveStudies(Array.isArray(response.data) ? response.data : []);
+      const studies = Array.isArray(response.data) ? response.data : [];
+      
+      // Sort by creation date to ensure latest is first
+      const sortedStudies = studies.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      
+      setReserveStudies(sortedStudies);
+      console.log('[Dropdown] Reserve studies fetched and sorted:', sortedStudies.length);
+      
+      // Auto-select first study if none selected and studies exist
+      if (showReserveStudyList && sortedStudies.length > 0 && !selectedValue && onSelectionChange) {
+        const firstStudy = sortedStudies[0];
+        console.log('[Dropdown] Auto-selecting first study:', firstStudy.studyName);
+        onSelectionChange(firstStudy.studyName, firstStudy._id);
+      }
     } catch (error) {
       console.error('Error fetching reserve studies:', error);
       setReserveStudies([]);
@@ -643,8 +658,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   onCompanyChange
 }) => {
   console.log('[SimulatorSubheader] Received props:', { onChangeView: !!onChangeView, onReset: !!onReset, selectedAssociation, selectedCompany });
-  const [showViewMenu, setShowViewMenu] = useState(false);
   const [selectedView, setSelectedView] = useState('Graph View');
+  const [showViewMenu, setShowViewMenu] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [showInvitePopup, setShowInvitePopup] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -656,15 +671,23 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [refreshAssociations, setRefreshAssociations] = useState(0);
   const [refreshReserveStudies, setRefreshReserveStudies] = useState(0);
   const [selectedStudyId, setSelectedStudyId] = useState<string>('');
+  const [dataFetched, setDataFetched] = useState<string>(''); // Track which study data was fetched
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(false); // Track loading state
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchExcelData = async () => {
-      if (selectedAssociation && selectedCompany && selectedStudyId && onShowCalculator) {
+      // Only fetch if we have all required data, haven't fetched this study yet, and not currently loading
+      if (selectedAssociation && selectedCompany && selectedStudyId && onShowCalculator && 
+          dataFetched !== selectedStudyId && !isLoadingData) {
+        console.log('[SimulatorSubheader] Fetching Excel data for study:', selectedStudyId);
+        setDataFetched(selectedStudyId); // Mark as fetching to prevent duplicate calls
+        setIsLoadingData(true);
+        
         try {
           const response = await apiService.get<any>(`/reserve-studies/${selectedStudyId}/data`);
-          console.log('[SimulatorSubheader] Complete JSON Data from Reserve Study:', JSON.stringify(response, null, 2));
+          console.log('[SimulatorSubheader] Excel data fetched successfully');
           
           // Send complete JSON to calculator page
           const completeData = {
@@ -675,16 +698,27 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             timestamp: new Date().toISOString()
           };
           
-          console.log('[SimulatorSubheader] Sending complete data to calculator:', completeData);
+          console.log('[SimulatorSubheader] Triggering calculator with data');
           onShowCalculator(selectedAssociation, selectedCompany, completeData);
         } catch (error) {
-          console.error('Error fetching Excel data:', error);
+          console.error('[SimulatorSubheader] Error fetching Excel data:', error);
+          // Reset fetched state on error to allow retry
+          setDataFetched('');
+          // Still show calculator even if data fetch fails
           onShowCalculator(selectedAssociation, selectedCompany);
+        } finally {
+          setIsLoadingData(false);
         }
       }
     };
-    fetchExcelData();
-  }, [selectedAssociation, selectedCompany, selectedStudyId]);
+    
+    // Only fetch if we have all required data, haven't fetched yet, and not loading
+    if (selectedAssociation && selectedCompany && selectedStudyId && 
+        dataFetched !== selectedStudyId && !isLoadingData) {
+      const timeoutId = setTimeout(fetchExcelData, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedAssociation, selectedCompany, selectedStudyId, dataFetched, isLoadingData]);
 
   useEffect(() => {
     if (selectedAssociation && onCompanyChange) {
@@ -746,6 +780,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
     }
     if (studyId) {
       setSelectedStudyId(studyId);
+      setDataFetched(''); // Reset to allow fetching new study data
+      setIsLoadingData(false); // Reset loading state
     }
   };
 
@@ -1000,9 +1036,42 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       <AddReserveStudyPopup
         isOpen={showAddReserveStudyPopup}
         onClose={() => setShowAddReserveStudyPopup(false)}
-        onSuccess={() => {
+        onSuccess={(newStudyId, newStudyName) => {
+          console.log('[SimulatorSubheader] New study created:', { newStudyId, newStudyName });
           setShowAddReserveStudyPopup(false);
-          setRefreshReserveStudies(prev => prev + 1);
+          
+          if (newStudyId && newStudyName && onCompanyChange) {
+            console.log('[SimulatorSubheader] Auto-selecting new study...');
+            
+            // Step 1: Update local state immediately
+            setSelectedStudyId(newStudyId);
+            setDataFetched(''); // Reset to allow fetching new study data
+            setSelectedView('Graph View');
+            
+            // Step 2: Notify parent components
+            onCompanyChange(newStudyName, newStudyId);
+            
+            // Step 3: Switch to graph view
+            viewModeEmitter.emit('viewModeChange', 'graph');
+            
+            // Step 4: Trigger calculator load
+            studySelectionEmitter.emit('newStudyAdded', {
+              studyId: newStudyId,
+              studyName: newStudyName,
+              association: selectedAssociation
+            });
+            
+            // Step 5: Refresh dropdown to show new study at top
+            setRefreshReserveStudies(prev => prev + 1);
+            
+            // Step 6: Force calculator load after state updates
+            setTimeout(() => {
+              if (onShowCalculator && selectedAssociation) {
+                console.log('[SimulatorSubheader] Force triggering calculator...');
+                onShowCalculator(selectedAssociation, newStudyName);
+              }
+            }, 500);
+          }
         }}
         selectedAssociation={selectedAssociation}
       />
