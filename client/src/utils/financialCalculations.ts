@@ -14,7 +14,7 @@ export interface ReserveItem {
   expectedLife: number;
   remainingLife: number;
   replacementCost: number;
-  sirsType: string;
+  sirsType: number; // Changed from string to number to match data structure
 }
 
 export interface YearlyProjection {
@@ -61,7 +61,7 @@ function calculateStdDev(values: number[]): number {
   return Math.sqrt(variance);
 }
 
-// Main projection engine
+// Main projection engine with enhanced calculation logic
 export function calculateFinancialProjections(
   config: FinancialConfig,
   items: ReserveItem[]
@@ -75,24 +75,27 @@ export function calculateFinancialProjections(
   let cumulativeContributions = 0;
   let cumulativeExpenses = 0;
   
-  // Group expenses by year
+  // Group expenses by year with proper inflation calculation
   const expensesByYear = new Map<number, number>();
   items.forEach(item => {
     const yearIndex = item.remainingLife;
+    // Apply compound inflation to replacement cost
     const inflatedCost = calculateCompoundGrowth(item.replacementCost, config.inflationRate, yearIndex);
     expensesByYear.set(yearIndex, (expensesByYear.get(yearIndex) || 0) + inflatedCost);
   });
   
-  // Project each year
+  console.log('[FinancialCalculations] Expenses by year:', Object.fromEntries(expensesByYear));
+  
+  // Project each year with enhanced logic
   for (let i = 0; i < config.yearsToProject; i++) {
     const year = config.currentYear + i;
     const openingBalance = balance;
     
-    // Inflate contributions
+    // Apply inflation to contributions starting from year 1
     const inflatedContribution = calculateCompoundGrowth(annualContribution, config.inflationRate, i);
     
-    // Calculate interest on opening balance
-    const interest = openingBalance * config.inflationRate;
+    // Calculate interest on opening balance (conservative approach)
+    const interest = openingBalance * (config.inflationRate * 0.8); // Slightly lower than inflation
     
     // Get expenses for this year
     const expenses = expensesByYear.get(i) || 0;
@@ -103,14 +106,16 @@ export function calculateFinancialProjections(
     cumulativeContributions += inflatedContribution;
     cumulativeExpenses += expenses;
     
-    // Calculate funding ratio (balance / total future expenses)
+    // Enhanced funding ratio calculation
     const futureExpenses = Array.from(expensesByYear.entries())
       .filter(([yearIdx]) => yearIdx >= i)
       .reduce((sum, [, cost]) => sum + cost, 0);
-    const fundingRatio = futureExpenses > 0 ? (balance / futureExpenses) * 100 : 100;
+    const fundingRatio = futureExpenses > 0 ? Math.min(200, Math.max(0, (balance / futureExpenses) * 100)) : 100;
     
-    // Calculate risk score (0-100, lower is better)
-    const riskScore = balance < 0 ? Math.min(100, Math.abs(balance) / 100000 * 100) : 0;
+    // Enhanced risk score calculation (0-100, lower is better)
+    const riskScore = balance < 0 
+      ? Math.min(100, (Math.abs(balance) / Math.max(config.startingBalance, 100000)) * 100)
+      : Math.max(0, (1 - (balance / Math.max(config.startingBalance, 100000))) * 50);
     
     projections.push({
       year,
@@ -126,11 +131,12 @@ export function calculateFinancialProjections(
     });
   }
   
-  // Calculate aggregate metrics
+  // Calculate enhanced aggregate metrics
   const balances = projections.map(p => p.closingBalance);
   const deficitYears = balances.filter(b => b < 0).length;
   const peakDeficit = Math.min(...balances, 0);
   const volatility = calculateStdDev(balances);
+  const avgBalance = balances.reduce((sum, b) => sum + b, 0) / balances.length;
   
   const metrics: FinancialMetrics = {
     totalContributions: cumulativeContributions,
@@ -139,11 +145,12 @@ export function calculateFinancialProjections(
     avgAnnualExpense: cumulativeExpenses / config.yearsToProject,
     peakDeficit,
     deficitYears,
-    fundingAdequacy: (cumulativeContributions / cumulativeExpenses) * 100,
-    volatilityIndex: volatility / Math.abs(balance || 1) * 100,
+    fundingAdequacy: cumulativeExpenses > 0 ? (cumulativeContributions / cumulativeExpenses) * 100 : 100,
+    volatilityIndex: Math.abs(avgBalance) > 0 ? (volatility / Math.abs(avgBalance)) * 100 : 0,
     sustainabilityScore: Math.max(0, 100 - (deficitYears / config.yearsToProject * 100))
   };
   
+  console.log('[FinancialCalculations] Final metrics:', metrics);
   return { projections, metrics };
 }
 

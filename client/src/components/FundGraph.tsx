@@ -46,9 +46,6 @@ const CASHFLOW = [
   { year:2050, value:"-$6,027,027", pos:false, barPct:1,   negPct:87 },
 ];
 
-const FEE_YEARS   = [2025,2026,2027,2028,2029,2025,2026,2027,2028,2029,2025,2026,2027,2028,2029,2025,2026,2027,2028,2029,2025,2026,2027,2028,2029];
-const FEE_HEIGHTS = [28,38,22,44,18,32,46,20,36,24,26,52,18,40,30,34,42,22,38,26,28,60,16,44,32];
-
 // ─────────────────────────────────────────────────────────────────
 // EXACT COLORS from CSS
 // ─────────────────────────────────────────────────────────────────
@@ -61,10 +58,6 @@ const BAR_ZONE_H = 192;         // 12rem = 192px (exact from HTML style="height:
 const BAR_W      = "55%";       // exact from CSS .simulation-timeline-positive-bar
 
 // Line heights from CSS (converted from rem: 1rem=16px)
-// positive-line:        height 6.5rem = 104px  (goes UP from year)
-// negative-line-t-even: height 4.6rem = 73.6px (goes UP from year, even col)
-// negative-line-t-odd:  height 2.6rem = 41.6px (goes UP from year, odd col)
-// negative-line-b:      height 2.5rem = 40px   (goes DOWN from year)
 const POS_LINE_H     = 104;   // positive stem up
 const NEG_LINE_T_EVEN = 73.6; // negative stem up, even col
 const NEG_LINE_T_ODD  = 41.6; // negative stem up, odd col
@@ -75,15 +68,13 @@ const STEM_W          = 3;    // 0.2rem ≈ 3px
 const YEAR_ROW_H = 16;
 
 // Value label rows from HTML:
-// odd  col: empty 1.5rem then value 3rem  → value center at 1.5 + 1.5 = 3rem above year
-// even col: value 1.5rem then empty 3rem  → value center at 0.75rem above year
 const VAL_H_TOP  = 24;  // 1.5rem
 const VAL_H_BOT  = 48;  // 3rem
 
 // ─────────────────────────────────────────────────────────────────
-// GRAPH 1 — Monthly Fee Collection (unchanged)
+// GRAPH 1 — Monthly Fee Collection (synchronized with cashflow)
 // ─────────────────────────────────────────────────────────────────
-function Graph1({ sel, onSel, onYearSelect }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void }) {
+function Graph1({ sel, onSel, onYearSelect, feeData }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void; feeData: any[] }) {
   return (
     <div style={{ borderBottom:"2px solid #e8e8e8", background:"#fff" }}>
       <div style={{ padding:"12px 16px 6px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -92,29 +83,29 @@ function Graph1({ sel, onSel, onYearSelect }: { sel: string | null; onSel: (valu
       </div>
       <div style={{ overflowX:"auto" }}>
         <div style={{ display:"flex", minWidth:"max-content", padding:"0 16px" }}>
-          {FEE_YEARS.map((year, i) => {
+          {feeData.map((data, i) => {
             const active = sel === `f${i}`;
-            const h = FEE_HEIGHTS[i] ?? 28;
+            const h = data.height ?? 28;
             return (
               <div key={i} onClick={() => {
                 onSel(active ? null : `f${i}`);
                 if (onYearSelect) {
-                  onYearSelect({ year, value: '$150', pos: true });
+                  onYearSelect({ year: data.year, value: data.feeValue, pos: true });
                 }
               }}
                 style={{ width:COL_W, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", cursor:"pointer", background:active?"#ddd":"transparent", borderRadius:6 }}>
                 <div style={{ height:16, display:"flex", alignItems:"center", justifyContent:"center", marginTop:6 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:GREEN }}>15%</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:GREEN }}>{data.percentage}%</span>
                 </div>
                 <div style={{ height:16, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:GREEN }}>$150</span>
+                  <span style={{ fontSize:11, fontWeight:700, color:GREEN }}>{data.feeValue}</span>
                 </div>
                 <div style={{ height:72, width:"100%", display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
                   <div style={{ width:"55%", height:h, background:GREEN, borderRadius:"4px 4px 0 0" }} />
                 </div>
                 <div style={{ width:"100%", height:1, background:"#e8e8e8" }} />
                 <div style={{ height:22, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <span style={{ fontSize:11, color:"#555" }}>{year}</span>
+                  <span style={{ fontSize:11, color:"#555" }}>{data.year}</span>
                 </div>
               </div>
             );
@@ -334,13 +325,19 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     setSel2(null);
   }, [excelData]);
   
-  const cashflowData = React.useMemo(() => {
+  const { cashflowData, feeData } = React.useMemo(() => {
     console.log('[FundGraph.tsx] Recalculating cashflowData with advanced analytics');
     console.log('[FundGraph.tsx] Complete excelData received:', excelData);
     
     if (!excelData?.data) {
       console.log('[FundGraph.tsx] No excelData, using default CASHFLOW');
-      return CASHFLOW;
+      const defaultFeeData = Array.from({ length: 25 }, (_, i) => ({
+        year: 2025 + (i % 5),
+        feeValue: '$150',
+        percentage: 15,
+        height: 28 + (i % 3) * 10
+      }));
+      return { cashflowData: CASHFLOW, feeData: defaultFeeData };
     }
     
     // Handle nested data structure from SimulatorSubheader
@@ -350,6 +347,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     
     console.log('[FundGraph.tsx] Extracted config:', config);
     console.log('[FundGraph.tsx] Extracted items count:', items.length);
+    console.log('[FundGraph.tsx] Sample item for analysis:', items[0]);
     
     const financialConfig: FinancialConfig = {
       startingBalance: config['Beginning Reserve Funds (Dollar Amount)'] || 0,
@@ -382,7 +380,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     const balances = projections.map(p => p.closingBalance);
     const maxAbsBalance = Math.max(...balances.map(b => Math.abs(b)));
     
-    const generatedData = projections.map((proj, i) => {
+    const generatedCashflowData = projections.map((proj, i) => {
       const isPositive = proj.closingBalance >= 0;
       const absBalance = Math.abs(proj.closingBalance);
       const percentage = maxAbsBalance > 0 ? Math.min(100, (absBalance / maxAbsBalance) * 100) : 1;
@@ -401,8 +399,25 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
       };
     });
     
-    console.log('[FundGraph.tsx] Generated data with analytics:', generatedData.slice(0, 3));
-    return generatedData;
+    // Generate fee collection data synchronized with cashflow years
+    const monthlyFee = financialConfig.monthlyFeePerUnit * financialConfig.totalUnits;
+    const generatedFeeData = projections.map((proj, i) => {
+      const inflatedFee = monthlyFee * Math.pow(1 + financialConfig.inflationRate, i);
+      const feePercentage = i === 0 ? 15 : Math.min(25, 15 + (i * 0.5)); // Progressive increase
+      const barHeight = Math.min(60, 20 + (feePercentage * 1.5)); // Scale height with percentage
+      
+      return {
+        year: proj.year,
+        feeValue: `$${Math.round(inflatedFee).toLocaleString()}`,
+        percentage: Math.round(feePercentage),
+        height: barHeight
+      };
+    });
+    
+    console.log('[FundGraph.tsx] Generated cashflow data with analytics:', generatedCashflowData.slice(0, 3));
+    console.log('[FundGraph.tsx] Generated fee data synchronized:', generatedFeeData.slice(0, 3));
+    
+    return { cashflowData: generatedCashflowData, feeData: generatedFeeData };
   }, [excelData]);
   
   const d2 = sel2 !== null ? cashflowData[parseInt(sel2.replace("c",""))] : null;
@@ -411,7 +426,17 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     <div style={{ fontFamily:"system-ui,sans-serif", background:"white", minHeight:"calc(100vh - 100px)" }}>
       <div style={{ background:"#fff", margin:"0px auto",    overflow:"hidden" }}>
 
-        <Graph1 sel={sel1} onSel={setSel1} onYearSelect={onYearSelect} />
+        <Graph1 sel={sel1} onSel={setSel1} onYearSelect={(yearData) => {
+          // Find matching cashflow data for the same year
+          const cashflowIndex = cashflowData.findIndex(c => c.year === yearData.year);
+          if (cashflowIndex >= 0) {
+            setSel2(`c${cashflowIndex}`);
+            // Always pass cashflow data to left panel
+            if (onYearSelect) {
+              onYearSelect(cashflowData[cashflowIndex]);
+            }
+          }
+        }} feeData={feeData} />
 
         {d2 && (
           <div style={{
@@ -433,7 +458,65 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
           </div>
         )}
 
-        <Graph2 sel={sel2} onSel={setSel2} onYearSelect={onYearSelect} cashflowData={cashflowData} />
+        <Graph2 sel={sel2} onSel={setSel2} onYearSelect={(yearData) => {
+          // Find matching fee data index for the same year
+          const feeIndex = feeData.findIndex(f => f.year === yearData.year);
+          if (feeIndex >= 0) {
+            setSel1(`f${feeIndex}`);
+          }
+          if (onYearSelect) {
+            onYearSelect(yearData);
+          }
+        }} cashflowData={cashflowData} />
+
+        {/* Cashflow Data Table */}
+        <div style={{ padding: '20px', background: '#f8f9fa', borderTop: '1px solid #e9ecef' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#1f2937' }}>Cashflow Simulator Data</h3>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+              <thead>
+                <tr style={{ background: '#f1f5f9' }}>
+                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Year</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Opening Balance</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Contributions</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Interest</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Expenses</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Closing Balance</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashflowData.map((data: any, index) => {
+                  const projection = data.projection;
+                  if (!projection) return null;
+                  
+                  return (
+                    <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                      <td style={{ padding: '12px', fontWeight: '500', color: '#1f2937' }}>{data.year}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', color: '#6b7280' }}>${projection.openingBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', color: '#10b981' }}>${projection.contributions.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', color: '#3b82f6' }}>${projection.interest.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', color: '#ef4444' }}>${projection.expenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: data.pos ? '#10b981' : '#ef4444' }}>{data.value}</td>
+                      <td style={{ padding: '12px', textAlign: 'right' }}>
+                        <span style={{ 
+                          padding: '4px 8px', 
+                          borderRadius: '12px', 
+                          fontSize: '12px', 
+                          fontWeight: '500',
+                          background: data.pos ? '#dcfce7' : '#fee2e2',
+                          color: data.pos ? '#166534' : '#991b1b'
+                        }}>
+                          {data.pos ? 'Surplus' : 'Deficit'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* <div style={{ padding:"8px 16px 14px", borderTop:"1px solid #f0f0f0", display:"flex", gap:20, alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
