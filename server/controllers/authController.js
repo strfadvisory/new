@@ -5,7 +5,7 @@ const configService = require('../services/configService');
 const { sendOTPEmail, sendVerificationEmail } = require('../services/emailService.jsx');
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', { expiresIn: '30d' });
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
 };
 
 const register = async (req, res) => {

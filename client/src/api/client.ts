@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { API_BASE_URL } from './config';
+import { checkTokenExpiration } from '../utils/tokenUtils';
 
 // Create axios instance
 const apiClient: AxiosInstance = axios.create({
@@ -13,6 +14,12 @@ const apiClient: AxiosInstance = axios.create({
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
   (config) => {
+    // Check if token is expired before making request
+    if (checkTokenExpiration()) {
+      window.location.href = '/login';
+      return Promise.reject(new Error('Token expired'));
+    }
+    
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -61,6 +68,12 @@ export const createFormDataClient = (): AxiosInstance => {
   // Add auth token for file uploads
   formDataClient.interceptors.request.use(
     (config) => {
+      // Check if token is expired before making request
+      if (checkTokenExpiration()) {
+        window.location.href = '/login';
+        return Promise.reject(new Error('Token expired'));
+      }
+      
       const token = localStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
