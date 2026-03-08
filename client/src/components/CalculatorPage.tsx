@@ -90,7 +90,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
         overflowY: 'auto',
         backgroundColor: '#ffffff',
         paddingLeft: (viewMode === 'graph' && isLeftPanelCollapsed) ? '50px' : '0',
-        paddingTop: '60px'
+  
       }}>
         {/* Toggle Button for collapsed state - Only in graph view */}
         {viewMode === 'graph' && isLeftPanelCollapsed && (

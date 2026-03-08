@@ -16,35 +16,35 @@ interface FundGraphProps {
 // negative-bar height% × 12rem = actual px bar height
 // ─────────────────────────────────────────────────────────────────
 const CASHFLOW = [
-  { year:2022, value:"$1,612,204",  pos:true,  barPct:16,  negPct:1  },
-  { year:2023, value:"$1,960,192",  pos:true,  barPct:21,  negPct:1  },
-  { year:2024, value:"$1,832,520",  pos:true,  barPct:19,  negPct:1  },
-  { year:2025, value:"$2,189,321",  pos:true,  barPct:25,  negPct:1  },
-  { year:2026, value:"$2,516,298",  pos:true,  barPct:30,  negPct:1  },
-  { year:2027, value:"$2,205,418",  pos:true,  barPct:25,  negPct:1  },
-  { year:2028, value:"$2,420,355",  pos:true,  barPct:29,  negPct:1  },
-  { year:2029, value:"$2,675,869",  pos:true,  barPct:33,  negPct:1  },
-  { year:2030, value:"$1,451,076",  pos:true,  barPct:13,  negPct:1  },
-  { year:2031, value:"$1,436,107",  pos:true,  barPct:13,  negPct:1  },
-  { year:2032, value:"$1,123,095",  pos:true,  barPct:8,   negPct:1  },
-  { year:2033, value:"-$179,405",   pos:false, barPct:1,   negPct:1  },
-  { year:2034, value:"-$30,339",    pos:false, barPct:1,   negPct:1  },
-  { year:2035, value:"$129,961",    pos:true,  barPct:1,   negPct:1  },
-  { year:2036, value:"-$1,157,289", pos:false, barPct:1,   negPct:8  },
-  { year:2037, value:"-$1,093,889", pos:false, barPct:1,   negPct:7  },
-  { year:2038, value:"-$948,789",   pos:false, barPct:1,   negPct:5  },
-  { year:2039, value:"-$2,328,289", pos:false, barPct:1,   negPct:27 },
-  { year:2040, value:"-$2,444,339", pos:false, barPct:1,   negPct:29 },
-  { year:2041, value:"-$2,280,839", pos:false, barPct:1,   negPct:26 },
-  { year:2042, value:"-$4,035,393", pos:false, barPct:1,   negPct:55 },
-  { year:2043, value:"-$3,885,093", pos:false, barPct:1,   negPct:52 },
-  { year:2044, value:"-$3,745,543", pos:false, barPct:1,   negPct:50 },
-  { year:2045, value:"-$5,012,043", pos:false, barPct:1,   negPct:71 },
-  { year:2046, value:"-$4,862,977", pos:false, barPct:1,   negPct:68 },
-  { year:2047, value:"-$4,825,577", pos:false, barPct:1,   negPct:68 },
-  { year:2048, value:"-$6,112,827", pos:false, barPct:1,   negPct:88 },
-  { year:2049, value:"-$6,184,127", pos:false, barPct:1,   negPct:90 },
-  { year:2050, value:"-$6,027,027", pos:false, barPct:1,   negPct:87 },
+  { year:2022, value:"$1,612,204",  pos:true,  barPct:16,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2023, value:"$1,960,192",  pos:true,  barPct:21,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2024, value:"$1,832,520",  pos:true,  barPct:19,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2025, value:"$2,189,321",  pos:true,  barPct:25,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2026, value:"$2,516,298",  pos:true,  barPct:30,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2027, value:"$2,205,418",  pos:true,  barPct:25,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2028, value:"$2,420,355",  pos:true,  barPct:29,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2029, value:"$2,675,869",  pos:true,  barPct:33,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2030, value:"$1,451,076",  pos:true,  barPct:13,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2031, value:"$1,436,107",  pos:true,  barPct:13,  negPct:1, studyName: 'Reserve Study'  },
+  { year:2032, value:"$1,123,095",  pos:true,  barPct:8,   negPct:1, studyName: 'Reserve Study'  },
+  { year:2033, value:"-$179,405",   pos:false, barPct:1,   negPct:1, studyName: 'Reserve Study'  },
+  { year:2034, value:"-$30,339",    pos:false, barPct:1,   negPct:1, studyName: 'Reserve Study'  },
+  { year:2035, value:"$129,961",    pos:true,  barPct:1,   negPct:1, studyName: 'Reserve Study'  },
+  { year:2036, value:"-$1,157,289", pos:false, barPct:1,   negPct:8, studyName: 'Reserve Study'  },
+  { year:2037, value:"-$1,093,889", pos:false, barPct:1,   negPct:7, studyName: 'Reserve Study'  },
+  { year:2038, value:"-$948,789",   pos:false, barPct:1,   negPct:5, studyName: 'Reserve Study'  },
+  { year:2039, value:"-$2,328,289", pos:false, barPct:1,   negPct:27, studyName: 'Reserve Study' },
+  { year:2040, value:"-$2,444,339", pos:false, barPct:1,   negPct:29, studyName: 'Reserve Study' },
+  { year:2041, value:"-$2,280,839", pos:false, barPct:1,   negPct:26, studyName: 'Reserve Study' },
+  { year:2042, value:"-$4,035,393", pos:false, barPct:1,   negPct:55, studyName: 'Reserve Study' },
+  { year:2043, value:"-$3,885,093", pos:false, barPct:1,   negPct:52, studyName: 'Reserve Study' },
+  { year:2044, value:"-$3,745,543", pos:false, barPct:1,   negPct:50, studyName: 'Reserve Study' },
+  { year:2045, value:"-$5,012,043", pos:false, barPct:1,   negPct:71, studyName: 'Reserve Study' },
+  { year:2046, value:"-$4,862,977", pos:false, barPct:1,   negPct:68, studyName: 'Reserve Study' },
+  { year:2047, value:"-$4,825,577", pos:false, barPct:1,   negPct:68, studyName: 'Reserve Study' },
+  { year:2048, value:"-$6,112,827", pos:false, barPct:1,   negPct:88, studyName: 'Reserve Study' },
+  { year:2049, value:"-$6,184,127", pos:false, barPct:1,   negPct:90, studyName: 'Reserve Study' },
+  { year:2050, value:"-$6,027,027", pos:false, barPct:1,   negPct:87, studyName: 'Reserve Study' },
 ];
 
 // ─────────────────────────────────────────────────────────────────
@@ -427,7 +427,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
   if (viewMode === 'list') {
     return (
       <div style={{ fontFamily: "system-ui,sans-serif", background: "white", minHeight: "calc(100vh - 100px)", padding: '20px' }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '20px', color: '#1f2937' }}>Cashflow Simulator Data</h2>
+        <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '20px', color: '#1f2937' }}>Cashflow Simulator Data ({cashflowData[0]?.studyName || 'Reserve Study'})</h2>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <thead>
@@ -500,25 +500,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
           }
         }} feeData={feeData} />
 
-        {d2 && (
-          <div style={{
-            background:d2.pos?"#f0fdf4":"#fff1f2",
-            borderTop:`2px solid ${d2.pos?"#86efac":"#fca5a5"}`,
-            borderBottom:`2px solid ${d2.pos?"#86efac":"#fca5a5"}`,
-            padding:"8px 24px", display:"flex", gap:28, alignItems:"center", flexWrap:"wrap",
-          }}>
-            <span style={{ fontWeight:700, fontSize:17 }}>{d2.year}</span>
-            <div>
-              <div style={{ fontSize:10, color:"#888", textTransform:"uppercase", letterSpacing:1 }}>Value</div>
-              <div style={{ fontSize:13, fontWeight:700, color:d2.pos?GREEN:RED }}>{d2.value}</div>
-            </div>
-            <div>
-              <div style={{ fontSize:10, color:"#888", textTransform:"uppercase", letterSpacing:1 }}>Status</div>
-              <div style={{ fontSize:13, fontWeight:700 }}>{d2.pos?"✅ Surplus":"🔴 Deficit"}</div>
-            </div>
-            <button onClick={()=>setSel2(null)} style={{ marginLeft:"auto", background:"transparent", border:"1px solid #d1d5db", borderRadius:8, padding:"4px 14px", fontSize:12, cursor:"pointer" }}>✕ Close</button>
-          </div>
-        )}
+     
 
         <Graph2 sel={sel2} onSel={setSel2} onYearSelect={(yearData) => {
           // Find matching fee data index for the same year
