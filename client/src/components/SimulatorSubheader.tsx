@@ -82,6 +82,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [showUserPopup, setShowUserPopup] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean; studyId: string; studyName: string}>({show: false, studyId: '', studyName: ''});
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -285,12 +286,10 @@ const Dropdown: React.FC<DropdownProps> = ({
 
   const handleDeleteReserveStudy = async (studyId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this reserve study?')) {
-      return;
-    }
     try {
       await apiService.delete(`/reserve-studies/${studyId}`);
       setReserveStudies(prev => prev.filter(s => s._id !== studyId));
+      setDeleteConfirm({show: false, studyId: '', studyName: ''});
       // Trigger dropdown refresh after delete
       refreshReserveStudiesDropdown();
     } catch (error) {
@@ -542,7 +541,10 @@ const Dropdown: React.FC<DropdownProps> = ({
                     </div>
                     <i 
                       className="fas fa-trash" 
-                      onClick={(e) => handleDeleteReserveStudy(study._id, e)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteConfirm({show: true, studyId: study._id, studyName: study.studyName});
+                      }}
                       style={{
                         color: '#ef4444',
                         fontSize: '14px',
@@ -643,6 +645,117 @@ const Dropdown: React.FC<DropdownProps> = ({
             >
               {showUserList ? '+ Send Invite' : bottomButtonText}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {deleteConfirm.show && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            borderRadius: '12px',
+            padding: '24px',
+            width: '100%',
+            maxWidth: '400px',
+            margin: '20px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              marginBottom: '16px'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: '#fef2f2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <i className="fas fa-exclamation-triangle" style={{ color: '#ef4444', fontSize: '20px' }}></i>
+              </div>
+              <h3 style={{
+                margin: 0,
+                fontSize: '18px',
+                fontWeight: '600',
+                color: '#1f2937'
+              }}>
+                Delete Reserve Study
+              </h3>
+            </div>
+            <p style={{
+              margin: '0 0 20px 0',
+              fontSize: '14px',
+              color: '#6b7280',
+              lineHeight: '1.5'
+            }}>
+              Are you sure you want to delete <strong style={{color: '#374151'}}>{deleteConfirm.studyName}</strong>? This action cannot be undone.
+            </p>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                onClick={() => setDeleteConfirm({show: false, studyId: '', studyName: ''})}
+                style={{
+                  padding: '10px 20px',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '8px',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={(e) => handleDeleteReserveStudy(deleteConfirm.studyId, e)}
+                style={{
+                  padding: '10px 20px',
+                  border: 'none',
+                  borderRadius: '8px',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#dc2626';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ef4444';
+                }}
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
