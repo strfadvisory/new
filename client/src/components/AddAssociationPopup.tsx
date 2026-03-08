@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { API_BASE_URL } from '../config';
 import '../pages/AssociationControl.css';
 
@@ -40,6 +40,31 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
 
   const [iconPreview, setIconPreview] = useState<string>(editData?.icon || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedCountry, setSelectedCountry] = useState('US');
+  const [countries, setCountries] = useState<any[]>([]);
+  const [loadingZip, setLoadingZip] = useState(false);
+
+  const currentCountry = countries.find(c => c.code === selectedCountry) || { code: 'US', name: 'United States', dialCode: '+1', flag: 'us', prefix: '1' };
+
+  const usStates = [
+    { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
+    { code: 'AR', name: 'Arkansas' }, { code: 'CA', name: 'California' }, { code: 'CO', name: 'Colorado' },
+    { code: 'CT', name: 'Connecticut' }, { code: 'DE', name: 'Delaware' }, { code: 'FL', name: 'Florida' },
+    { code: 'GA', name: 'Georgia' }, { code: 'HI', name: 'Hawaii' }, { code: 'ID', name: 'Idaho' },
+    { code: 'IL', name: 'Illinois' }, { code: 'IN', name: 'Indiana' }, { code: 'IA', name: 'Iowa' },
+    { code: 'KS', name: 'Kansas' }, { code: 'KY', name: 'Kentucky' }, { code: 'LA', name: 'Louisiana' },
+    { code: 'ME', name: 'Maine' }, { code: 'MD', name: 'Maryland' }, { code: 'MA', name: 'Massachusetts' },
+    { code: 'MI', name: 'Michigan' }, { code: 'MN', name: 'Minnesota' }, { code: 'MS', name: 'Mississippi' },
+    { code: 'MO', name: 'Missouri' }, { code: 'MT', name: 'Montana' }, { code: 'NE', name: 'Nebraska' },
+    { code: 'NV', name: 'Nevada' }, { code: 'NH', name: 'New Hampshire' }, { code: 'NJ', name: 'New Jersey' },
+    { code: 'NM', name: 'New Mexico' }, { code: 'NY', name: 'New York' }, { code: 'NC', name: 'North Carolina' },
+    { code: 'ND', name: 'North Dakota' }, { code: 'OH', name: 'Ohio' }, { code: 'OK', name: 'Oklahoma' },
+    { code: 'OR', name: 'Oregon' }, { code: 'PA', name: 'Pennsylvania' }, { code: 'RI', name: 'Rhode Island' },
+    { code: 'SC', name: 'South Carolina' }, { code: 'SD', name: 'South Dakota' }, { code: 'TN', name: 'Tennessee' },
+    { code: 'TX', name: 'Texas' }, { code: 'UT', name: 'Utah' }, { code: 'VT', name: 'Vermont' },
+    { code: 'VA', name: 'Virginia' }, { code: 'WA', name: 'Washington' }, { code: 'WV', name: 'West Virginia' },
+    { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' }
+  ];
 
   const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -66,6 +91,47 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
 
   const triggerFileInput = () => {
     fileInputRef.current?.click();
+  };
+
+  useEffect(() => {
+    // Load countries from JSON
+    fetch('/countrylist.json')
+      .then(res => res.json())
+      .then(data => {
+        const formattedCountries = data.map((country: any) => ({
+          code: country.iso2,
+          name: country.name,
+          dialCode: country.phoneCode,
+          flag: country.iso2.toLowerCase(),
+          prefix: country.phoneCode.replace('+', '')
+        }));
+        setCountries(formattedCountries);
+      })
+      .catch(err => console.error('Error loading countries:', err));
+  }, []);
+
+  const fetchLocationByZip = async (zipCode: string) => {
+    if (zipCode.length !== 5) return;
+    setLoadingZip(true);
+    try {
+      const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+      if (response.ok) {
+        const data = await response.json();
+        const place = data.places[0];
+        setFormData({
+          ...formData,
+          address: {
+            ...formData.address,
+            state: place['state abbreviation'],
+            city: place['place name']
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching location:', error);
+    } finally {
+      setLoadingZip(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -216,11 +282,20 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
                   type="text" 
                   placeholder="Zip Code*"
                   value={formData.address.zipCode}
-                  onChange={(e) => setFormData({ 
-                    ...formData, 
-                    address: { ...formData.address, zipCode: e.target.value }
-                  })}
+                  maxLength={5}
+                  pattern="[0-9]{5}"
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    setFormData({ 
+                      ...formData, 
+                      address: { ...formData.address, zipCode: value }
+                    });
+                    if (value.length === 5) {
+                      fetchLocationByZip(value);
+                    }
+                  }}
                 />
+                {loadingZip && <div className="text-muted small mt-1"><i className="fas fa-spinner fa-spin"></i> Loading...</div>}
               </div>
               <div className="form-group">
                 <select 
@@ -231,9 +306,9 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
                   })}
                 >
                   <option value="">State*</option>
-                  <option value="CA">California</option>
-                  <option value="NY">New York</option>
-                  <option value="TX">Texas</option>
+                  {usStates.map(state => (
+                    <option key={state.code} value={state.code}>{state.name}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -290,15 +365,66 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
 
             <div className="form-group phone-group">
               <div className="phone-input">
-                <span className="country-code">
-                  <img src="https://flagcdn.com/w20/us.png" alt="US" />
-                  +1
+                <span className="country-code" onClick={() => document.getElementById('country-select-association')?.click()}>
+                  <img src={`https://flagcdn.com/w20/${currentCountry.flag}.png`} alt={currentCountry.name} />
+                  {currentCountry.dialCode}
                 </span>
+                <select 
+                  id="country-select-association"
+                  value={selectedCountry}
+                  onChange={(e) => {
+                    const newCountry = e.target.value;
+                    setSelectedCountry(newCountry);
+                    
+                    // Update phone number with new country code if phone exists
+                    const country = countries.find(c => c.code === newCountry);
+                    if (country && formData.phone) {
+                      const cleanPhone = formData.phone.replace(/^\+?\d{1,4}\s?/, ''); // Remove existing country code
+                      if (cleanPhone) {
+                        setFormData({
+                          ...formData,
+                          phone: `${country.dialCode} ${cleanPhone}`
+                        });
+                      }
+                    }
+                  }}
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    width: '100px',
+                    height: '100%',
+                    opacity: 0,
+                    cursor: 'pointer'
+                  }}
+                >
+                  {countries.map(country => (
+                    <option key={country.code} value={country.code}>
+                      {country.name}
+                    </option>
+                  ))}
+                </select>
                 <input 
                   type="tel" 
-                  placeholder="99999 99999*"
+                  placeholder="Enter phone number*"
                   value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData({ ...formData, phone: value });
+                    
+                    // Auto-detect country from phone number
+                    const phoneNumber = value.replace(/\D/g, '');
+                    if (phoneNumber.length >= 1 && countries.length > 0) {
+                      const sortedCountries = [...countries].sort((a, b) => b.prefix.length - a.prefix.length);
+                      
+                      for (const country of sortedCountries) {
+                        if (phoneNumber.startsWith(country.prefix)) {
+                          setSelectedCountry(country.code);
+                          break;
+                        }
+                      }
+                    }
+                  }}
                 />
               </div>
             </div>

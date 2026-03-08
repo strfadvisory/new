@@ -786,37 +786,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
                 <i className="fas fa-list view-menu-icon"></i>
                 List View
               </div>
-              <div className="view-menu-item" onClick={() => { console.log('Monthly selected'); setShowViewMenu(false); }}>
-                <i className="fas fa-calendar view-menu-icon"></i>
-                Monthly
-              </div>
-              <div className="view-menu-item" onClick={async () => {
-                try {
-                  const token = localStorage.getItem('token');
-                  const response = await fetch('http://localhost:5001/api/reserve-studies/69ac7619ae2658e3392e8fcf/data', {
-                    headers: {
-                      'Authorization': `Bearer ${token}`
-                    }
-                  });
-                  const data = await response.json();
-                  console.log('[SimulatorSubheader] Test API Response:', JSON.stringify(data, null, 2));
-                  
-                  const completeTestData = {
-                    studyId: '69ac7619ae2658e3392e8fcf',
-                    association: selectedAssociation || 'Test Association',
-                    reserveStudy: selectedCompany || 'Test Reserve Study',
-                    data: data,
-                    timestamp: new Date().toISOString()
-                  };
-                  
-                  if (onShowCalculator) {
-                    onShowCalculator(selectedAssociation || 'Test Association', selectedCompany || 'Test Reserve Study', completeTestData);
-                  }
-                  setShowViewMenu(false);
-                } catch (error) {
-                  console.error('Error:', error);
-                }
-              }}>Test API</div>
+         
             </div>
           )}
         </div>

@@ -29,6 +29,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
   
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [selectedYearData, setSelectedYearData] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
  
   React.useEffect(() => {
     console.log('[CalculatorPage.tsx] excelData changed, resetting selectedYearData');
@@ -49,17 +50,66 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
       width: '100%',
       minHeight: '100vh',
       backgroundColor: '#f3f4f6',
-      display: 'flex'
+      display: 'flex',
+      position: 'relative'
     }}>
-      {/* Left Panel Container */}
+      {/* View Toggle Header */}
       <div style={{
-        width: isLeftPanelCollapsed ? '0px' : '300px',
-        transition: 'width 0.3s ease',
-        overflow: 'hidden',
-        height: '100vh'
+        position: 'fixed',
+        top: '20px',
+        right: '20px',
+        zIndex: 1000,
+        display: 'flex',
+        gap: '8px',
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        padding: '4px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        border: '1px solid #e5e7eb'
       }}>
-        <LeftPanel isCollapsed={isLeftPanelCollapsed} onToggle={toggleLeftPanel} selectedYearData={selectedYearData} excelData={excelData} />
+        <button
+          onClick={() => setViewMode('graph')}
+          style={{
+            padding: '8px 16px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500',
+            backgroundColor: viewMode === 'graph' ? '#3b82f6' : 'transparent',
+            color: viewMode === 'graph' ? 'white' : '#6b7280'
+          }}
+        >
+          Graph View
+        </button>
+        <button
+          onClick={() => setViewMode('list')}
+          style={{
+            padding: '8px 16px',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '14px',
+            fontWeight: '500',
+            backgroundColor: viewMode === 'list' ? '#3b82f6' : 'transparent',
+            color: viewMode === 'list' ? 'white' : '#6b7280'
+          }}
+        >
+          List View
+        </button>
       </div>
+
+      {/* Left Panel Container - Only show in graph view */}
+      {viewMode === 'graph' && (
+        <div style={{
+          width: isLeftPanelCollapsed ? '0px' : '300px',
+          transition: 'width 0.3s ease',
+          overflow: 'hidden',
+          height: '100vh'
+        }}>
+          <LeftPanel isCollapsed={isLeftPanelCollapsed} onToggle={toggleLeftPanel} selectedYearData={selectedYearData} excelData={excelData} />
+        </div>
+      )}
       
       {/* Right Panel Container */}
       <div style={{ 
@@ -68,10 +118,11 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
         overflowX: 'auto',
         overflowY: 'auto',
         backgroundColor: '#ffffff',
-        paddingLeft: isLeftPanelCollapsed ? '50px' : '0'
+        paddingLeft: (viewMode === 'graph' && isLeftPanelCollapsed) ? '50px' : '0',
+        paddingTop: '60px'
       }}>
-        {/* Toggle Button for collapsed state */}
-        {isLeftPanelCollapsed && (
+        {/* Toggle Button for collapsed state - Only in graph view */}
+        {viewMode === 'graph' && isLeftPanelCollapsed && (
           <button
             onClick={toggleLeftPanel}
             style={{
@@ -95,7 +146,13 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
             →   <img src='/expend.png' /> 
           </button>
         )}
-        <FundGraph association={association} reserveStudy={reserveStudy} onYearSelect={handleYearSelect} excelData={excelData} />
+        <FundGraph 
+          association={association} 
+          reserveStudy={reserveStudy} 
+          onYearSelect={handleYearSelect} 
+          excelData={excelData}
+          viewMode={viewMode}
+        />
       </div>
     </div>
   );

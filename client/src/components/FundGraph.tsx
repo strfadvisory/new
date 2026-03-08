@@ -7,6 +7,7 @@ interface FundGraphProps {
   reserveStudy?: string;
   onYearSelect?: (yearData: any) => void;
   excelData?: any;
+  viewMode?: 'graph' | 'list';
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -315,7 +316,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = CASHFLOW }: { sel: st
 // ─────────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────────
-const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData }) => {
+const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph' }) => {
   const [sel1, setSel1] = useState<string | null>(null);
   const [sel2, setSel2] = useState<string | null>(null);
   
@@ -422,6 +423,67 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
   
   const d2 = sel2 !== null ? cashflowData[parseInt(sel2.replace("c",""))] : null;
 
+  // List view - only show Cashflow Simulator Data table
+  if (viewMode === 'list') {
+    return (
+      <div style={{ fontFamily: "system-ui,sans-serif", background: "white", minHeight: "calc(100vh - 100px)", padding: '20px' }}>
+        <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '20px', color: '#1f2937' }}>Cashflow Simulator Data</h2>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+            <thead>
+              <tr style={{ background: '#f1f5f9' }}>
+                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Year</th>
+                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Opening Balance</th>
+                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Contributions</th>
+                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Interest</th>
+                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Expenses</th>
+                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Closing Balance</th>
+                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cashflowData.map((data: any, index) => {
+                const projection = data.projection;
+                
+                return (
+                  <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: '12px', fontWeight: '500', color: '#1f2937' }}>{data.year}</td>
+                    <td style={{ padding: '12px', textAlign: 'right', color: '#6b7280' }}>
+                      {projection ? `$${projection.openingBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'N/A'}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'right', color: '#10b981' }}>
+                      {projection ? `$${projection.contributions.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'N/A'}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'right', color: '#3b82f6' }}>
+                      {projection ? `$${projection.interest.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'N/A'}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'right', color: '#ef4444' }}>
+                      {projection ? `$${projection.expenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'N/A'}
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: data.pos ? '#10b981' : '#ef4444' }}>{data.value}</td>
+                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                      <span style={{ 
+                        padding: '4px 8px', 
+                        borderRadius: '12px', 
+                        fontSize: '12px', 
+                        fontWeight: '500',
+                        background: data.pos ? '#dcfce7' : '#fee2e2',
+                        color: data.pos ? '#166534' : '#991b1b'
+                      }}>
+                        {data.pos ? 'Surplus' : 'Deficit'}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  }
+
+  // Graph view - show full interface with graphs and table
   return (
     <div style={{ fontFamily:"system-ui,sans-serif", background:"white", minHeight:"calc(100vh - 100px)" }}>
       <div style={{ background:"#fff", margin:"0px auto",    overflow:"hidden" }}>
@@ -468,55 +530,6 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
             onYearSelect(yearData);
           }
         }} cashflowData={cashflowData} />
-
-        {/* Cashflow Data Table */}
-        <div style={{ padding: '20px', background: '#f8f9fa', borderTop: '1px solid #e9ecef' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '16px', color: '#1f2937' }}>Cashflow Simulator Data</h3>
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-              <thead>
-                <tr style={{ background: '#f1f5f9' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Year</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Opening Balance</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Contributions</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Interest</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Expenses</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Closing Balance</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: '#374151', borderBottom: '1px solid #e5e7eb' }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {cashflowData.map((data: any, index) => {
-                  const projection = data.projection;
-                  if (!projection) return null;
-                  
-                  return (
-                    <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                      <td style={{ padding: '12px', fontWeight: '500', color: '#1f2937' }}>{data.year}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', color: '#6b7280' }}>${projection.openingBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', color: '#10b981' }}>${projection.contributions.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', color: '#3b82f6' }}>${projection.interest.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', color: '#ef4444' }}>${projection.expenses.toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: data.pos ? '#10b981' : '#ef4444' }}>{data.value}</td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
-                        <span style={{ 
-                          padding: '4px 8px', 
-                          borderRadius: '12px', 
-                          fontSize: '12px', 
-                          fontWeight: '500',
-                          background: data.pos ? '#dcfce7' : '#fee2e2',
-                          color: data.pos ? '#166534' : '#991b1b'
-                        }}>
-                          {data.pos ? 'Surplus' : 'Deficit'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
 
         {/* <div style={{ padding:"8px 16px 14px", borderTop:"1px solid #f0f0f0", display:"flex", gap:20, alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
