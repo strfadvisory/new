@@ -44,5 +44,8 @@ export const API_ENDPOINTS = {
   master: `${API_BASE_URL}/master`,
   
   // Validation endpoints
-  validateEmail: `${API_BASE_URL}/validate/email`
+  validateEmail: `${API_BASE_URL}/validate/email`,
+  
+  // Company dropdown endpoint
+  companyDropdown: `${API_BASE_URL}/company-dropdown`
 };

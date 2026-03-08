@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config';
+import CompanyDropdown from './CompanyDropdown';
 
 interface DashboardHeaderProps {
   user: any;
@@ -59,14 +60,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       <div className="header-left">
         <div className="logo" onClick={() => navigate('/dashboard')} style={{ cursor: 'pointer' }}>
           <img src="/logo.png" alt="Reserve Fund Advisory" style={{ height: '40px' }} />
-          <div className="logo-text">
-            <div className="company-name">
-              {isSuperAdmin ? 'Super Admin' : (user?.companyType || 'User')}
-            </div>
-            <div className="company-subtitle">
-              {isSuperAdmin ? '' : companyName}
-            </div>
           </div>
+          
+          <div className="logo-text">
+           <CompanyDropdown />
         </div>
         <nav className="header-nav">
           {isSuperAdmin ? (

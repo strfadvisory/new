@@ -195,7 +195,7 @@ display: flex;
 .header-left {
   display: flex;
   align-items: center;
-  gap: 60px;
+ 
 }
 
 .menu-toggle {
