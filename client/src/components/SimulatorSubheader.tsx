@@ -4,7 +4,7 @@ import { apiService } from '../services/ApiService';
 import InviteMemberModal from './InviteMemberModal';
 import AddAssociationPopup from './AddAssociationPopup';
 import AddReserveStudyPopup from './AddReserveStudyPopup';
-import { viewModeEmitter, studySelectionEmitter } from '../utils/eventEmitter';
+import { viewModeEmitter, studySelectionEmitter, refreshReserveStudiesDropdown } from '../utils/eventEmitter';
 import './SimulatorSubheader.css';
 
 interface ReserveStudy {
@@ -291,6 +291,8 @@ const Dropdown: React.FC<DropdownProps> = ({
     try {
       await apiService.delete(`/reserve-studies/${studyId}`);
       setReserveStudies(prev => prev.filter(s => s._id !== studyId));
+      // Trigger dropdown refresh after delete
+      refreshReserveStudiesDropdown();
     } catch (error) {
       console.error('Error deleting reserve study:', error);
       alert('Failed to delete reserve study');
