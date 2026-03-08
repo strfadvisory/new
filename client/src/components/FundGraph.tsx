@@ -336,13 +336,20 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
   
   const cashflowData = React.useMemo(() => {
     console.log('[FundGraph.tsx] Recalculating cashflowData with advanced analytics');
+    console.log('[FundGraph.tsx] Complete excelData received:', excelData);
+    
     if (!excelData?.data) {
       console.log('[FundGraph.tsx] No excelData, using default CASHFLOW');
       return CASHFLOW;
     }
     
-    const config = excelData.data.config || {};
-    const items = excelData.data.items || [];
+    // Handle nested data structure from SimulatorSubheader
+    const actualData = excelData.data.data || excelData.data;
+    const config = actualData.config || {};
+    const items = actualData.items || [];
+    
+    console.log('[FundGraph.tsx] Extracted config:', config);
+    console.log('[FundGraph.tsx] Extracted items count:', items.length);
     
     const financialConfig: FinancialConfig = {
       startingBalance: config['Beginning Reserve Funds (Dollar Amount)'] || 0,
@@ -390,7 +397,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
         healthScore,
         optimalFee,
         metrics,
-        studyName: excelData.studyName || 'Reserve Study'
+        studyName: excelData.reserveStudy || excelData.studyName || 'Reserve Study'
       };
     });
     

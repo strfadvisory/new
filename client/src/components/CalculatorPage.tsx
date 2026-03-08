@@ -11,6 +11,22 @@ interface CalculatorPageProps {
 const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStudy, excelData }) => {
   console.log('[CalculatorPage.tsx] Received props:', { association, reserveStudy, hasExcelData: !!excelData });
   
+  // Console complete JSON data when received
+  React.useEffect(() => {
+    if (excelData) {
+      console.log('[CalculatorPage] Complete JSON Data Received:');
+      console.log('='.repeat(50));
+      console.log(JSON.stringify(excelData, null, 2));
+      console.log('='.repeat(50));
+      console.log('[CalculatorPage] Data structure breakdown:');
+      console.log('- Study ID:', excelData.studyId);
+      console.log('- Association:', excelData.association);
+      console.log('- Reserve Study:', excelData.reserveStudy);
+      console.log('- Data keys:', Object.keys(excelData.data || {}));
+      console.log('- Timestamp:', excelData.timestamp);
+    }
+  }, [excelData]);
+  
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [selectedYearData, setSelectedYearData] = useState<any>(null);
  

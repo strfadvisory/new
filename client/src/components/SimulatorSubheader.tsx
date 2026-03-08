@@ -661,8 +661,19 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       if (selectedAssociation && selectedCompany && selectedStudyId && onShowCalculator) {
         try {
           const response = await apiService.get<any>(`/reserve-studies/${selectedStudyId}/data`);
-          console.log('Excel Data:', response);
-          onShowCalculator(selectedAssociation, selectedCompany, response.data);
+          console.log('[SimulatorSubheader] Complete JSON Data from Reserve Study:', JSON.stringify(response, null, 2));
+          
+          // Send complete JSON to calculator page
+          const completeData = {
+            studyId: selectedStudyId,
+            association: selectedAssociation,
+            reserveStudy: selectedCompany,
+            data: response.data || response,
+            timestamp: new Date().toISOString()
+          };
+          
+          console.log('[SimulatorSubheader] Sending complete data to calculator:', completeData);
+          onShowCalculator(selectedAssociation, selectedCompany, completeData);
         } catch (error) {
           console.error('Error fetching Excel data:', error);
           onShowCalculator(selectedAssociation, selectedCompany);
@@ -788,9 +799,18 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
                     }
                   });
                   const data = await response.json();
-                  console.log('Response 663:', data);
+                  console.log('[SimulatorSubheader] Test API Response:', JSON.stringify(data, null, 2));
+                  
+                  const completeTestData = {
+                    studyId: '69ac7619ae2658e3392e8fcf',
+                    association: selectedAssociation || 'Test Association',
+                    reserveStudy: selectedCompany || 'Test Reserve Study',
+                    data: data,
+                    timestamp: new Date().toISOString()
+                  };
+                  
                   if (onShowCalculator) {
-                    onShowCalculator(selectedAssociation, selectedCompany, data);
+                    onShowCalculator(selectedAssociation || 'Test Association', selectedCompany || 'Test Reserve Study', completeTestData);
                   }
                   setShowViewMenu(false);
                 } catch (error) {

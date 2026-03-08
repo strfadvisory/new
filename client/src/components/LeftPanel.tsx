@@ -14,11 +14,11 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const value = selectedYearData?.value || "$234,333";
   const isPositive = selectedYearData?.pos !== false;
   
-  const config = excelData?.data?.config || {};
+  const config = excelData?.data?.data?.config || excelData?.data?.config || {};
   const modelName = config[Object.keys(config)[0]] || 'Reserve Study';
-  const studyName = selectedYearData?.studyName || excelData?.studyName || modelName;
+  const studyName = selectedYearData?.studyName || excelData?.studyName || excelData?.reserveStudy || modelName;
   
-  const items = excelData?.data?.items || [];
+  const items = excelData?.data?.data?.items || excelData?.data?.items || [];
   
   const projection = selectedYearData?.projection;
   const healthScore = selectedYearData?.healthScore || 0;

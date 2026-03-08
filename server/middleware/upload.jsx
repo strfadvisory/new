@@ -1,22 +1,47 @@
 const multer = require('multer');
-const path = require('path');
 const mongoose = require('mongoose');
 const { Readable } = require('stream');
 
-const upload = multer({ storage: multer.memoryStorage() });
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+  const allowedMimes = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel'
+  ];
+  
+  if (allowedMimes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only Excel files (.xlsx, .xls) are allowed'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 const uploadToGridFS = async (req, res, next) => {
   if (!req.file) return next();
   
   try {
-    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'uploads' });
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'reserve-studies' });
     const readableStream = Readable.from(req.file.buffer);
-    const uploadStream = bucket.openUploadStream(`${Date.now()}-${req.file.originalname}`);
+    const uploadStream = bucket.openUploadStream(req.file.originalname, {
+      metadata: {
+        uploadedBy: req.user?.id,
+        uploadedAt: new Date()
+      }
+    });
     
     readableStream.pipe(uploadStream);
     
     uploadStream.on('finish', () => {
-      req.file.id = uploadStream.id;
+      req.file.gridfsId = uploadStream.id;
       next();
     });
     
@@ -28,5 +53,4 @@ const uploadToGridFS = async (req, res, next) => {
   }
 };
 
-module.exports = upload;
-module.exports.uploadToGridFS = uploadToGridFS;
+module.exports = { upload, uploadToGridFS };

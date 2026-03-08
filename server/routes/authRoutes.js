@@ -1,8 +1,7 @@
 const express = require('express');
 const { register, login, verifyOTP, resendOTP, createCompanyProfile, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware.jsx');
-const upload = require('../middleware/upload.jsx');
-const { uploadToGridFS } = require('../middleware/upload.jsx');
+const { upload, uploadToGridFS } = require('../middleware/upload.jsx');
 const User = require('../models/User');
 const mongoose = require('mongoose');
 const router = express.Router();

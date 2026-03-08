@@ -10,8 +10,8 @@ const reserveStudySchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  filePath: {
-    type: String,
+  fileId: {
+    type: mongoose.Schema.Types.ObjectId,
     required: true
   },
   fileSize: {

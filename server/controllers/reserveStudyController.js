@@ -1,44 +1,7 @@
 const ReserveStudy = require('../models/ReserveStudy');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const mongoose = require('mongoose');
 const XLSX = require('xlsx');
-
-// Configure multer for file upload
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, '../uploads/reserve-studies');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const fileFilter = (req, file, cb) => {
-  const allowedMimes = [
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel'
-  ];
-  
-  if (allowedMimes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only Excel files (.xlsx, .xls) are allowed'), false);
-  }
-};
-
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
-});
+const { upload, uploadToGridFS } = require('../middleware/upload.jsx');
 
 // Create new reserve study
 const createReserveStudy = async (req, res) => {
@@ -50,8 +13,8 @@ const createReserveStudy = async (req, res) => {
       return res.status(400).json({ message: 'Study name is required' });
     }
 
-    if (!file) {
-      return res.status(400).json({ message: 'Excel file is required' });
+    if (!file || !file.gridfsId) {
+      return res.status(400).json({ message: 'Excel file upload failed' });
     }
 
     let associationId = null;
@@ -66,7 +29,7 @@ const createReserveStudy = async (req, res) => {
     const reserveStudy = new ReserveStudy({
       studyName: studyName.trim(),
       fileName: file.originalname,
-      filePath: file.path,
+      fileId: file.gridfsId,
       fileSize: file.size,
       mimeType: file.mimetype,
       uploadedBy: req.user.id,
@@ -158,20 +121,29 @@ const downloadReserveStudy = async (req, res) => {
       return res.status(404).json({ message: 'Reserve study not found' });
     }
 
-    if (!fs.existsSync(study.filePath)) {
-      return res.status(404).json({ message: 'File not found' });
-    }
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'reserve-studies' });
+    const downloadStream = bucket.openDownloadStream(study.fileId);
 
-    res.download(study.filePath, study.fileName);
+    res.set({
+      'Content-Type': study.mimeType,
+      'Content-Disposition': `attachment; filename="${study.fileName}"`
+    });
+
+    downloadStream.pipe(res);
+
+    downloadStream.on('error', (error) => {
+      console.error('Download error:', error);
+      res.status(404).json({ message: 'File not found' });
+    });
   } catch (error) {
     console.error('Error downloading reserve study:', error);
     res.status(500).json({ message: 'Failed to download file' });
   }
 };
 
-// Parse reserve study Excel file
-function parseReserveStudy(filePath) {
-  const workbook = XLSX.readFile(filePath);
+// Parse reserve study Excel file from GridFS
+function parseReserveStudyFromBuffer(buffer) {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
   const sheet = workbook.Sheets["Manual entry"];
 
   if (!sheet) {
@@ -223,23 +195,42 @@ const getReserveStudyData = async (req, res) => {
       return res.status(404).json({ message: 'Reserve study not found' });
     }
 
-    if (!fs.existsSync(study.filePath)) {
-      return res.status(404).json({ message: 'Excel file not found' });
-    }
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'reserve-studies' });
+    const downloadStream = bucket.openDownloadStream(study.fileId);
+    
+    const chunks = [];
+    downloadStream.on('data', (chunk) => {
+      chunks.push(chunk);
+    });
 
-    const parsedData = parseReserveStudy(study.filePath);
-    const jsonData = {
-      studyName: study.studyName,
-      fileName: study.fileName,
-      data: parsedData
-    };
+    downloadStream.on('end', () => {
+      try {
+        const buffer = Buffer.concat(chunks);
+        const parsedData = parseReserveStudyFromBuffer(buffer);
+        const jsonData = {
+          studyName: study.studyName,
+          fileName: study.fileName,
+          data: parsedData
+        };
 
-    // Console log
-    console.log(JSON.stringify(jsonData, null, 2));
+        console.log(JSON.stringify(jsonData, null, 2));
 
-    res.json({
-      message: 'Reserve study data retrieved successfully',
-      ...jsonData
+        res.json({
+          message: 'Reserve study data retrieved successfully',
+          ...jsonData
+        });
+      } catch (parseError) {
+        console.error('Error parsing Excel data:', parseError);
+        res.status(500).json({ 
+          message: 'Failed to parse Excel data',
+          error: parseError.message 
+        });
+      }
+    });
+
+    downloadStream.on('error', (error) => {
+      console.error('Error reading file from GridFS:', error);
+      res.status(404).json({ message: 'Excel file not found' });
     });
   } catch (error) {
     console.error('Error reading Excel data:', error);
@@ -261,10 +252,9 @@ const deleteReserveStudy = async (req, res) => {
       return res.status(404).json({ message: 'Reserve study not found' });
     }
 
-    // Delete the uploaded Excel file
-    if (study.filePath && fs.existsSync(study.filePath)) {
-      fs.unlinkSync(study.filePath);
-    }
+    // Delete the file from GridFS
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'reserve-studies' });
+    await bucket.delete(study.fileId);
 
     // Delete from database
     await ReserveStudy.findByIdAndDelete(id);
@@ -278,6 +268,7 @@ const deleteReserveStudy = async (req, res) => {
 
 module.exports = {
   upload,
+  uploadToGridFS,
   createReserveStudy,
   getReserveStudies,
   getReserveStudy,
