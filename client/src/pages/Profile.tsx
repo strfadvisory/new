@@ -1,77 +1,108 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getUserProfile } from '../services/userApi';
+import './Profile.css';
 
-interface ProfileProps {
-  user: any;
-}
+const Profile: React.FC = () => {
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
-const Profile: React.FC<ProfileProps> = ({ user }) => {
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const data = await getUserProfile();
+      setProfile(data);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load profile');
+      if (err.message === 'Not authorized') {
+        navigate('/login');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  if (loading) {
+    return (
+      <div className="profile-container">
+        <div className="loading-spinner">
+          <i className="fas fa-spinner fa-spin"></i>
+          <p>Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="profile-container">
+        <div className="error-message">
+          <i className="fas fa-exclamation-circle"></i>
+          <p>{error}</p>
+          <button onClick={fetchProfile} className="retry-btn">Retry</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4">
-      <h1>My Profile</h1>
-      <p>Manage your personal information and account settings.</p>
-      
-      <div className="row mt-4">
-        <div className="col-md-8">
-          <div className="card">
-            <div className="card-header">
-              <h3>Personal Information</h3>
+    <div className="profile-container">
+      <div className="profile-card">
+        <div className="profile-avatar">
+          <i className="fas fa-user-circle"></i>
+        </div>
+        
+        <div className="profile-info">
+          <h2>{profile?.name}</h2>
+          
+          <div className="profile-details">
+            <div className="detail-item">
+              <i className="fas fa-envelope"></i>
+              <div>
+                <label>Email</label>
+                <span>{profile?.email}</span>
+              </div>
             </div>
-            <div className="card-body">
-              <form>
-                <div className="row mb-3">
-                  <div className="col-md-6">
-                    <label className="form-label">First Name</label>
-                    <input type="text" className="form-control" defaultValue={user?.firstName || 'John'} />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label">Last Name</label>
-                    <input type="text" className="form-control" defaultValue={user?.lastName || 'Doe'} />
-                  </div>
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">Email Address</label>
-                  <input type="email" className="form-control" defaultValue={user?.email || 'john.doe@example.com'} />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">Phone Number</label>
-                  <input type="tel" className="form-control" defaultValue="+1 (555) 123-4567" />
-                </div>
-                <div className="mb-3">
-                  <label className="form-label">Company Role</label>
-                  <input type="text" className="form-control" defaultValue={user?.role || 'Manager'} readOnly />
-                </div>
-                <button type="submit" className="btn btn-primary">Update Profile</button>
-              </form>
+            
+            <div className="detail-item">
+              <i className="fas fa-user-tag"></i>
+              <div>
+                <label>Role</label>
+                <span>{profile?.role}</span>
+              </div>
+            </div>
+            
+            <div className="detail-item">
+              <i className="fas fa-calendar-alt"></i>
+              <div>
+                <label>Joined</label>
+                <span>{new Date(profile?.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              </div>
             </div>
           </div>
         </div>
         
-        <div className="col-md-4">
-          <div className="card">
-            <div className="card-header">
-              <h3>Account Settings</h3>
-            </div>
-            <div className="card-body">
-              <div className="mb-3">
-                <label className="form-label">Change Password</label>
-                <button className="btn btn-outline-secondary w-100">Update Password</button>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Two-Factor Authentication</label>
-                <div className="form-check form-switch">
-                  <input className="form-check-input" type="checkbox" />
-                  <label className="form-check-label">Enable 2FA</label>
-                </div>
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Email Notifications</label>
-                <div className="form-check form-switch">
-                  <input className="form-check-input" type="checkbox" defaultChecked />
-                  <label className="form-check-label">Receive notifications</label>
-                </div>
-              </div>
-            </div>
-          </div>
+        <div className="profile-actions">
+          <button className="edit-profile-btn" onClick={() => alert('Edit profile feature coming soon!')}>
+            <i className="fas fa-edit"></i>
+            Edit Profile
+          </button>
+          <button className="logout-btn-profile" onClick={handleLogout}>
+            <i className="fas fa-sign-out-alt"></i>
+            Logout
+          </button>
         </div>
       </div>
     </div>

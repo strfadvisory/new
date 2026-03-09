@@ -6,6 +6,8 @@ import { updateSignupState, getSignupState, clearSignupState, getFormData } from
 import { API_ENDPOINTS } from './config';
 import SignupStateDebug from './components/SignupStateDebug';
 import Login from './Login';
+import ForgotPassword from './ForgotPassword';
+import ResetPassword from './ResetPassword';
 import CompanySelection from './CompanySelection';
 import CreateProfile from './CreateProfile';
 import OTPVerification from './OTPVerification';
@@ -23,6 +25,7 @@ import Banking from './pages/Banking';
 import UserManagement from './pages/UserManagement';
 import DashboardRoleManager from './pages/DashboardRoleManager';
 import AssociationControl from './pages/AssociationControl';
+import Profile from './pages/Profile';
 
 function App() {
   const [user, setUser] = useState<any>(null);
@@ -161,6 +164,8 @@ function App() {
         {/* {  <SignupStateDebug />  } */}
         <Routes>
           <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator'} replace />} />
+          <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator'} replace />} />
+          <Route path="/reset-password/:token" element={!user ? <ResetPassword /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator'} replace />} />
           <Route path="/signup" element={<CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />} />
           <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} onNavigate={(step) => navigate(step)} />} />
           <Route path="/verify-otp" element={<OTPVerification onVerify={handleOTPVerified} onBack={handleBackToProfile} onNavigate={(step) => navigate(step)} />} />
@@ -179,6 +184,9 @@ function App() {
             <Route path="role-manager" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
             <Route path="role-management" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
             <Route path="association-control" element={<AssociationControl user={user} onLogout={handleLogout} />} />
+          </Route>
+          <Route path="/profile" element={user ? <DashboardLayout user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /> : <Navigate to="/login" replace />}>
+            <Route index element={<Profile />} />
           </Route>
           <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator') : '/login'} replace />} />
         </Routes>

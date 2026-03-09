@@ -28,6 +28,8 @@ const userSchema = new mongoose.Schema({
   otp: String,
   otpExpiry: Date,
   isVerified: { type: Boolean, default: false },
+  resetPasswordToken: String,
+  resetPasswordExpire: Date,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   companyProfile: {
     companyName: String,

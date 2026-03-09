@@ -127,7 +127,7 @@ const AllCompanies: React.FC = () => {
         <div className="companies-header">
           <div className="header-top">
             <h2 className="results-title">{filteredUsers.length} Results founded</h2>
-            <a href="#" className="add-new-link">+ Add New</a>
+          
           </div>
           <input
             type="text"
