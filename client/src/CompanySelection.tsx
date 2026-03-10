@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './CompanySelection.css';
-import { API_ENDPOINTS } from './config';
+import { API_ENDPOINTS, API_BASE_URL } from './config';
 import { updateSignupState } from './utils/signupState';
 import AuthSidebar from './components/AuthSidebar';
 
@@ -36,6 +36,13 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
     fetchCompanyTypes();
   }, []);
 
+  const getIconUrl = (iconPath: string) => {
+    if (iconPath.startsWith('/api/icons/')) {
+      return `${API_BASE_URL.replace('/api', '')}/api/icons/${iconPath.split('/').pop()}`;
+    }
+    return iconPath;
+  };
+
   const handleCompanySelect = (roleId: string, roleName: string) => {
     updateSignupState({ 
       roleId, 
@@ -50,77 +57,53 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
       <AuthSidebar />
       
       <div className="company-content">
-                <div  style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto' }}> 
+                <div  style={{ background: 'white',  border:'1px solid #E5E5E5', maxWidth: '800px', margin: '0 auto', borderRadius: '8px',  }}> 
         <div className="company-header">
-          <div className="header-top">
-            <span className="select-company">Select Company</span>
-            <button className="already-account" onClick={onBack}>
-              Already I have an account?
-            </button>
-          </div>
-          <h1>Welcome Back</h1>
-          <p>Choose your Company type you like to signup</p>
+          <h2 style={{ fontSize: '20px', borderBottom: '1px solid #E3E3E3',  padding: '20px' }}>Choose your Company Type</h2>
+          <p  style={{   padding: '20px' }}>Set up a new organisational entity to manage Users, modules, and operations efficiently.</p>
         </div>
         
-        <div className="company-grid">
+        <div className="company-list">
           {loading ? (
             <p>Loading...</p>
           ) : (
             companyTypes.map((company) => (
               <div 
                 key={company._id} 
-                className="company-card"
+                className="company-item"
                 onClick={() => handleCompanySelect(company._id, company.name)}
               >
                 <div className="company-icon">
-                  
                   <img
-  src={company.icon}
-  alt="Company Icon"
-  style={{
-    width: "70px",
- 
-    objectFit: "contain",
-    verticalAlign: "middle"
-  }}
-/>
-                
+                    src={getIconUrl(company.icon)}
+                    alt="Company Icon"
+                    style={{
+                      width: "48px",
+                      height: "48px",
+                      objectFit: "contain"
+                    }}
+                  />
                 </div>
-                <div className="company-info">
+                <div className="company-details">
                   <h3>{company.name}</h3>
                   <p>{company.description}</p>
+                </div>
+                <div className="company-arrow">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 18L15 12L9 6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
                 </div>
               </div>
             ))
           )}
         </div>
         
-        <div className="company-footer">
-          <button 
-            className="company-not-listed-btn"
-            style={{
-              background: 'white',
-              color: '#374151',
-              border: '1px solid #d1d5db',
-              padding: '12px 24px',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '500',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f9fafb';
-              e.currentTarget.style.borderColor = '#9ca3af';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'white';
-              e.currentTarget.style.borderColor = '#d1d5db';
-            }}
-          >
-            Company type not listed ?
-          </button>
+        <div className="company-not-listed" style={{ fontSize: '20px',  padding: '20px', color:'#6b7280' }}
+             onClick={() => handleCompanySelect('other', 'Company Type Not Listed')}>
+          <span>Company Type not listed</span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M9 18L15 12L9 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
         </div>
 
 

@@ -5,16 +5,8 @@ const { Readable } = require('stream');
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  const allowedMimes = [
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel'
-  ];
-  
-  if (allowedMimes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only Excel files (.xlsx, .xls) are allowed'), false);
-  }
+  // Allow all file types - no restrictions
+  cb(null, true);
 };
 
 const upload = multer({

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "management_company",
+    "name": "Management Company",
+    "description": "Create and manage an organizational entity to oversee users, modules, and operational activities efficiently.",
+    "icon": "management_company.png"
+  },
+  {
+    "id": "bank_office",
+    "name": "Bank Office",
+    "description": "Set up a banking organization to manage financial services such as loans, investment plans, and fixed deposits, and collaborate with associations.",
+    "icon": "bank_office.png"
+  },
+  {
+    "id": "reserve_study_company",
+    "name": "Reserve Study Company",
+    "description": "Establish an organization to manage users, associations, study modules, and reserve planning operations.",
+    "icon": "reserve_study_company.png"
+  },
+  {
+    "id": "investor_advisor",
+    "name": "Investor Advisor",
+    "description": "Create an advisory organization to manage associations, users, and investment-related study and data modules.",
+    "icon": "investor_advisor.png"
+  },
+  {
+    "id": "board_members",
+    "name": "Board Members",
+    "description": "Set up a governance entity to manage board members, oversee modules, and supervise operational activities.",
+    "icon": "board_members.png"
+  },
+  {
+    "id": "other",
+    "name": "Company Type Not Listed",
+    "description": "Select this option if your organization type is not listed above and configure it manually.",
+    "icon": "other.png"
+  }
+]

@@ -490,7 +490,9 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                       >
                         <div className="company-logo">
                           {role.icon ? (
-                            <img src={role.icon} alt={role.name} />
+                     
+                            <img src={role.icon} alt={API_BASE_URL} />
+                            
                           ) : (
                             <i className="fas fa-user-shield" style={{ color: '#64748b', fontSize: '20px' }}></i>
                           )}

@@ -1,5 +1,6 @@
 const clearDatabase = require('./clearDatabase');
 const seedSuperAdmin = require('./seedSuperAdmin');
+const seedDefaultRoles = require('./seedDefaultRoles');
 const mongoose = require('mongoose');
 
 async function clearAndSeed() {
@@ -11,6 +12,9 @@ async function clearAndSeed() {
     
     // Seed super admin
     await seedSuperAdmin();
+    
+    // Seed default master roles
+    await seedDefaultRoles();
     
     console.log('Clear and seed process completed successfully');
     

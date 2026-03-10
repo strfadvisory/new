@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api');
+export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api' 
 
 export const API_ENDPOINTS = {
   // Auth endpoints
@@ -50,5 +50,8 @@ export const API_ENDPOINTS = {
   validateEmail: `${API_BASE_URL}/validate/email`,
   
   // Company dropdown endpoint
-  companyDropdown: `${API_BASE_URL}/company-dropdown`
+  companyDropdown: `${API_BASE_URL}/company-dropdown`,
+  
+  // Icons endpoint
+  icons: `${API_BASE_URL}/icons`
 };
