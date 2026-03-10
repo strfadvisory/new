@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   designation: { type: String },
   phone: { type: String },
+  profileImageId: { type: mongoose.Schema.Types.ObjectId },
   password: { type: String, required: true },
   address: {
     zipCode: String,

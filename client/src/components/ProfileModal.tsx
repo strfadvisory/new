@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './ProfileModal.css';
 import './Modal.css';
 
@@ -13,6 +13,7 @@ interface ProfileModalProps {
 const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onChangePassword, onDeleteAccount }) => {
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -20,16 +21,42 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onCh
     }
   }, [isOpen]);
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('profileImage', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/user/upload-profile-image`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        fetchUserProfile(); // Refresh profile data
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    }
+  };
+
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/user/profile`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/user/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       const data = await response.json();
+      console.log('Profile data:', data); // Debug log
       setProfileData(data);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -61,20 +88,38 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onCh
             <div className="profile-section">
               <div className="profile-avatar-section">
                 <div className="profile-avatar-large">
-                  <i className="fas fa-user-circle"></i>
+                  {profileData?.profileImageId ? (
+                    <img 
+                      src={`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/user/profile-image/${profileData.profileImageId}`}
+                      alt="Profile"
+                      style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <i className="fas fa-user-circle"></i>
+                  )}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleImageUpload} 
+                    accept="image/*" 
+                    style={{ display: 'none' }} 
+                  />
+                  <button className="upload-avatar-btn" onClick={() => fileInputRef.current?.click()}>
+                    <i className="fas fa-camera"></i>
+                  </button>
                 </div>
                 <div className="profile-basic-info">
                   <h3>{profileData?.name}</h3>
                   <p>{profileData?.email}</p>
                   <p>{profileData?.phone || 'Phone number'}</p>
                   <div className="join-date">
-                    Join Date: {new Date(profileData?.createdAt).toLocaleDateString('en-GB', { 
+                    Join Date: {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-GB', { 
                       day: '2-digit', 
                       month: 'short', 
                       year: 'numeric',
                       hour: '2-digit',
                       minute: '2-digit'
-                    })}
+                    }) : 'N/A'}
                   </div>
                 </div>
               </div>

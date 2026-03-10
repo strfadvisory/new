@@ -1,5 +1,5 @@
 // API Configuration
-export const API_BASE_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5000/api');
+export const API_BASE_URL = process.env.REACT_APP_API_URL || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:5001/api');
 
 // API Endpoints Configuration
 export const API_ENDPOINTS = {
