@@ -62,6 +62,40 @@ const register = async (req, res) => {
       isVerified: false
     });
 
+    // Create Editor role - has all permissions with canEdit: true
+    const editorRole = await Role.create({
+      name: 'Editor',
+      description: 'Editor role with full access permissions',
+      icon: selectedRole.icon,
+      type: 'User',
+      status: true,
+      permissions: selectedRole.permissions.map(perm => ({
+        permissionId: perm.permissionId,
+        canEdit: true,
+        limit: perm.limit
+      })),
+      nextSteps: selectedRole.nextSteps,
+      videos: selectedRole.videos,
+      createdBy: user._id
+    });
+
+    // Create Member role - same permissions but canEdit: false
+    const memberRole = await Role.create({
+      name: 'Member',
+      description: 'Member role with view-only permissions',
+      icon: selectedRole.icon,
+      type: 'User',
+      status: true,
+      permissions: selectedRole.permissions.map(perm => ({
+        permissionId: perm.permissionId,
+        canEdit: false,
+        limit: perm.limit
+      })),
+      nextSteps: selectedRole.nextSteps,
+      videos: selectedRole.videos,
+      createdBy: user._id
+    });
+
     try {
       await sendOTPEmail(email, otp);
     } catch (emailError) {
@@ -77,6 +111,8 @@ const register = async (req, res) => {
       email: user.email,
       companyType: user.companyType,
       orgId: user.orgId,
+      editorRoleId: editorRole._id,
+      memberRoleId: memberRole._id,
       token
     });
   } catch (error) {
