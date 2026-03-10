@@ -13,6 +13,7 @@ import { API_BASE_URL } from './config';
 import DashboardHeader from './components/DashboardHeader';
 import SimulatorSubheader from './components/SimulatorSubheader';
 import CalculatorPage from './components/CalculatorPage';
+import { getIconUrl } from './utils/iconUtils';
 
 interface SuperAdminLayoutProps {
   user: any;
@@ -490,8 +491,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                       >
                         <div className="company-logo">
                           {role.icon ? (
-                     
-                            <img src={role.icon} alt={API_BASE_URL} />
+             
+                            <img src={getIconUrl(role.icon)} alt={role.name}  />
                             
                           ) : (
                             <i className="fas fa-user-shield" style={{ color: '#64748b', fontSize: '20px' }}></i>

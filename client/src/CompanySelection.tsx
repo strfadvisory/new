@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import './CompanySelection.css';
-import { API_ENDPOINTS, API_BASE_URL } from './config';
+import { API_ENDPOINTS } from './config';
 import { updateSignupState } from './utils/signupState';
+import { getIconUrl } from './utils/iconUtils';
 import AuthSidebar from './components/AuthSidebar';
 
 interface CompanyType {
@@ -36,12 +37,7 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect })
     fetchCompanyTypes();
   }, []);
 
-  const getIconUrl = (iconPath: string) => {
-    if (iconPath.startsWith('/api/icons/')) {
-      return `${API_BASE_URL.replace('/api', '')}/api/icons/${iconPath.split('/').pop()}`;
-    }
-    return iconPath;
-  };
+
 
   const handleCompanySelect = (roleId: string, roleName: string) => {
     updateSignupState({ 
