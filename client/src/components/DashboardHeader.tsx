@@ -1,7 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config';
 import CompanyDropdown from './CompanyDropdown';
+import ProfileModal from './ProfileModal';
+import ChangePasswordModal from './ChangePasswordModal';
+import DeleteAccountModal from './DeleteAccountModal';
 
 interface DashboardHeaderProps {
   user: any;
@@ -25,6 +28,26 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const currentPage = location.pathname.split('/').pop() || '';
   const [companyName, setCompanyName] = useState(user?.companyProfile?.companyName || 'Company name');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setShowProfileDropdown(false);
+      }
+    };
+
+    if (showProfileDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showProfileDropdown]);
 
   useEffect(() => {
     const createCompanyProfileIfNeeded = async () => {
@@ -98,7 +121,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         <div className="notification-icon">
           <i className="fas fa-bell"></i>
         </div>
-        <div className="profile-menu">
+        <div className="profile-menu" ref={profileDropdownRef}>
           <div 
             className="profile-icon" 
             onClick={() => setShowProfileDropdown(!showProfileDropdown)}
@@ -107,7 +130,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </div>
           {showProfileDropdown && (
             <div className="profile-dropdown">
-              <div className="dropdown-item" onClick={() => navigate('/profile')}>
+              <div className="dropdown-item" onClick={() => {
+                setShowProfileModal(true);
+                setShowProfileDropdown(false);
+              }}>
                 <i className="fas fa-user"></i>
                 My Profile
               </div>
@@ -119,6 +145,30 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           )}
         </div>
       </div>
+      
+      <ProfileModal 
+        isOpen={showProfileModal} 
+        onClose={() => setShowProfileModal(false)} 
+        user={user}
+        onChangePassword={() => {
+          setShowProfileModal(false);
+          setShowChangePassword(true);
+        }}
+        onDeleteAccount={() => {
+          setShowProfileModal(false);
+          setShowDeleteAccount(true);
+        }}
+      />
+      
+      <ChangePasswordModal 
+        isOpen={showChangePassword} 
+        onClose={() => setShowChangePassword(false)} 
+      />
+      
+      <DeleteAccountModal 
+        isOpen={showDeleteAccount} 
+        onClose={() => setShowDeleteAccount(false)} 
+      />
     </header>
   );
 };

@@ -157,7 +157,7 @@ const getCompanies = async (req, res) => {
 
 const createCompanyProfile = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user._id;
     const user = await User.findById(userId).select('-password');
     
     if (!user) {

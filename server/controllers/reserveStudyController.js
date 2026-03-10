@@ -32,7 +32,7 @@ const createReserveStudy = async (req, res) => {
       fileId: file.gridfsId,
       fileSize: file.size,
       mimeType: file.mimetype,
-      uploadedBy: req.user.id,
+      uploadedBy: req.user._id,
       associationId: associationId
     });
 

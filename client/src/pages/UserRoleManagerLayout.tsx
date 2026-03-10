@@ -293,19 +293,19 @@ const UserRoleManagerLayout: React.FC = () => {
         />
       </div>
 
-      {/* Right Slidebar */}
+      {/* Add/Edit Modal */}
       {isSlidebarOpen && (
         <>
-          <div className="slidebar-overlay" onClick={() => setIsSlidebarOpen(false)}></div>
-          <div className="right-slidebar">
-            <div className="slidebar-header">
+          <div className="modal-overlay" onClick={() => setIsSlidebarOpen(false)}></div>
+          <div className="form-modal">
+            <div className="modal-header">
               <h3>{editMode ? 'Edit Role' : 'Add New Role'}</h3>
               <button className="close-btn" onClick={() => setIsSlidebarOpen(false)}>
                 <i className="fas fa-times"></i>
               </button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="slidebar-content">
+              <div className="modal-body">
                 
                 <div className="form-group">
                   <input 
@@ -418,9 +418,14 @@ const UserRoleManagerLayout: React.FC = () => {
                   </div>
                 </div>
 
-                <button type="submit" className="submit-btn">
-                  {editMode ? 'Update Role' : 'Save Role'}
-                </button>
+                <div className="modal-footer">
+                  <button type="button" className="btn-cancel" onClick={() => setIsSlidebarOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-submit">
+                    {editMode ? 'Update' : 'Save'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

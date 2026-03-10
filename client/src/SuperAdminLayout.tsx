@@ -531,19 +531,19 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         </div>
       </div>
 
-      {/* Right Slidebar */}
+      {/* Add/Edit Modal */}
       {isSlidebarOpen && (
         <>
-          <div className="slidebar-overlay" onClick={() => setIsSlidebarOpen(false)}></div>
-          <div className="right-slidebar">
-            <div className="slidebar-header">
+          <div className="modal-overlay" onClick={() => setIsSlidebarOpen(false)}></div>
+          <div className="form-modal">
+            <div className="modal-header">
               <h3>{editMode ? (currentPage === 'library' ? 'Edit Library Item' : 'Edit Role') : (currentPage === 'library' ? 'Add New Library Item' : 'Add New Role')}</h3>
               <button className="close-btn" onClick={() => setIsSlidebarOpen(false)}>
                 <i className="fas fa-times"></i>
               </button>
             </div>
             <form onSubmit={handleSubmit}>
-              <div className="slidebar-content">
+              <div className="modal-body">
                 
                 
                 <div className="form-group">
@@ -690,9 +690,14 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   </div>
                 </div>
 
-                <button type="submit" className="submit-btn">
-                  {editMode ? (currentPage === 'library' ? 'Update Library Item' : 'Update Role') : (currentPage === 'library' ? 'Save Library Item' : 'Save Role')}
-                </button>
+                <div className="modal-footer">
+                  <button type="button" className="btn-cancel" onClick={() => setIsSlidebarOpen(false)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-submit">
+                    {editMode ? (currentPage === 'library' ? 'Update' : 'Update') : (currentPage === 'library' ? 'Save' : 'Save')}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
