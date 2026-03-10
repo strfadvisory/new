@@ -20,8 +20,8 @@ interface UserVideosResponse {
   videos: Array<{
     title: string;
     description: string;
-    image: string;
-    url: string;
+    thumbnail: string;
+    videoUrl: string;
   }>;
 }
 

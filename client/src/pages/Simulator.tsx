@@ -67,7 +67,7 @@ const Simulator: React.FC = () => {
         {videos.length > 0 ? videos.map((video, index) => (
           <div key={index} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <div 
-              style={{ background: '#f3f4f6', borderRadius: '8px', height: '180px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: `url(${video.image})`, backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer' }}
+              style={{ background: '#f3f4f6', borderRadius: '8px', height: '180px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: video.thumbnail ? `url(${video.thumbnail})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer' }}
               onClick={() => {
                 setCurrentVideo(video);
                 setShowVideoModal(true);

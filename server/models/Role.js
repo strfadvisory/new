@@ -6,7 +6,11 @@ const roleSchema = new mongoose.Schema({
   icon: { type: String, required: true },
   type: { type: String, enum: ['Master', 'User'], required: true },
   status: { type: Boolean, default: true },
-  permissions: [{ type: String }],
+  permissions: [{ 
+    permissionId: { type: String },
+    canEdit: { type: Boolean, default: true },
+    limit: { type: String, default: '' }
+  }],
   nextSteps: [{ type: String }],
   videos: [{ type: String }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }

@@ -16,7 +16,7 @@ class MasterDataService {
       console.error('Error loading master data:', error);
       // Fallback empty structure
       this.masterData = {
-        permissions: [],
+        modules: [],
         nextSteps: [],
         videos: []
       };
@@ -24,10 +24,6 @@ class MasterDataService {
   }
 
   getPermissionById(id) {
-    for (const module of this.masterData.permissions) {
-      const permission = module.permissions.find(p => p.id === id);
-      if (permission) return { ...permission, module: module.key };
-    }
     return null;
   }
 
@@ -40,38 +36,51 @@ class MasterDataService {
   }
 
   getModuleByKey(key) {
-    return this.masterData.permissions.find(m => m.key === key);
+    return this.masterData.modules.find(m => m.key === key);
   }
 
-  getUserNavigation(permissionIds) {
-    const modules = new Map();
+  getPermissionsByModule(moduleId) {
+    return [];
+  }
+
+  getUserNavigation(permissions) {
+    // Handle both old string format and new object format permissions
+    const permissionIds = permissions.map(p => 
+      typeof p === 'string' ? p : p.permissionId
+    );
     
-    permissionIds.forEach(permId => {
-      const permission = this.getPermissionById(permId);
-      if (permission) {
-        if (!modules.has(permission.module)) {
-          const module = this.getModuleByKey(permission.module);
-          modules.set(permission.module, {
-            level: module.displayName,
-            path: `/dashboard/${permission.module.toLowerCase().replace('_', '-')}`
-          });
+    // Filter modules based on user's assigned permissions
+    return this.masterData.modules
+      .filter(module => {
+        // Check if user has permission for this module
+        const hasPermission = permissionIds.includes(module.key);
+        if (!hasPermission) return false;
+        
+        // If permission is object format, check canView
+        const permissionObj = permissions.find(p => 
+          (typeof p === 'string' ? p : p.permissionId) === module.key
+        );
+        
+        if (typeof permissionObj === 'object') {
+          // For object format, user needs canView to see in navigation
+          return true; // If they have the permission, they can view
         }
-      }
-    });
-
-    return Array.from(modules.values());
+        
+        // For string format, assume they can view
+        return true;
+      })
+      .map(module => ({
+        level: module.displayName,
+        path: `/dashboard/${module.key.toLowerCase().replace('_', '-')}`
+      }));
   }
 
-  getAvailableNextSteps(permissionIds) {
-    return this.masterData.nextSteps.filter(ns => 
-      ns.permissionIds.some(pid => permissionIds.includes(pid))
-    );
+  getAvailableNextSteps(permissions) {
+    return this.masterData.nextSteps;
   }
 
-  getAvailableVideos(permissionIds) {
-    return this.masterData.videos.filter(v => 
-      v.permissionIds.some(pid => permissionIds.includes(pid))
-    );
+  getAvailableVideos(permissions) {
+    return this.masterData.videos;
   }
 }
 

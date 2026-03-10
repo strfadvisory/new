@@ -72,7 +72,19 @@ const updateRole = async (req, res) => {
     if (description) role.description = description;
     if (icon) role.icon = icon;
     if (status !== undefined) role.status = status;
-    if (permissions) role.permissions = permissions;
+    if (permissions) {
+      // Handle both old format (array of strings) and new format (array of objects)
+      role.permissions = permissions.map(perm => {
+        if (typeof perm === 'string') {
+          return { permissionId: perm, canEdit: true, limit: '' };
+        }
+        return {
+          permissionId: perm.permissionId || perm.id,
+          canEdit: perm.canEdit !== undefined ? perm.canEdit : true,
+          limit: perm.limit || ''
+        };
+      });
+    }
     if (nextSteps) role.nextSteps = nextSteps;
     if (videos) role.videos = videos;
     
@@ -120,10 +132,13 @@ const getUserPermissions = async (req, res) => {
     }
 
     const role = user.roleId;
-    const navigation = masterDataService.getUserNavigation(role?.permissions || []);
+    const permissions = role?.permissions || [];
+    
+    // Pass the full permissions array to getUserNavigation
+    const navigation = masterDataService.getUserNavigation(permissions);
     
     res.json({ 
-      permissions: role?.permissions || [],
+      permissions: permissions,
       navigation,
       menu: navigation
     });

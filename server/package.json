@@ -11,7 +11,8 @@
     "delete:users": "node deleteUsers.js",
     "clear": "node clearAndSeed.js",
     "update:thumbnails": "node updateThumbnails.js",
-    "migrate": "node runAllMigrations.js"
+    "migrate": "node runAllMigrations.js",
+    "migrate:permissions": "node runPermissionMigration.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

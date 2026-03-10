@@ -116,7 +116,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
       </div>
       <div className="header-right">
         <div className="role-name">
-          {user?.role === 'SUPER_ADMIN' ? 'Super Admin' : (user?.role || 'User')}
+          {user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 
+           user?.role === 'ADMIN' ? 'Admin' : 
+           user?.role || 'User'}
         </div>
         <div className="notification-icon">
           <i className="fas fa-bell"></i>

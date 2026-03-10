@@ -193,6 +193,24 @@ const createCompanyProfile = async (req, res) => {
   }
 };
 
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Delete the user account
+    const deletedUser = await User.findByIdAndDelete(userId);
+    
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllUsers,
   updateUserStatus,
@@ -200,5 +218,6 @@ module.exports = {
   updateUser,
   getAdminUsers,
   getCompanies,
-  createCompanyProfile
+  createCompanyProfile,
+  deleteAccount
 };

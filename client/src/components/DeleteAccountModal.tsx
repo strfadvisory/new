@@ -6,10 +6,12 @@ import './Modal.css';
 interface DeleteAccountModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLogout?: () => void;
 }
 
-const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose }) => {
+const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose, onLogout }) => {
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
 
   const handleContinue = () => {
@@ -17,6 +19,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
   };
 
   const handleConfirmDelete = async () => {
+    setIsDeleting(true);
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/user/delete-account`, {
@@ -29,7 +32,10 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
       if (response.ok) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        navigate('/login');
+        if (onLogout) {
+          onLogout();
+        }
+        window.location.href = '/login';
       } else {
         const data = await response.json();
         alert(data.message || 'Failed to delete account');
@@ -37,6 +43,8 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
     } catch (error) {
       console.error('Error deleting account:', error);
       alert('Failed to delete account');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -78,8 +86,8 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
               <button className="btn-cancel-confirm" onClick={handleCancelConfirm}>
                 Cancel
               </button>
-              <button className="btn-delete-confirm" onClick={handleConfirmDelete}>
-                Delete
+              <button className="btn-delete-confirm" onClick={handleConfirmDelete} disabled={isDeleting}>
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

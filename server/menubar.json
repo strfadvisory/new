@@ -2,82 +2,31 @@
   "modules": [
     {
       "module": "SIMULATOR_MANAGEMENT",
-      "displayName": "Simulator Management 1",
-      "permissions": [
-        { "code": "ACCESS_SIMULATOR", "name": "Access Simulator", "description": "Grants permission-based access to the Simulator module and its associated data." },
-        { "code": "UPLOAD_MODEL", "name": "Upload Model", "description": "Allows authorized users to upload and validate structured simulation models." },
-        { "code": "CREATE_VERSION", "name": "Create Version", "description": "Creates a new version linked to an existing simulator model." },
-        { "code": "EDIT_OWN_VERSION", "name": "Edit Own Version", "description": "Allows users to modify simulator versions created by themselves." },
-        { "code": "EDIT_OTHER_VERSIONS", "name": "Edit Other Versions", "description": "Allows authorized roles to modify versions created by other users." },
-        { "code": "PUBLISH_VERSION", "name": "Publish Version", "description": "Changes the version status to Published and makes it accessible to permitted users." },
-        { "code": "ACCESS_SIMULATOR_PLAYGROUND", "name": "Access Simulator Playground", "description": "Provides a sandbox environment isolated from live data for scenario testing." },
-        { "code": "DOWNLOAD_REPORT", "name": "Download Report", "description": "Exports simulation results into downloadable formats (PDF, CSV, XLS)." },
-        { "code": "VIEW_REPORT", "name": "View Report", "description": "Displays generated simulation results in read-only mode within the system." },
-        { "code": "TRANSFER_ASSOCIATION", "name": "Transfer Association to Another User", "description": "Reassigns an association from one user to another with proper authorization." }
-      ]
-    },
-    {
-      "module": "INVITATION_ONBOARDING",
-      "displayName": "Invitation & Onboarding",
-      "permissions": [
-        { "code": "INVITE_MEMBERS", "name": "Invite Members", "description": "Sends onboarding invitations and assigns the Member role upon acceptance." },
-        { "code": "INVITE_PROPERTY_MANAGERS", "name": "Invite Property Managers", "description": "Sends onboarding invitations and assigns the Property Manager role." },
-        { "code": "INVITE_MANAGERS", "name": "Invite Managers", "description": "Sends onboarding invitations and assigns the Manager role." },
-        { "code": "INVITE_SUPER_ADMIN", "name": "Invite Super Admin", "description": "Initiates onboarding workflow for assigning Super Admin privileges." },
-        { "code": "VIEW_INVITED_MANAGERS_STATUS", "name": "View Invited Managers Status", "description": "Displays invitation status (Pending / Accepted / Expired)." }
-      ]
-    },
-    {
-      "module": "COMPANY_CONTROL",
-      "displayName": "Company Control",
-      "permissions": [
-        { "code": "CREATE_COMPANY", "name": "Create Company", "description": "Creates a new company entity with a unique identifier and default configuration." },
-        { "code": "EDIT_COMPANY", "name": "Edit Company", "description": "Updates company metadata and configuration settings with audit tracking." },
-        { "code": "DELETE_COMPANY", "name": "Delete Company", "description": "Soft-deletes or permanently removes a company based on system-level permissions." }
-      ]
-    },
-    {
-      "module": "ASSOCIATION_CONTROL",
-      "displayName": "Association Control",
-      "permissions": [
-        { "code": "CREATE_SINGLE_ASSOCIATION", "name": "Create Single Association", "description": "Creates one association linked to a specific company." },
-        { "code": "CREATE_MULTIPLE_ASSOCIATIONS", "name": "Create Multiple Associations", "description": "Performs bulk creation of associations using validated batch input." },
-        { "code": "EDIT_ASSOCIATION", "name": "Edit Association", "description": "Updates association details and configuration settings." },
-        { "code": "DELETE_ASSOCIATION", "name": "Delete Association", "description": "Soft-deletes or removes an association after dependency validation checks." }
-      ]
-    },
-    {
-      "module": "USER_MANAGEMENT",
-      "displayName": "User Management",
+      "displayName": "Simulator Management",
       "canEdit": true,
-      "canEditValue": false,
-      "permissions": [
-        { "code": "ADD_MEMBER_ROLE", "name": "Add Member Role", "description": "Create and assign member roles with specific permissions and access levels." },
-        { "code": "EDIT_MEMBER_ROLE", "name": "Edit Member Role", "description": "Modify existing member roles and update their permissions and access rights." },
-        { "code": "DELETE_MEMBER_ROLE", "name": "Delete Member Role", "description": "Remove member roles and revoke associated permissions from the system." },
-        { "code": "VIEW_MEMBER_LIST", "name": "View Member List", "description": "Access and view the complete list of members and their role assignments." },
-        { "code": "MANAGE_USERS", "name": "Manage Users", "description": "Access user management interface to view, edit, and manage user accounts." }
-      ]
+      "canView": true,
+      "limit": ""
     },
     {
       "module": "ROLE_MANAGEMENT",
       "displayName": "Role Management",
       "canEdit": true,
-      "canEditValue": false,
-      "permissions": [
-        { "code": "CREATE_ROLE", "name": "Create Role", "description": "Create new roles with custom permissions and access configurations." },
-        { "code": "EDIT_ROLE", "name": "Edit Role", "description": "Modify existing roles and update their permission sets and configurations." },
-        { "code": "DELETE_ROLE", "name": "Delete Role", "description": "Remove roles from the system and handle associated user reassignments." },
-        { "code": "ASSIGN_PERMISSIONS", "name": "Assign Permissions", "description": "Grant or revoke specific permissions to roles and manage access control." }
-      ]
+      "canView": true,
+      "limit": ""
     },
     {
-      "module": "BANKING_SERVICES",
-      "displayName": "Banking Services",
-      "permissions": [
-        { "code": "MANAGE_CD_PLANS", "name": "Manage CD Plans", "description": "Create and manage CD plans, and assign Members with predefined access permissions." },
-        { "code": "MANAGE_LOAN_OFFERS", "name": "Manage Loan Offers", "description": "Create and manage loan offers, and assign Managers with clearly defined access rights." }
-      ]
+      "module": "USER_MANAGEMENT",
+      "displayName": "User Management",
+      "canEdit": true,
+      "canView": true,
+      "limit": ""
+    },
+    {
+      "module": "ASSOCIATION_CONTROL",
+      "displayName": "Association Control",
+      "canEdit": true,
+      "canView": true,
+      "limit": ""
     }
   ]
 }
