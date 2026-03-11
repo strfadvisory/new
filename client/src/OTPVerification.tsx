@@ -120,10 +120,10 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ onVerify, onBack, onN
   };
 
   return (
-    <div className="create-profile-container">
+    <div className="form-container" style={{ display: 'flex', height: '100vh', fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
       <AuthSidebar />
       
-      <div className="profile-content">
+      <div className="form-content" style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'white' }}>
         <Breadcrumb items={[
           { label: 'Select Company', onClick: () => {
             updateSignupState({ currentStep: 'company-selection' });
@@ -136,112 +136,139 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ onVerify, onBack, onN
           { label: 'OTP Verification', active: true }
         ]} />
         
-        <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto'}}>
-          <h1 style={{fontSize: '32px', fontWeight: '700', marginBottom: '8px', textAlign: 'left'}}>OTP Verification</h1>
-          <p style={{fontSize: '16px', color: '#6b7280', marginBottom: '8px', textAlign: 'left'}}>Verify your email address {maskEmail(email)}</p>
-          <p style={{fontSize: '16px', color: '#6b7280', marginBottom: '40px', textAlign: 'left'}}>Enter the OTP sent to your registered contact to verify and access the system.</p>
-          
-          <form onSubmit={handleSubmit}>
-            <div style={{display: 'flex', justifyContent: 'space-between', gap: '8px', marginBottom: '32px'}}>
-              {otp.map((digit, index) => (
-                <input
-                  key={index}
-                  id={`otp-${index}`}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  style={{
-                    width: 'calc((100% - 40px) / 6)',
-                    height: '50px',
-                    fontSize: '20px',
-                    fontWeight: '600',
-                    textAlign: 'center',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    outline: 'none',
-                    backgroundColor: '#ffffff',
-                    color: '#1f2937'
-                  }}
-                  value={digit}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onFocus={(e) => e.target.style.borderColor = '#3b82f6'}
-                  onBlur={(e) => e.target.style.borderColor = '#e5e7eb'}
-                />
-              ))}
-            </div>
+        <div style={{ maxWidth: '800px', width: '100%', margin: '0 auto', padding: '20px' }}>
+          <div className="form-card" style={{ background: '#ffffff', borderRadius: '10px', padding: '0', border: '1px solid #e6e6e6', width: '100%' }}>
+            <h2 className="form-title" style={{ fontSize: '20px', fontWeight: '600', color: '#2f2f2f', margin: '0', marginBottom: '8px', borderBottom: '1px solid #e6e6e6', padding: '20px 20px 8px 20px' }}>OTP Verification</h2>
+            <p className="form-description" style={{ fontSize: '14px', color: '#6b7280', margin: '0', marginBottom: '20px', lineHeight: '1.5', padding: '0 20px' }}>Verify your email address {maskEmail(email)}. Enter the OTP sent to your registered contact to verify and access the system.</p>
             
-            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: '32px', fontSize: '16px'}}>
-              <span style={{color: '#1f2937', fontWeight: '500', marginRight: '16px'}}>
-                {timer > 0 ? `${timer} Second` : ''}
-              </span>
+            <form onSubmit={handleSubmit} style={{ padding: '20px' }}>
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                  {otp.map((digit, index) => (
+                    <input
+                      key={index}
+                      id={`otp-${index}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      className="form-input"
+                      style={{
+                        width: 'calc((100% - 40px) / 6)',
+                        height: '44px',
+                        fontSize: '20px',
+                        fontWeight: '600',
+                        textAlign: 'center',
+                        border: '1px solid #dcdcdc',
+                        borderRadius: '8px',
+                        background: '#fafafa',
+                        transition: 'all 0.2s ease',
+                        color: '#1f2937'
+                      }}
+                      value={digit}
+                      onChange={(e) => handleChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#2b6cb0';
+                        e.target.style.background = 'white';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#dcdcdc';
+                        e.target.style.background = '#fafafa';
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div className="form-options" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginBottom: '25px', fontSize: '14px' }}>
+                <span style={{ color: '#374151', fontWeight: '500', marginRight: '16px' }}>
+                  {timer > 0 ? `${timer} Second` : ''}
+                </span>
+                <button 
+                  type="button" 
+                  onClick={handleResend} 
+                  disabled={!canResend || resending}
+                  className="forgot-password"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: canResend ? '#1f4f8f' : '#9ca3af',
+                    fontSize: '14px',
+                    cursor: canResend ? 'pointer' : 'not-allowed',
+                    textDecoration: 'none',
+                    fontWeight: '500'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (canResend) e.currentTarget.style.textDecoration = 'underline';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.textDecoration = 'none';
+                  }}
+                >
+                  {resending ? 'Sending...' : 'Resend Code'}
+                </button>
+              </div>
+              
               <button 
-                type="button" 
-                onClick={handleResend} 
-                disabled={!canResend || resending}
+                type="submit" 
+                disabled={loading || otp.join('').length !== 6}
+                className="primary-button"
                 style={{
-                  background: 'none',
+                  height: '48px',
+                  borderRadius: '8px',
+                  background: '#1f4f8f',
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: '15px',
+                  width: '100%',
                   border: 'none',
-                  color: canResend ? '#3b82f6' : '#9ca3af',
-                  fontSize: '16px',
-                  cursor: canResend ? 'pointer' : 'not-allowed',
-                  textDecoration: 'underline',
-                  fontWeight: '500'
+                  cursor: loading || otp.join('').length !== 6 ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  marginBottom: '16px',
+                  opacity: loading || otp.join('').length !== 6 ? 0.6 : 1
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && otp.join('').length === 6) {
+                    e.currentTarget.style.background = '#173f74';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = '#1f4f8f';
                 }}
               >
-                {resending ? 'Sending...' : 'Resend Code'}
+                {loading ? 'Verifying...' : 'Continue'}
               </button>
-            </div>
-            
-            <button 
-              type="submit" 
-              disabled={loading || otp.join('').length !== 6}
-              style={{
-                width: '100%',
-                backgroundColor: '#1e40af',
-                color: 'white',
-                border: 'none',
-                padding: '16px 24px',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '600',
-                cursor: loading || otp.join('').length !== 6 ? 'not-allowed' : 'pointer',
-                marginBottom: '16px',
-                opacity: loading || otp.join('').length !== 6 ? 0.6 : 1
-              }}
-            >
-              {loading ? 'Verifying...' : 'Continue'}
-            </button>
-            
-            <button 
-              type="button" 
-              onClick={onBack} 
-              className="company-not-listed-btn"
-              style={{
-                background: 'white',
-                color: '#374151',
-                border: '1px solid #d1d5db',
-                padding: '12px 24px',
-                borderRadius: '8px',
-                fontSize: '16px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                width: '100%'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9fafb';
-                e.currentTarget.style.borderColor = '#9ca3af';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'white';
-                e.currentTarget.style.borderColor = '#d1d5db';
-              }}
-            >
-              Back to Profile
-            </button>
-          </form>
+              
+              <button 
+                type="button" 
+                onClick={onBack} 
+                className="secondary-button"
+                style={{
+                  background: 'white',
+                  color: '#374151',
+                  border: '1px solid #d1d5db',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '16px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                  width: '100%'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                  e.currentTarget.style.borderColor = '#9ca3af';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'white';
+                  e.currentTarget.style.borderColor = '#d1d5db';
+                }}
+              >
+                Back to Profile
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

@@ -25,7 +25,7 @@ const FormInput: React.FC<FormInputProps> = ({
   };
 
   return (
-    <div className="form-input-group">
+    <div className="form-group">
       <div className="input-wrapper">
         <input
           id={label.toLowerCase().replace(/\s+/g, '-')}
@@ -36,6 +36,7 @@ const FormInput: React.FC<FormInputProps> = ({
           placeholder={placeholder || label}
           className="form-input"
           aria-label={label}
+          style={{width: '100%'}}
         />
         {isPasswordField && (
           <button

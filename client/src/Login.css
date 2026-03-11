@@ -269,16 +269,53 @@ body {
 .checkbox-label {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   cursor: pointer;
   color: #374151;
   font-size: 14px;
+  margin-bottom: 16px;
 }
 
-.checkbox-label input {
-  width: auto;
-  height: auto;
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
   margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.checkbox-label input[type="checkbox"]:hover {
+  border-color: #1f4f8f;
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background: #1f4f8f;
+  border-color: #1f4f8f;
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.checkbox-label input[type="checkbox"]:focus {
+  outline: 2px solid #1f4f8f;
+  outline-offset: 2px;
 }
 
 .forgot-password {

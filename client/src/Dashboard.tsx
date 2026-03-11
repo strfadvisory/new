@@ -195,12 +195,15 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                     <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: '600', color: '#1f2937', textDecoration: step.completed ? 'line-through' : 'none' }}>{step.title}</h4>
                     <p style={{ margin: 0, fontSize: '13px', color: '#6b7280' }}>{step.description}</p>
                   </div>
-                  <input 
-                    type="checkbox" 
-                    checked={step.completed} 
-                    onChange={() => toggleNextStep(index)}
-                    style={{ width: '20px', height: '20px', cursor: 'pointer', marginTop: '4px' }}
-                  />
+                  <div className="checkbox-group">
+                    <input 
+                      type="checkbox" 
+                      id={`step-${index}`}
+                      checked={step.completed} 
+                      onChange={() => toggleNextStep(index)}
+                    />
+                    <label htmlFor={`step-${index}`} style={{ display: 'none' }}>Complete step</label>
+                  </div>
                 </div>
               )) : (
                 <div style={{ padding: '32px', border: '2px dashed #d1d5db', borderRadius: '8px', textAlign: 'center', background: '#f9fafb' }}>

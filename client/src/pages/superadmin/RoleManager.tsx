@@ -346,22 +346,24 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                       <div className="permission-item">
                         <div className="permission-settings">
                           <div>
-                            <label>
+                            <div className="checkbox-group">
                               <input 
                                 type="checkbox" 
+                                id={`view-${module.key}`}
                                 checked={getModulePermission(module.key).canView}
                                 onChange={(e) => updateModulePermission(module.key, 'canView', e.target.checked)}
                               />
-                              <span>Can View</span>
-                            </label>
-                            <label>
+                              <label htmlFor={`view-${module.key}`}>Can View</label>
+                            </div>
+                            <div className="checkbox-group">
                               <input 
                                 type="checkbox" 
+                                id={`edit-${module.key}`}
                                 checked={getModulePermission(module.key).canEdit}
                                 onChange={(e) => updateModulePermission(module.key, 'canEdit', e.target.checked)}
                               />
-                              <span>Can Edit</span>
-                            </label>
+                              <label htmlFor={`edit-${module.key}`}>Can Edit</label>
+                            </div>
                             <div className="limit-input">
                               <label>Access Limit</label>
                               <input 
@@ -421,23 +423,21 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                   <div style={{ flex: 1, marginLeft: '20px' }}>
                     <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>{step.title}</h3>
                   </div>
-                  <input 
-                    type="checkbox" 
-                    checked={selectedNextSteps.includes(step.id)}
-                    onChange={() => {
-                      const newSteps = selectedNextSteps.includes(step.id)
-                        ? selectedNextSteps.filter(s => s !== step.id)
-                        : [...selectedNextSteps, step.id];
-                      setSelectedNextSteps(newSteps);
-                      setHasChanges(true);
-                    }}
-                    style={{ 
-                      width: '20px', 
-                      height: '20px', 
-                      cursor: 'pointer',
-                      accentColor: '#0e519b'
-                    }}
-                  />
+                  <div className="checkbox-group">
+                    <input 
+                      type="checkbox" 
+                      id={`step-${step.id}`}
+                      checked={selectedNextSteps.includes(step.id)}
+                      onChange={() => {
+                        const newSteps = selectedNextSteps.includes(step.id)
+                          ? selectedNextSteps.filter(s => s !== step.id)
+                          : [...selectedNextSteps, step.id];
+                        setSelectedNextSteps(newSteps);
+                        setHasChanges(true);
+                      }}
+                    />
+                    <label htmlFor={`step-${step.id}`} style={{ display: 'none' }}>Select step</label>
+                  </div>
                 </div>
               )) : (
                 <div style={{ 
@@ -510,23 +510,21 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                     <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>{video.title}</h3>
                     <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>{video.description}</p>
                   </div>
-                  <input 
-                    type="checkbox" 
-                    checked={selectedVideos.includes(video._id)}
-                    onChange={() => {
-                      const newVideos = selectedVideos.includes(video._id)
-                        ? selectedVideos.filter(v => v !== video._id)
-                        : [...selectedVideos, video._id];
-                      setSelectedVideos(newVideos);
-                      setHasChanges(true);
-                    }}
-                    style={{ 
-                      width: '20px', 
-                      height: '20px', 
-                      cursor: 'pointer',
-                      accentColor: '#0e519b'
-                    }}
-                  />
+                  <div className="checkbox-group">
+                    <input 
+                      type="checkbox" 
+                      id={`video-${video._id}`}
+                      checked={selectedVideos.includes(video._id)}
+                      onChange={() => {
+                        const newVideos = selectedVideos.includes(video._id)
+                          ? selectedVideos.filter(v => v !== video._id)
+                          : [...selectedVideos, video._id];
+                        setSelectedVideos(newVideos);
+                        setHasChanges(true);
+                      }}
+                    />
+                    <label htmlFor={`video-${video._id}`} style={{ display: 'none' }}>Select video</label>
+                  </div>
                 </div>
               )) : (
                 <div style={{ 

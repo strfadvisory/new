@@ -28,11 +28,5 @@
     "name": "Board Members",
     "description": "Set up a governance entity to manage board members, oversee modules, and supervise operational activities.",
     "icon": "board_members.png"
-  },
-  {
-    "id": "other",
-    "name": "Company Type Not Listed",
-    "description": "Select this option if your organization type is not listed above and configure it manually.",
-    "icon": "other.png"
-  }
+  } 
 ]

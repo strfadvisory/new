@@ -103,32 +103,34 @@ const AddressForm: React.FC<AddressFormProps> = ({
       )}
       
       <div className="row g-4">
-        <div className="col-md-6">
+        <div className="col-md-12">
           <div className="form-group">
-            <label>Zip Code*</label>
             <input
               type="text"
+              className="form-input"
               name="zipCode"
               value={addressData.zipCode}
               onChange={handleInputChange}
               maxLength={5}
               pattern="[0-9]{5}"
-              placeholder="Enter 5-digit ZIP code"
+              placeholder="Zip Code *"
               required
+              style={{width: '100%'}}
             />
             {loadingZip && <div className="text-muted small mt-1"><i className="fas fa-spinner fa-spin"></i> Loading...</div>}
           </div>
         </div>
-        <div className="col-md-6">
+        <div className="col-md-12">
           <div className="form-group">
-            <label>State*</label>
             <select
+              className="form-input"
               name="state"
               value={addressData.state}
               onChange={handleInputChange}
               required
+              style={{width: '100%'}}
             >
-              <option value="">Select State</option>
+              <option value="">State *</option>
               {usStates.map(state => (
                 <option key={state.code} value={state.code}>{state.name}</option>
               ))}
@@ -138,35 +140,40 @@ const AddressForm: React.FC<AddressFormProps> = ({
       </div>
       
       <div className="form-group">
-        <label>City*</label>
         <input
           type="text"
+          className="form-input"
           name="city"
           value={addressData.city}
           onChange={handleInputChange}
-          placeholder="City will auto-fill from ZIP code"
+          placeholder="City *"
           required
+          style={{width: '100%'}}
         />
       </div>
       
       <div className="form-group">
-        <label>Address 1*</label>
         <input
           type="text"
+          className="form-input"
           name="address1"
           value={addressData.address1}
           onChange={handleInputChange}
+          placeholder="Address 1 *"
           required
+          style={{width: '100%'}}
         />
       </div>
       
       <div className="form-group">
-        <label>Address 2</label>
         <input
           type="text"
+          className="form-input"
           name="address2"
           value={addressData.address2}
           onChange={handleInputChange}
+          placeholder="Address 2"
+          style={{width: '100%'}}
         />
       </div>
     </>

@@ -499,8 +499,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                           )}
                         </div>
                         <div className="company-info">
-                          <div className="company-name">{role.name}</div>
-                          <div className="company-level">{role.name.toLowerCase().includes('association') ? 'Associations' : 'Level 1'}</div>
+                          <div className="company-name">{role.name}</div> 
                           <div className="company-address">{role.description || 'Master Role'}</div>
                         </div>
                       </div>

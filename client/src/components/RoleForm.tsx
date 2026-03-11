@@ -77,36 +77,40 @@ const RoleForm: React.FC<RoleFormProps> = ({ onClose, onRoleCreated }) => {
         
         <form onSubmit={handleSubmit} className="role-form">
           <div className="form-group">
-            <label htmlFor="name">Role Name *</label>
             <input
               type="text"
               id="name"
+              className="form-input"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter role name"
+              placeholder="Role Name *"
               required
+              style={{width: '100%'}}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="description">Description *</label>
             <textarea
               id="description"
+              className="form-input"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Enter role description"
+              placeholder="Description *"
               rows={3}
               required
+              style={{width: '100%'}}
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="icon">Icon</label>
             <select
               id="icon"
+              className="form-input"
               value={formData.icon}
               onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+              style={{width: '100%'}}
             >
+              <option value="">Select Icon</option>
               {iconOptions.map(option => (
                 <option key={option.value} value={option.value}>
                   {option.label}

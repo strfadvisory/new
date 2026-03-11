@@ -55,13 +55,14 @@ const ForgotPassword: React.FC = () => {
               
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
-                  <label>Email Address*</label>
                   <input
                     type="email"
+                    className="form-input"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your registered email"
+                    placeholder="Email Address *"
                     required
+                    style={{width: '100%'}}
                   />
                 </div>
                 

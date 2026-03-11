@@ -169,14 +169,16 @@ const AdvisoryVerification: React.FC = () => {
             </div>
             
             <div className="form-group">
-              <label>Password*</label>
               <div className="password-input">
                 <input
                   type={showPassword ? "text" : "password"}
+                  className="form-input"
                   name="password"
+                  placeholder="Password *"
                   value={formData.password}
                   onChange={handleInputChange}
                   required
+                  style={{width: '100%'}}
                 />
                 <button
                   type="button"
@@ -189,14 +191,16 @@ const AdvisoryVerification: React.FC = () => {
             </div>
             
             <div className="form-group">
-              <label>Re Password*</label>
               <div className="password-input">
                 <input
                   type="password"
+                  className="form-input"
                   name="rePassword"
+                  placeholder="Re Password *"
                   value={formData.rePassword}
                   onChange={handleInputChange}
                   required
+                  style={{width: '100%'}}
                 />
               </div>
             </div>

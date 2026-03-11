@@ -178,185 +178,304 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
           { label: 'Company Profile', active: true }
         ]} />
         
-        <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto'}}>
-          <div>
-            <h1>Create Management Company</h1>
-            <p>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
-          </div>
-          
-          <form onSubmit={handleSubmit}>
+        <div className="form-container" style={{maxWidth: '800px', width: '100%', margin: '0 auto'}}>
+          <div className="form-card" style={{
+            background: '#ffffff',
+            borderRadius: '10px',
+            padding: '0',
+            border: '1px solid #e6e6e6',
+            width: '100%',
+            maxWidth: '800px'
+          }}>
+            <h2 className="form-title" style={{
+              fontSize: '20px',
+              fontWeight: '600',
+              color: '#2f2f2f',
+              margin: '0',
+              marginBottom: '8px',
+              borderBottom: '1px solid #e6e6e6',
+              padding: '20px 20px 8px 20px'
+            }}>Create Management Company</h2>
+            <p className="form-description" style={{
+              fontSize: '14px',
+              color: '#6b7280',
+              margin: '0',
+              marginBottom: '20px',
+              lineHeight: '1.5',
+              padding: '0 20px'
+            }}>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
             
-            <div className="form-group">
-              <label>Company Name*</label>
-              <input
-                type="text"
-                name="companyName"
-                value={formData.companyName}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
+            <form onSubmit={handleSubmit} style={{padding: '20px'}}>
             
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                style={{
-                  width: '100%',
-                  padding: '14px 16px',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontSize: '14px',
-                  transition: 'all 0.2s ease',
-                  background: '#ffffff',
-                  resize: 'vertical'
-                }}
-                name="description"
-                rows={3}
-                value={formData.description}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Your Logo</label>
-              <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
-                <div 
-                  className="border rounded d-flex flex-column align-items-center justify-content-center" 
-                  style={{
-                    width: '60px', 
-                    height: '60px', 
-                    cursor: 'pointer', 
-                    backgroundColor: '#f8f9fa',
-                    border: '2px dashed #d1d5db',
-                    borderRadius: '8px'
-                  }}
-                  onClick={() => document.getElementById('logoUpload')?.click()}
-                >
-                  <input
-                    type="file"
-                    id="logoUpload"
-                    accept="image/*"
-                    onChange={handleLogoChange}
-                    style={{display: 'none'}}
-                  />
-                  {logoPreview ? (
-                    <img src={logoPreview} alt="Logo" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px'}} />
-                  ) : (
-                    <i className="fas fa-camera" style={{fontSize: '20px', color: '#6b7280'}}></i>
-                  )}
-                </div>
-                <div 
-                  style={{
-                    flex: 1,
-                    padding: '16px 20px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: '8px',
-                    backgroundColor: '#f9fafb',
-                    cursor: 'pointer',
-                    textAlign: 'center',
-                    color: '#6b7280',
-                    fontSize: '16px'
-                  }}
-                  onClick={() => document.getElementById('logoUpload')?.click()}
-                >
-                  Upload Logo
-                </div>
-              </div>
-            </div>
-            
-            <div className="section-title mt-4">
-              <h3>Company contact Details</h3>
-              <p>Create a secure password to set up your account and access the system.</p>
-            </div>
-            
-            <div className="form-group phone-group">
-              <label>Phone*</label>
-              <div className="phone-input">
-                <span className="country-code">
-                  <img src="https://flagcdn.com/w20/us.png" alt="US" />
-                  +1
-                </span>
+              <div className="form-group" style={{marginBottom: '20px'}}>
                 <input
-                  type="tel"
-                  name="phone"
-                  placeholder="99999 99999"
-                  value={formData.phone}
+                  type="text"
+                  className="form-input"
+                  name="companyName"
+                  placeholder="Company Name *"
+                  value={formData.companyName}
                   onChange={handleInputChange}
                   required
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    borderRadius: '8px',
+                    border: '2px solid #e2e8f0',
+                    padding: '14px 16px',
+                    fontSize: '14px',
+                    background: '#ffffff',
+                    transition: 'all 0.2s ease'
+                  }}
                 />
               </div>
-            </div>
             
-            <div className="form-group">
-              <label>Company contact Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
+              <div className="form-group" style={{marginBottom: '20px'}}>
+                <textarea
+                  className="form-input"
+                  style={{
+                    width: '100%',
+                    padding: '14px 16px',
+                    border: '2px solid #e2e8f0',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    transition: 'all 0.2s ease',
+                    background: '#ffffff',
+                    resize: 'vertical',
+                    minHeight: '80px'
+                  }}
+                  name="description"
+                  rows={3}
+                  placeholder="Description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                />
+              </div>
+            
+              <div className="form-group" style={{marginBottom: '20px'}}>
+                <div style={{display: 'flex', gap: '12px', alignItems: 'center'}}>
+                  <div 
+                    className="border rounded d-flex flex-column align-items-center justify-content-center" 
+                    style={{
+                      width: '60px', 
+                      height: '60px', 
+                      cursor: 'pointer', 
+                      backgroundColor: '#f8f9fa',
+                      border: '2px dashed #d1d5db',
+                      borderRadius: '8px'
+                    }}
+                    onClick={() => document.getElementById('logoUpload')?.click()}
+                  >
+                    <input
+                      type="file"
+                      id="logoUpload"
+                      accept="image/*"
+                      onChange={handleLogoChange}
+                      style={{display: 'none'}}
+                    />
+                    {logoPreview ? (
+                      <img src={logoPreview} alt="Logo" style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px'}} />
+                    ) : (
+                      <i className="fas fa-camera" style={{fontSize: '20px', color: '#6b7280'}}></i>
+                    )}
+                  </div>
+                  <div 
+                    style={{
+                      flex: 1,
+                      padding: '14px 16px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '8px',
+                      backgroundColor: '#ffffff',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      color: '#6b7280',
+                      fontSize: '14px',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onClick={() => document.getElementById('logoUpload')?.click()}
+                  >
+                    Upload Logo
+                  </div>
+                </div>
+              </div>
+            
+              <div className="section-title" style={{margin: '30px 0 15px 0'}}>
+                <h3 style={{fontSize: '16px', fontWeight: '600', marginBottom: '3px', color: '#1f2937'}}>Company Contact Details</h3>
+                <p style={{color: '#6b7280', fontSize: '13px', lineHeight: '1.4', margin: '0'}}>Provide contact information for your management company.</p>
+              </div>
+            
+              <div className="form-group" style={{marginBottom: '20px'}}>
+                <div className="phone-input" style={{
+                  display: 'flex',
+                  border: '2px solid #e2e8f0',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  background: 'white',
+                  transition: 'all 0.2s ease',
+                  alignItems: 'center'
+                }}>
+                  <span className="country-code" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '14px 16px',
+                    background: '#f9fafb',
+                    borderRight: '2px solid #e2e8f0',
+                    fontSize: '14px',
+                    minWidth: '80px',
+                    cursor: 'pointer'
+                  }}>
+                    <img src="https://flagcdn.com/w20/us.png" alt="US" style={{width: '16px', height: 'auto'}} />
+                    +1
+                  </span>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    name="phone"
+                    placeholder="Phone *"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                    style={{
+                      width: '100%',
+                      border: 'none',
+                      padding: '14px 16px',
+                      fontSize: '14px',
+                      background: 'transparent',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+              </div>
+            
+              <div className="form-group" style={{marginBottom: '20px'}}>
+                <input
+                  type="email"
+                  className="form-input"
+                  name="email"
+                  placeholder="Company contact Email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    borderRadius: '8px',
+                    border: '2px solid #e2e8f0',
+                    padding: '14px 16px',
+                    fontSize: '14px',
+                    background: '#ffffff',
+                    transition: 'all 0.2s ease'
+                  }}
+                />
+              </div>
+              
+              <div className="form-group" style={{marginBottom: '20px'}}>
+                <input
+                  type="text"
+                  className="form-input"
+                  name="contactPerson"
+                  placeholder="Contact Person"
+                  value={formData.contactPerson}
+                  onChange={handleInputChange}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    borderRadius: '8px',
+                    border: '2px solid #e2e8f0',
+                    padding: '14px 16px',
+                    fontSize: '14px',
+                    background: '#ffffff',
+                    transition: 'all 0.2s ease'
+                  }}
+                />
+              </div>
+              
+              <div className="form-group" style={{marginBottom: '20px'}}>
+                <input
+                  type="url"
+                  className="form-input"
+                  name="linkedinUrl"
+                  placeholder="LinkedIn Page url"
+                  value={formData.linkedinUrl}
+                  onChange={handleInputChange}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    borderRadius: '8px',
+                    border: '2px solid #e2e8f0',
+                    padding: '14px 16px',
+                    fontSize: '14px',
+                    background: '#ffffff',
+                    transition: 'all 0.2s ease'
+                  }}
+                />
+              </div>
+              
+              <div className="form-group" style={{marginBottom: '20px'}}>
+                <input
+                  type="url"
+                  className="form-input"
+                  name="websiteLink"
+                  placeholder="Website Link"
+                  value={formData.websiteLink}
+                  onChange={handleInputChange}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    borderRadius: '8px',
+                    border: '2px solid #e2e8f0',
+                    padding: '14px 16px',
+                    fontSize: '14px',
+                    background: '#ffffff',
+                    transition: 'all 0.2s ease'
+                  }}
+                />
+              </div>
+            
+              <AddressForm
+                addressData={{
+                  zipCode: formData.zipCode,
+                  state: formData.state,
+                  city: formData.city,
+                  address1: formData.address1,
+                  address2: formData.address2
+                }}
+                onAddressChange={(addressData) => {
+                  const newFormData = { ...formData, ...addressData };
+                  setFormData(newFormData);
+                  updateCompanyFormData(newFormData);
+                }}
+                showUseMyAddress={true}
+                useMyAddress={useMyAddress}
+                onUseMyAddressChange={handleUseMyAddress}
               />
-            </div>
-            
-            <div className="form-group">
-              <label>Contact Person</label>
-              <input
-                type="text"
-                name="contactPerson"
-                value={formData.contactPerson}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>
-                <i className="fab fa-linkedin" style={{marginRight: '8px'}}></i>LinkedIn Page url
-              </label>
-              <input
-                type="url"
-                name="linkedinUrl"
-                value={formData.linkedinUrl}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>
-                <i className="fas fa-globe" style={{marginRight: '8px'}}></i>Website Link
-              </label>
-              <input
-                type="url"
-                name="websiteLink"
-                value={formData.websiteLink}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <AddressForm
-              addressData={{
-                zipCode: formData.zipCode,
-                state: formData.state,
-                city: formData.city,
-                address1: formData.address1,
-                address2: formData.address2
-              }}
-              onAddressChange={(addressData) => {
-                const newFormData = { ...formData, ...addressData };
-                setFormData(newFormData);
-                updateCompanyFormData(newFormData);
-              }}
-              showUseMyAddress={true}
-              useMyAddress={useMyAddress}
-              onUseMyAddressChange={handleUseMyAddress}
-            />
-            
-            <div className="form-note">
-              <p>Please note that fields marked with * are mandatory.</p>
-            </div>
-            
-            <button type="submit" className="continue-button" disabled={loading}>
-              {loading ? <><i className="fas fa-spinner fa-spin"></i> Saving...</> : 'Continue'}
-            </button>
-          </form>
+              
+              <div className="form-note" style={{marginBottom: '25px'}}>
+                <p style={{color: '#6b7280', fontSize: '12px', margin: '0'}}>Please note that fields marked with * are mandatory.</p>
+              </div>
+              
+              <button 
+                type="submit" 
+                className="primary-button continue-button" 
+                disabled={loading}
+                style={{
+                  height: '48px',
+                  borderRadius: '8px',
+                  background: '#1f4f8f',
+                  color: 'white',
+                  fontWeight: '600',
+                  fontSize: '15px',
+                  width: '100%',
+                  border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  transition: 'all 0.2s ease',
+                  marginBottom: '16px',
+                  opacity: loading ? '0.6' : '1'
+                }}
+              >
+                {loading ? <><i className="fas fa-spinner fa-spin"></i> Saving...</> : 'Continue'}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

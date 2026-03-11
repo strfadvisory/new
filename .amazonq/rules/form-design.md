@@ -14,7 +14,7 @@ Page Container
   -> AuthSidebar (300px width)
   -> Main Content Area (flex: 1)
       -> Breadcrumb (optional)
-      -> Form Container (max-width: 800px, centered)
+      -> Form Container (max-width: 800px, width:100% centered)
           -> Form Card
               -> Form Header (h2 + description)
               -> Form Body (padding: 20px)
@@ -34,6 +34,9 @@ Page Container
 ---
 
 ## 2. FORM CARD DESIGN
+
+input title alswase inside input not top
+input type password must have eye
 
 ### Card Structure
 ```css

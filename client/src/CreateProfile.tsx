@@ -290,287 +290,256 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
           { label: 'Create Profile', active: true }
         ]} />
         
-        <div className="profile-form" style={{maxWidth: '600px', margin: '0 auto'}}>
-          <h1>Create your profile</h1>
-          <p>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
-          
-          <form onSubmit={handleSubmit}>
-            <div className="row g-4">
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label>First name *</label>
-                  <input
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="form-group">
-                  <label>Last Name*</label>
-                  <input
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-            </div>
+        <div className="profile-form" style={{maxWidth: '800px', margin: '0 auto'}}>
+          <div className="form-card">
+            <h2 className="form-title">Create your profile</h2>
+            <p className="form-description">Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
             
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <label>Email Address*</label>
-                  <input
-                    type="email"
-                    className={emailValidation.valid === false ? 'is-invalid' : emailValidation.valid === true ? 'is-valid' : ''}
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    onBlur={handleEmailBlur}
-                    required
-                  />
-                  {emailValidation.checking && (
-                    <div className="text-muted small mt-1">
-                      <i className="fas fa-spinner fa-spin me-1"></i>Checking email...
-                    </div>
-                  )}
-                  {emailValidation.valid === false && (
-                    <div className="invalid-feedback" style={{display: 'block', color: '#ef4444', fontSize: '12px', marginTop: '4px'}}>{emailValidation.message}</div>
-                  )}
-                  {emailValidation.valid === true && (
-                    <div className="valid-feedback" style={{display: 'block', color: '#10b981', fontSize: '12px', marginTop: '4px'}}>{emailValidation.message}</div>
-                  )}
+            <form onSubmit={handleSubmit} className="form-body">
+              <div className="row g-4">
+                <div className="col-md-12">
+                  <div className="form-group">
+                    <input
+                      type="text"
+                      className="form-input"
+                      name="firstName"
+                      placeholder="First name *"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      required
+                      style={{width: '100%'}}
+                    />
+                  </div>
+                </div>
+                <div className="col-md-12">
+                  <div className="form-group">
+                    <input
+                      type="text"
+                      className="form-input"
+                      name="lastName"
+                      placeholder="Last Name *"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      required
+                      style={{width: '100%'}}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
             
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <label>Designation*</label>
-                  <input
-                    type="text"
-                    name="designation"
-                    value={formData.designation}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+              <div className="form-group">
+                <input
+                  type="email"
+                  className={`form-input ${emailValidation.valid === false ? 'is-invalid' : emailValidation.valid === true ? 'is-valid' : ''}`}
+                  name="email"
+                  placeholder="Email Address *"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  onBlur={handleEmailBlur}
+                  required
+                  style={{width: '100%'}}
+                />
+                {emailValidation.checking && (
+                  <div className="text-muted small">
+                    <i className="fas fa-spinner fa-spin me-1"></i>Checking email...
+                  </div>
+                )}
+                {emailValidation.valid === false && (
+                  <div className="invalid-feedback">{emailValidation.message}</div>
+                )}
+                {emailValidation.valid === true && (
+                  <div className="valid-feedback">{emailValidation.message}</div>
+                )}
               </div>
-            </div>
             
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group phone-group">
-                  <label>Phone*</label>
-                  <div className="phone-input">
-                    <span className="country-code" onClick={() => document.getElementById('country-select')?.click()}>
-                      <img src={`https://flagcdn.com/w20/${currentCountry.flag}.png`} alt={currentCountry.name} />
-                      {currentCountry.dialCode}
-                    </span>
-                    <select 
-                      id="country-select"
-                      value={selectedCountry}
-                      onChange={(e) => {
-                        const newCountry = e.target.value;
-                        setSelectedCountry(newCountry);
-                        
-                        updateSignupState({ selectedCountry: newCountry });
-                        
-                        // Update phone number with new country code if phone exists
-                        const country = countries.find(c => c.code === newCountry);
-                        if (country && formData.phone) {
-                          const cleanPhone = formData.phone.replace(/^\+?\d{1,4}\s?/, ''); // Remove existing country code
-                          if (cleanPhone) {
-                            const newFormData = {
-                              ...formData,
-                              phone: `${country.dialCode} ${cleanPhone}`
-                            };
-                            setFormData(newFormData);
-                            updateFormData(newFormData);
-                            updateSignupState({
-                              selectedCountry: newCountry,
-                              agreeToTerms
-                            });
-                          }
+              <div className="form-group">
+                <input
+                  type="text"
+                  className="form-input"
+                  name="designation"
+                  placeholder="Designation *"
+                  value={formData.designation}
+                  onChange={handleInputChange}
+                  required
+                  style={{width: '100%'}}
+                />
+              </div>
+            
+              <div className="form-group">
+                <div className="phone-input">
+                  <span className="country-code" onClick={() => document.getElementById('country-select')?.click()}>
+                    <img src={`https://flagcdn.com/w20/${currentCountry.flag}.png`} alt={currentCountry.name} />
+                    {currentCountry.dialCode}
+                  </span>
+                  <select 
+                    id="country-select"
+                    value={selectedCountry}
+                    onChange={(e) => {
+                      const newCountry = e.target.value;
+                      setSelectedCountry(newCountry);
+                      
+                      updateSignupState({ selectedCountry: newCountry });
+                      
+                      // Update phone number with new country code if phone exists
+                      const country = countries.find(c => c.code === newCountry);
+                      if (country && formData.phone) {
+                        const cleanPhone = formData.phone.replace(/^\+?\d{1,4}\s?/, ''); // Remove existing country code
+                        if (cleanPhone) {
+                          const newFormData = {
+                            ...formData,
+                            phone: `${country.dialCode} ${cleanPhone}`
+                          };
+                          setFormData(newFormData);
+                          updateFormData(newFormData);
+                          updateSignupState({
+                            selectedCountry: newCountry,
+                            agreeToTerms
+                          });
                         }
-                      }}
-                      style={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 0,
-                        width: '100px',
-                        height: '100%',
-                        opacity: 0,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      {countries.map(country => (
-                        <option key={country.code} value={country.code}>
-                          {country.name}
-                        </option>
-                      ))}
-                    </select>
-                    <input
-                      type="tel"
-                      name="phone"
-                      placeholder="Enter phone number"
-                      value={formData.phone}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
+                      }
+                    }}
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      top: 0,
+                      width: '100px',
+                      height: '100%',
+                      opacity: 0,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {countries.map(country => (
+                      <option key={country.code} value={country.code}>
+                        {country.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder="Phone *"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                    style={{width: '100%'}}
+                  />
                 </div>
               </div>
-            </div>
+              
+              <AddressForm
+                addressData={{
+                  zipCode: formData.zipCode,
+                  state: formData.state,
+                  city: formData.city,
+                  address1: formData.address1,
+                  address2: formData.address2
+                }}
+                onAddressChange={(addressData) => {
+                  const newFormData = { ...formData, ...addressData };
+                  setFormData(newFormData);
+                  updateFormData(newFormData);
+                }}
+              />
             
-         
+              <div className="section-title">
+                <h3>Create Your Password</h3>
+                <p>Create a new password to set up your account and access the system.</p>
+              </div>
             
-          
-            
- 
-            <AddressForm
-              addressData={{
-                zipCode: formData.zipCode,
-                state: formData.state,
-                city: formData.city,
-                address1: formData.address1,
-                address2: formData.address2
-              }}
-              onAddressChange={(addressData) => {
-                const newFormData = { ...formData, ...addressData };
-                setFormData(newFormData);
-                updateFormData(newFormData);
-              }}
-            />
-            
-            <div className="section-title mt-5">
-              <h3>Create Your Password</h3>
-              <p>Create a new password to set up your account and access the system.</p>
-            </div>
-            
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <label>Password*</label>
-                  <div className="password-input">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                    </button>
-                  </div>
+              <div className="form-group">
+                <div className="password-input">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    className="form-input"
+                    name="password"
+                    placeholder="Password *"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                    style={{width: '100%'}}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label="Toggle password visibility"
+                  >
+                    <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                  </button>
                 </div>
               </div>
-            </div>
             
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <label>Re Password*</label>
-                  <div className="password-input">
-                    <input
-                      type={showRePassword ? "text" : "password"}
-                      name="rePassword"
-                      value={formData.rePassword}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    <button
-                      type="button"
-                      className="password-toggle"
-                      onClick={() => setShowRePassword(!showRePassword)}
-                    >
-                      <i className={`fas ${showRePassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                    </button>
-                  </div>
+              <div className="form-group">
+                <div className="password-input">
+                  <input
+                    type={showRePassword ? "text" : "password"}
+                    className="form-input"
+                    name="rePassword"
+                    placeholder="Re Password *"
+                    value={formData.rePassword}
+                    onChange={handleInputChange}
+                    required
+                    style={{width: '100%'}}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle"
+                    onClick={() => setShowRePassword(!showRePassword)}
+                    aria-label="Toggle password confirmation visibility"
+                  >
+                    <i className={`fas ${showRePassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                  </button>
                 </div>
               </div>
-            </div>
             
-            <div className="row g-4">
-              <div className="col-12">
-                <div className="form-group">
-                  <div className="checkbox-group">
-                    <input
-                      type="checkbox"
-                      id="agreeToTerms"
-                      checked={agreeToTerms}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setAgreeToTerms(checked);
-                        updateSignupState({ agreeToTerms: checked });
-                      }}
-                      required
-                    />
-                    <label htmlFor="agreeToTerms">I agree to the Terms and Conditions*</label>
-                  </div>
+              <div className="form-group">
+                <div className="checkbox-group">
+                  <input
+                    type="checkbox"
+                    id="agreeToTerms"
+                    checked={agreeToTerms}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setAgreeToTerms(checked);
+                      updateSignupState({ agreeToTerms: checked });
+                    }}
+                    required
+                  />
+                  <label htmlFor="agreeToTerms">I agree to the Terms and Conditions *</label>
                 </div>
               </div>
-            </div>
             
-            <div className="form-note mt-4">
-              <p className="text-muted small">Please note that fields marked with * are mandatory.</p>
-            </div>
-            
-            <button 
-              type="submit" 
-              className="continue-button" 
-              disabled={loading || !agreeToTerms}
-              style={{
-                opacity: (loading || !agreeToTerms) ? 0.5 : 1,
-                cursor: (loading || !agreeToTerms) ? 'not-allowed' : 'pointer',
-                backgroundColor: (loading || !agreeToTerms) ? '#9ca3af' : undefined
-              }}
-            >
-              {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Continue'}
-            </button>
-            
-            <div className="change-company">
+              <div className="form-note">
+                <p>Please note that fields marked with * are mandatory.</p>
+              </div>
+              
+              <button 
+                type="submit" 
+                className="primary-button" 
+                disabled={loading || !agreeToTerms}
+              >
+                {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Continue'}
+              </button>
+              
               <button 
                 type="button" 
-                onClick={onBack} 
-                style={{
-                  background: 'white',
-                  color: '#374151',
-                  border: '1px solid #d1d5db',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                  width: '100%'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f9fafb';
-                  e.currentTarget.style.borderColor = '#9ca3af';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'white';
-                  e.currentTarget.style.borderColor = '#d1d5db';
-                }}
+                className="secondary-button"
+                onClick={onBack}
               >
                 Choose other Profile
               </button>
+            </form>
+            
+            <div className="secondary-action">
+              <button 
+                type="button" 
+                className="secondary-link"
+                onClick={onBack}
+              >
+                Need help? Contact support
+              </button>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>

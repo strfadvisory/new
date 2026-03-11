@@ -121,15 +121,15 @@ const ResetPassword: React.FC = () => {
           
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label>New Password*</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showPassword ? 'text' : 'password'}
+                  className="form-input"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter new password"
+                  placeholder="New Password *"
                   required
-                  style={{ paddingRight: '45px' }}
+                  style={{ paddingRight: '45px', width: '100%' }}
                 />
                 <button
                   type="button"
@@ -155,15 +155,15 @@ const ResetPassword: React.FC = () => {
             </div>
             
             <div className="form-group">
-              <label>Confirm Password*</label>
               <div style={{ position: 'relative' }}>
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
+                  className="form-input"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
+                  placeholder="Confirm Password *"
                   required
-                  style={{ paddingRight: '45px' }}
+                  style={{ paddingRight: '45px', width: '100%' }}
                 />
                 <button
                   type="button"
