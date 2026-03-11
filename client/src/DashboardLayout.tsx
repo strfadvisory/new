@@ -61,6 +61,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
   // Check if current route is simulator page
   const isSimulatorPage = location.pathname === '/dashboard/simulator' || location.pathname === '/dashboard/simulator-management';
 
+  // Reset state when navigating to simulator-management
+  useEffect(() => {
+    if (location.pathname === '/dashboard/simulator-management') {
+      console.log('[DashboardLayout] Navigated to simulator-management, resetting state');
+      handleReset();
+    }
+  }, [location.pathname]);
+
   console.log('[DashboardLayout] Render - Current viewMode:', viewMode, 'showCalculator:', showCalculator, 'isSimulatorPage:', isSimulatorPage);
 
   const handleReset = () => {

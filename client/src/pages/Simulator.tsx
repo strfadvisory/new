@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
+import { useLocation } from 'react-router-dom';
 import {
   useUserNextsteps,
   useUserVideos,
@@ -8,6 +9,7 @@ import {
 } from '../hooks/queries';
 
 const Simulator: React.FC = () => {
+  const location = useLocation();
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteLoading, setInviteLoading] = useState(false);
   const [inviteData, setInviteData] = useState({
@@ -39,6 +41,25 @@ const Simulator: React.FC = () => {
       setUser(JSON.parse(userData));
     }
   }, []);
+
+  // Reset component state when route changes to simulator-management
+  React.useEffect(() => {
+    if (location.pathname === '/dashboard/simulator-management') {
+      console.log('[Simulator] Route changed to simulator-management, resetting state');
+      // Reset all modal states
+      setShowInviteModal(false);
+      setShowVideoModal(false);
+      setCurrentVideo(null);
+      setInviteData({
+        selectedRole: '',
+        firstName: '',
+        lastName: '',
+        adminEmail: '',
+        designation: ''
+      });
+      setInviteLoading(false);
+    }
+  }, [location.pathname]);
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

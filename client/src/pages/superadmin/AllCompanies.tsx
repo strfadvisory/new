@@ -238,7 +238,7 @@ const AllCompanies: React.FC = () => {
                   ) : (
                     <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280', fontSize: '14px', flexDirection: 'column', gap: '8px'}}>
                       <i className="fas fa-building" style={{fontSize: '24px', color: '#d1d5db'}}></i>
-                      <span>No Logo</span>
+       
                     </div>
                   )}
                 </div>
