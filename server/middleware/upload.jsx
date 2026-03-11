@@ -5,8 +5,17 @@ const { Readable } = require('stream');
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  // Allow all file types - no restrictions
-  cb(null, true);
+  // Allow image files only for logo uploads
+  if (file.fieldname === 'logo') {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed for logo upload'), false);
+    }
+  } else {
+    // Allow all file types for other uploads
+    cb(null, true);
+  }
 };
 
 const upload = multer({
@@ -21,7 +30,7 @@ const uploadToGridFS = async (req, res, next) => {
   if (!req.file) return next();
   
   try {
-    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'reserve-studies' });
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'uploads' });
     const readableStream = Readable.from(req.file.buffer);
     const uploadStream = bucket.openUploadStream(req.file.originalname, {
       metadata: {
@@ -33,7 +42,7 @@ const uploadToGridFS = async (req, res, next) => {
     readableStream.pipe(uploadStream);
     
     uploadStream.on('finish', () => {
-      req.file.gridfsId = uploadStream.id;
+      req.file.id = uploadStream.id;
       next();
     });
     

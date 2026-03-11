@@ -241,8 +241,11 @@ const createCompanyProfile = async (req, res) => {
     const userId = req.user._id;
     const companyData = req.body;
     
-    if (req.file) {
-      companyData.logoId = req.file.id;
+    console.log('File upload info:', req.file);
+    
+    if (req.file && req.file.id) {
+      companyData.logoId = req.file.id.toString();
+      console.log('Logo ID saved:', companyData.logoId);
     }
     
     const user = await User.findById(userId);
@@ -252,6 +255,8 @@ const createCompanyProfile = async (req, res) => {
 
     user.companyProfile = companyData;
     await user.save();
+    
+    console.log('User saved with company profile:', user.companyProfile);
 
     const role = await Role.findById(user.roleId);
 
@@ -276,6 +281,7 @@ const createCompanyProfile = async (req, res) => {
       companyProfile: user.companyProfile
     });
   } catch (error) {
+    console.error('Create company profile error:', error);
     res.status(400).json({ message: error.message });
   }
 };

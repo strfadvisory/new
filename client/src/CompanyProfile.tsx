@@ -54,6 +54,19 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Please select an image file for the logo');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Logo file size must be less than 5MB');
+        return;
+      }
+      
+      console.log('Logo selected:', file.name, file.type, file.size);
       setLogo(file);
       setLogoPreview(URL.createObjectURL(file));
     }
@@ -127,9 +140,11 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
       formDataToSend.append('useMyAddress', useMyAddress.toString());
       
       if (logo) {
+        console.log('Uploading logo:', logo.name, logo.size);
         formDataToSend.append('logo', logo);
       }
       
+      console.log('Submitting company profile...');
       const response = await fetch(API_ENDPOINTS.companyProfile, {
         method: 'POST',
         headers: { 
@@ -137,7 +152,9 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
         },
         body: formDataToSend
       });
+      
       const data = await response.json();
+      console.log('Response:', data);
       
       if (response.ok) {
         localStorage.setItem('user', JSON.stringify(data));
@@ -145,9 +162,11 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
         clearSignupState();
         onComplete();
       } else {
-        toast.error(data.message);
+        console.error('Error response:', data);
+        toast.error(data.message || 'Failed to create company profile');
       }
     } catch (error) {
+      console.error('Submit error:', error);
       toast.error('Failed to create company profile');
     } finally {
       setLoading(false);

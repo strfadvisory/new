@@ -67,7 +67,10 @@ const AllCompanies: React.FC = () => {
     console.log('typedUsers:', typedUsers);
     console.log('isLoading:', isLoading);
     console.log('error:', error);
-  }, [users, typedUsers, isLoading, error]);
+    if (selectedUser?.companyProfile?.logoId) {
+      console.log('Logo URL:', `${API_ENDPOINTS.file}/${selectedUser.companyProfile.logoId}`);
+    }
+  }, [users, typedUsers, isLoading, error, selectedUser]);
 
   React.useEffect(() => {
     if (typedUsers.length > 0 && !selectedUser) {
@@ -199,14 +202,30 @@ const AllCompanies: React.FC = () => {
                 </div>
               </div>
 
-              <div className="detail-section" style={{position: 'relative'}}>
+              <div className="detail-section" style={{position: 'relative', display: 'flex', gap: '24px', alignItems: 'center'}}>
                 <div className='logobox'>
                   {selectedUser.companyProfile?.logoId ? (
                     <>
-                      <img src={`${API_ENDPOINTS.file}/${selectedUser.companyProfile.logoId}`} alt="Logo" style={{width: '100%', height: '100%', objectFit: 'contain'}} />
-                      <button onClick={handleRemoveLogo} style={{position: 'absolute', top: '10px', right: '10px', background: 'red', color: 'white', border: 'none', borderRadius: '4px', padding: '5px 10px', cursor: 'pointer', fontSize: '12px'}}>Remove Logo</button>
+                      <img 
+                        src={`${API_ENDPOINTS.file}/${selectedUser.companyProfile.logoId}`} 
+                        alt="Company Logo" 
+                        style={{width: '100%', height: '100%', objectFit: 'contain'}} 
+                        onError={(e) => {
+                          console.error('Failed to load logo:', `${API_ENDPOINTS.file}/${selectedUser.companyProfile?.logoId}`);
+                          // Replace with placeholder image
+                          e.currentTarget.src = '/logo.png';
+                          e.currentTarget.onerror = null; // Prevent infinite loop
+                        }}
+                        onLoad={() => console.log('Logo loaded successfully')}
+                      />
+                   
                     </>
-                  ) : 'No Logo'}
+                  ) : (
+                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280', fontSize: '14px', flexDirection: 'column', gap: '8px'}}>
+                      <i className="fas fa-building" style={{fontSize: '24px', color: '#d1d5db'}}></i>
+                      <span>No Logo</span>
+                    </div>
+                  )}
                 </div>
                 <div className='companybox'> 
                   <div className="detail-value">{selectedUser.companyProfile?.companyName || 'N/A'}</div>

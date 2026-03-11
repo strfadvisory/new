@@ -110,11 +110,46 @@ router.delete('/remove-logo/:userId', protect, async (req, res) => {
 
 router.get('/file/:id', async (req, res) => {
   try {
+    const { id } = req.params;
+    
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid file ID format' });
+    }
+    
     const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'uploads' });
-    const downloadStream = bucket.openDownloadStream(new mongoose.Types.ObjectId(req.params.id));
+    
+    // Check if file exists
+    const files = await bucket.find({ _id: new mongoose.Types.ObjectId(id) }).toArray();
+    if (files.length === 0) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+    
+    const file = files[0];
+    
+    // Set appropriate headers
+    res.set({
+      'Content-Type': file.contentType || 'application/octet-stream',
+      'Content-Length': file.length,
+      'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+      'Access-Control-Allow-Origin': '*'
+    });
+    
+    const downloadStream = bucket.openDownloadStream(new mongoose.Types.ObjectId(id));
+    
+    downloadStream.on('error', (error) => {
+      console.error('GridFS download error:', error);
+      if (!res.headersSent) {
+        res.status(404).json({ message: 'Error downloading file' });
+      }
+    });
+    
     downloadStream.pipe(res);
   } catch (error) {
-    res.status(404).json({ message: 'File not found' });
+    console.error('File endpoint error:', error);
+    if (!res.headersSent) {
+      res.status(500).json({ message: 'Internal server error' });
+    }
   }
 });
 
