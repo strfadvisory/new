@@ -3,6 +3,8 @@ import { toast } from 'react-toastify';
 import './Login.css';
 import { API_ENDPOINTS } from './config';
 import AuthSidebar from './components/AuthSidebar';
+import FormInput from './components/FormInput';
+import PrimaryButton from './components/PrimaryButton';
 
 interface LoginProps {
   onNewUser: () => void;
@@ -44,30 +46,28 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
       <AuthSidebar />
       
       <div className="login-form-container">
-        <div className="login-form">
-          <h1>Access your Account</h1>
-          <p>Set up a new organisational entity to manage Users, modules, and operations efficiently.</p>
+        <div className="form-card">
+          <h2 className="form-title">Access your Account</h2>
+          <p className="form-description">Enter your credentials to access your account and manage your organization.</p>
           
           <form onSubmit={handleLogin}>
-            <div className="form-group">
-              <label>Register Email Address*</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+            <FormInput
+              label="Email Address*"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="Email Address*"
+            />
             
-            <div className="form-group">
-              <label>Password*</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
+            <FormInput
+              label="Password*"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Password*"
+            />
             
             <div className="form-options">
               <label className="checkbox-label">
@@ -81,41 +81,20 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
               <a href="/forgot-password" className="forgot-password">Forgot Password?</a>
             </div>
             
-            <button type="submit" className="login-button" disabled={loading}>
-              {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Login'}
-            </button>
-            
-            <div className="new-user">
-              <button 
-                type="button" 
-                onClick={onNewUser} 
-                className="company-not-listed-btn"
-                style={{
-                  background: 'white',
-                  color: '#374151',
-                  border: '1px solid #d1d5db',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                  width: '100%'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#f9fafb';
-                  e.currentTarget.style.borderColor = '#9ca3af';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = 'white';
-                  e.currentTarget.style.borderColor = '#d1d5db';
-                }}
-              >
-                I am new user
-              </button>
-            </div>
+            <PrimaryButton type="submit" disabled={loading} loading={loading}>
+              Continue
+            </PrimaryButton>
           </form>
+          
+          <div className="secondary-action">
+            <button 
+              type="button" 
+              onClick={onNewUser} 
+              className="secondary-link"
+            >
+              Don't have an Account? Sign Up
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -103,64 +103,159 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
- 
   padding: 40px;
 }
 
-.login-form {
-  background: white;
- 
-  border-radius: 12px;
+/* Form Card Styles */
+.form-card {
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 0;
+  border: 1px solid #e6e6e6;
   width: 100%;
-  max-width: 420px;
- 
+  max-width: 800px;
 }
 
-.login-form h1 {
-  font-size: 24px;
+/* Typography */
+.form-title {
+  font-size: 20px;
   font-weight: 600;
+  color: #2f2f2f;
+  margin: 0;
   margin-bottom: 8px;
-  color: #000000;
-  font-weight: bold;
+  border-bottom: 1px solid #e6e6e6;
+  padding: 20px 20px 8px 20px;
 }
 
-.login-form p {
+.form-description {
+  font-size: 14px;
   color: #6b7280;
-  font-size: 16px;
-  margin-bottom: 30px;
-  line-height: 1.5;
-}
-
-.form-group {
+  margin: 0;
   margin-bottom: 20px;
+  line-height: 1.5;
+  padding: 0 20px;
 }
 
-.form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 16px;
-  font-weight: 500;
+/* Form Content */
+.form-card form {
+  padding: 20px;
+}
+
+/* Form Input Styles */
+.form-input-group {
+  margin-bottom: 16px;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.form-input {
+  width: 100%;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid #dcdcdc;
+  padding: 0 14px;
+  font-size: 14px;
+  background: #fafafa;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  border-color: #2b6cb0;
+  background: white;
+  outline: none;
+}
+
+.form-input:hover {
+  border-color: #cbd5e1;
+}
+
+/* Password Toggle Button */
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #6b7280;
+  font-size: 14px;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
   color: #374151;
 }
 
-.form-group input {
-  width: 100%;
-  padding: 14px 16px;
-  border: 2px solid #e2e8f0;
+.form-input[type="password"] {
+  padding-right: 45px;
+}
+
+.input-wrapper .form-input[type="text"] {
+  padding-right: 45px;
+}
+
+/* Primary Button */
+.primary-button {
+  height: 48px;
   border-radius: 8px;
-  font-size: 14px;
+  background: #1f4f8f;
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  width: 100%;
+  border: none;
+  cursor: pointer;
   transition: all 0.2s ease;
-  background: #ffffff;
+  margin-bottom: 16px;
 }
 
-.form-group input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background: #ffffff;
+.primary-button:hover {
+  background: #173f74;
 }
 
-.form-group input:hover {
-  border-color: #cbd5e1;
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Secondary Action */
+.secondary-action {
+  text-align: center;
+  margin: 0;
+  padding: 16px 20px;
+  border-top: 1px solid #e6e6e6;
+  font-family: 'DM Sans';
+  font-weight: 700;
+  font-style: normal;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: 0%;
+  vertical-align: middle;
+}
+
+.secondary-link {
+  font-size: 16px;
+  text-align: center;
+  color: #1f4f8f;
+  cursor: pointer;
+  background: none;
+  border: none;
+  text-decoration: none;
+  font-family: 'DM Sans';
+  font-weight: 700;
+}
+
+.secondary-link:hover {
+  color: #173f74;
+  text-decoration: underline;
 }
 
 .form-options {
@@ -168,7 +263,7 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 25px;
-  font-size: 16px;
+  font-size: 14px;
 }
 
 .checkbox-label {
@@ -177,64 +272,26 @@ body {
   gap: 8px;
   cursor: pointer;
   color: #374151;
+  font-size: 14px;
 }
 
 .checkbox-label input {
   width: auto;
+  height: auto;
+  margin: 0;
 }
 
 .forgot-password {
-  color: #3b82f6;
+  color: #1f4f8f;
   text-decoration: none;
+  font-size: 14px;
 }
 
 .forgot-password:hover {
   text-decoration: underline;
 }
 
-.login-button {
-  width: 100%;
-  background: #0e519b;
-  color: white;
-  border: none;
-  padding: 14px 24px;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-bottom: 24px;
-}
 
-.login-button:hover {
-  background: #0e519b;
-  transform: translateY(-2px);
-}
-
-.login-button:active {
-  transform: translateY(0);
-}
-
-.new-user {
-  text-align: center;
-}
-
-.new-user-link {
-  background: none;
-  border: none;
-  color: #6b7280;
-  text-decoration: none;
-  font-size: 16px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.new-user-link:hover {
-  color: #3b82f6;
-  text-decoration: underline;
-  font-size: 16px;
-  
-}
 
 .logo-image {
   height: 40px;
