@@ -9,6 +9,7 @@ import Analytics from './pages/superadmin/Analytics';
 import SystemSettings from './pages/superadmin/SystemSettings';
 import RoleManager from './pages/superadmin/RoleManager';
 import Library from './pages/superadmin/Library';
+import LTMManager from './pages/superadmin/LTMManager';
 import { API_BASE_URL } from './config';
 import DashboardHeader from './components/DashboardHeader';
 import SimulatorSubheader from './components/SimulatorSubheader';
@@ -393,7 +394,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     { id: 'simulators', label: 'Simulators', path: '/admin/simulators' },
     { id: 'companies', label: 'Companies', path: '/admin/companies' },
     { id: 'role-manager', label: 'Role Manager', path: '/admin/role-manager' },
-    { id: 'library', label: 'Library', path: '/admin/library' }
+    { id: 'library', label: 'Library', path: '/admin/library' },
+    { id: 'ltm-manager', label: 'LTM Manager', path: '#' }
   ];
 
   return (
@@ -526,6 +528,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   <Route path="settings" element={<SystemSettings />} />
                   <Route path="role-manager" element={<RoleManager selectedRole={selectedRole} onEdit={handleEditRole} onDelete={handleDeleteRole} onRoleUpdate={handleRoleUpdate} isUserContext={false} />} />
                   <Route path="library" element={<Library selectedItem={selectedLibraryItem} onEdit={handleEditLibraryItem} onDelete={handleDeleteLibraryItem} />} />
+                  <Route path="ltm-manager" element={<LTMManager />} />
                 </Routes>
               )}
             </div>

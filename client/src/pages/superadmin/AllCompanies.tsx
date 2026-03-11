@@ -130,7 +130,7 @@ const AllCompanies: React.FC = () => {
         <div className="companies-header">
           <div className="header-top">
             <h2 className="results-title">{filteredUsers.length} Results founded</h2>
-          
+            <a href="#" className="add-new-link" onClick={(e) => { e.preventDefault(); /* Add new company functionality */ }}>+ Add New</a>
           </div>
           <input
             type="text"
@@ -156,9 +156,24 @@ const AllCompanies: React.FC = () => {
                 className={`company-item ${selectedUser?._id === user._id ? 'active' : ''}`}
                 onClick={() => setSelectedUser(user)}
               >
-                <div className="company-name">{user.firstName} {user.lastName}</div>
-                <div className="company-type">{user.designation}</div>
-                <div className="company-desc">{user.email}</div>
+                <div className="company-logo">
+                  {user.companyProfile?.logoId ? (
+                    <img 
+                      src={`${API_ENDPOINTS.file}/${user.companyProfile.logoId}`} 
+                      alt={user.companyProfile.companyName || `${user.firstName} ${user.lastName}`}
+                      onError={(e) => {
+                        e.currentTarget.src = '/logo.png';
+                        e.currentTarget.onerror = null;
+                      }}
+                    />
+                  ) : (
+                    <i className="fas fa-building" style={{ color: '#64748b', fontSize: '20px' }}></i>
+                  )}
+                </div>
+                <div className="company-info">
+                  <div className="company-name">{user.companyProfile?.companyName || `${user.firstName} ${user.lastName}`}</div>
+                  <div className="company-address">{user.roleId?.name || user.designation}</div>
+                </div>
               </div>
             ))
           )}

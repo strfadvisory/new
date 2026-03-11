@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   upload,
-  uploadToGridFS,
+  uploadReserveStudyToGridFS,
   createReserveStudy,
   getReserveStudies,
   getReserveStudy,
@@ -16,7 +16,7 @@ const { protect } = require('../middleware/authMiddleware.jsx');
 router.use(protect);
 
 // Routes
-router.post('/', upload.single('excelFile'), uploadToGridFS, createReserveStudy);
+router.post('/', upload.single('excelFile'), uploadReserveStudyToGridFS, createReserveStudy);
 router.get('/', getReserveStudies);
 router.get('/:id', getReserveStudy);
 router.get('/:id/data', getReserveStudyData);

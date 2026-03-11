@@ -30,6 +30,7 @@ interface Association {
   name: string;
   type?: string;
   description?: string;
+  icon?: string;
 }
 
 interface User {
@@ -52,9 +53,10 @@ interface DropdownProps {
   bottomButtonText?: string;
   onBottomButtonClick?: () => void;
   selectedValue?: string;
-  onSelectionChange?: (value: string, studyId?: string) => void;
+  onSelectionChange?: (value: string, studyId?: string, associationData?: Association) => void;
   refreshTrigger?: number;
   associationFilter?: string;
+  selectedAssociationData?: Association | null;
 }
 
 const Dropdown: React.FC<DropdownProps> = ({ 
@@ -71,7 +73,8 @@ const Dropdown: React.FC<DropdownProps> = ({
   selectedValue,
   onSelectionChange,
   refreshTrigger,
-  associationFilter
+  associationFilter,
+  selectedAssociationData
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -207,13 +210,22 @@ const Dropdown: React.FC<DropdownProps> = ({
     setLoading(true);
     try {
       const data = await apiService.get<Association[]>('/associations');
-      setAssociations(Array.isArray(data) ? data : [
+      const associationsData = Array.isArray(data) ? data : [
         { _id: '1', name: 'Homeowners Association A', type: 'HOA' },
         { _id: '2', name: 'Community Board B', type: 'Community' },
         { _id: '3', name: 'Property Management Group', type: 'Management' },
         { _id: '4', name: 'Residents Council', type: 'Council' },
         { _id: '5', name: 'Building Committee', type: 'Committee' }
-      ]);
+      ];
+      setAssociations(associationsData);
+      
+      // Update selected association data if there's a match
+      if (selectedValue && selectedAssociationData) {
+        const selected = associationsData.find(assoc => assoc.name === selectedValue);
+        if (selected && selectedAssociationData) {
+          // This will be handled by the parent component
+        }
+      }
     } catch (error) {
       console.error('Error fetching associations:', error);
       setAssociations([
@@ -332,7 +344,9 @@ const Dropdown: React.FC<DropdownProps> = ({
             height: '20px',
             borderRadius: '50%',
             background: '#e5e7eb'
-          }}></div>
+          }}>
+            {icon}
+          </div>
         )}
         {selectedValue || label}
         <i className="fas fa-chevron-down" style={{ fontSize: '16px' }}></i>
@@ -448,7 +462,7 @@ const Dropdown: React.FC<DropdownProps> = ({
                     onClick={() => {
                       console.log('Selected association:', association.name);
                       if (onSelectionChange) {
-                        onSelectionChange(association.name);
+                        onSelectionChange(association.name, undefined, association);
                       }
                       setIsOpen(false);
                     }}
@@ -457,15 +471,37 @@ const Dropdown: React.FC<DropdownProps> = ({
                       width: '32px',
                       height: '32px',
                       borderRadius: '50%',
-                      background: '#374151',
-                      color: 'white',
+                      background: '#e5e7eb',
+                      color: '#374151',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '12px',
-                      fontWeight: '600'
+                      fontWeight: '600',
+                      overflow: 'hidden'
                     }}>
-                      {association.name.charAt(0).toUpperCase()}
+                      {association.icon ? (
+                        <img 
+                          src={association.icon} 
+                          alt={association.name}
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            // Fallback to first letter if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              parent.innerHTML = association.name.charAt(0).toUpperCase();
+                            }
+                          }}
+                        />
+                      ) : (
+                        association.name.charAt(0).toUpperCase()
+                      )}
                     </div>
                     <span style={{
                       fontSize: '14px',
@@ -772,7 +808,7 @@ interface SimulatorSubheaderProps {
   onShowCalculator?: (association: string, reserveStudy: string, excelData?: any) => void;
   selectedAssociation?: string;
   selectedCompany?: string;
-  onAssociationChange?: (value: string) => void;
+  onAssociationChange?: (value: string, associationData?: Association) => void;
   onCompanyChange?: (value: string, studyId?: string) => void;
 }
 
@@ -804,6 +840,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [selectedStudyId, setSelectedStudyId] = useState<string>('');
   const [dataFetched, setDataFetched] = useState<string>(''); // Track which study data was fetched
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false); // Track loading state
+  const [selectedAssociationData, setSelectedAssociationData] = useState<Association | null>(null);
+  const [associations, setAssociations] = useState<Association[]>([]);
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -856,6 +894,29 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       onCompanyChange('');
       setRefreshReserveStudies(prev => prev + 1);
     }
+  }, [selectedAssociation]);
+
+  // Fetch associations on mount to get association data
+  useEffect(() => {
+    const fetchAssociationsData = async () => {
+      try {
+        const data = await apiService.get<Association[]>('/associations');
+        const associationsData = Array.isArray(data) ? data : [];
+        setAssociations(associationsData);
+        
+        // Update selected association data if there's a match
+        if (selectedAssociation) {
+          const selected = associationsData.find(assoc => assoc.name === selectedAssociation);
+          if (selected) {
+            setSelectedAssociationData(selected);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching associations:', error);
+      }
+    };
+    
+    fetchAssociationsData();
   }, [selectedAssociation]);
 
   useEffect(() => {
@@ -921,13 +982,60 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       <div className="left-section">
         <Dropdown 
           label="Associations" 
-          icon={<div />} 
+          icon={selectedAssociationData?.icon ? (
+            <img 
+              src={selectedAssociationData.icon} 
+              alt={selectedAssociationData.name}
+              style={{
+                width: '16px',
+                height: '16px',
+                objectFit: 'cover',
+                borderRadius: '50%'
+              }}
+              onError={(e) => {
+                // Fallback to first letter if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  parent.innerHTML = selectedAssociationData?.name?.charAt(0)?.toUpperCase() || 'A';
+                  parent.style.fontSize = '10px';
+                  parent.style.fontWeight = '600';
+                  parent.style.color = '#374151';
+                  parent.style.display = 'flex';
+                  parent.style.alignItems = 'center';
+                  parent.style.justifyContent = 'center';
+                }
+              }}
+            />
+          ) : selectedAssociation ? (
+            <div style={{
+              fontSize: '10px',
+              fontWeight: '600',
+              color: '#374151',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '100%',
+              height: '100%'
+            }}>
+              {selectedAssociation.charAt(0).toUpperCase()}
+            </div>
+          ) : null} 
           showAssociationsList={true} 
           bottomButtonText="+ Create an Associations" 
           onBottomButtonClick={() => setShowCreateAssociationPopup(true)}
           selectedValue={selectedAssociation}
-          onSelectionChange={onAssociationChange}
+          onSelectionChange={(value, studyId, associationData) => {
+            if (onAssociationChange) {
+              onAssociationChange(value, associationData);
+            }
+            if (associationData) {
+              setSelectedAssociationData(associationData);
+            }
+          }}
           refreshTrigger={refreshAssociations}
+          selectedAssociationData={selectedAssociationData}
         />
         <Dropdown 
           label="Reserve Studies" 
@@ -942,11 +1050,15 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
         />
       
         <div ref={viewMenuRef} className="view-menu-container">
-          <button className="view-menu-button" onClick={() => setShowViewMenu(!showViewMenu)}>
+          <button 
+            className={`view-menu-button ${!selectedCompany ? 'disabled' : ''}`} 
+            onClick={() => selectedCompany && setShowViewMenu(!showViewMenu)}
+            disabled={!selectedCompany}
+          >
             {selectedView} <i className={selectedView === 'Graph View' ? 'fas fa-chart-bar' : 'fas fa-list'}></i>
           </button>
           
-          {showViewMenu && (
+          {showViewMenu && selectedCompany && (
             <div className="view-menu">
               <div className="view-menu-item" onClick={() => { 
                 console.log('[SimulatorSubheader] Graph View clicked');
@@ -972,13 +1084,14 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       </div>
       
       <div className="right-section">
-        <div ref={userDropdownRef} className="users-container" style={{ position: 'relative' }}>
+        <div ref={userDropdownRef} className={`users-container ${!selectedCompany ? 'disabled' : ''}`} style={{ position: 'relative' }}>
           {users.map((user, index) => (
             <div 
               key={user._id} 
-              className="user-avatar" 
-              style={{ zIndex: 30 - (index * 10), cursor: 'pointer' }}
+              className={`user-avatar ${!selectedCompany ? 'disabled' : ''}`}
+              style={{ zIndex: 30 - (index * 10), cursor: selectedCompany ? 'pointer' : 'not-allowed' }}
               onClick={() => {
+                if (!selectedCompany) return;
                 setShowUserDropdown(!showUserDropdown);
                 if (!showUserDropdown) fetchDropdownUsers();
               }}
@@ -986,10 +1099,14 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
               {user.firstName?.charAt(0)?.toUpperCase() || 'U'}
             </div>
           ))}
-          <button className="add-user-button" onClick={() => setShowInvitePopup(true)}>
+          <button 
+            className={`add-user-button ${!selectedCompany ? 'disabled' : ''}`}
+            onClick={() => selectedCompany && setShowInvitePopup(true)}
+            disabled={!selectedCompany}
+          >
             <i className="fas fa-user"></i>
           </button>
-          {showUserDropdown && (
+          {showUserDropdown && selectedCompany && (
             <div style={{
               position: 'absolute',
               top: '45px',
@@ -1135,22 +1252,38 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             </div>
           )}
         </div>
-        <button className="action-button" onClick={onReset}>
+        <button 
+          className={`action-button ${!selectedCompany ? 'disabled' : ''}`}
+          onClick={() => selectedCompany && onReset && onReset()}
+          disabled={!selectedCompany}
+        >
           <i className="fas fa-undo"></i> Reset All
         </button>
-        <button className="icon-button" onClick={onUndo}>
+        <button 
+          className={`icon-button ${!selectedCompany ? 'disabled' : ''}`}
+          onClick={() => selectedCompany && onUndo && onUndo()}
+          disabled={!selectedCompany}
+        >
           <i className="fas fa-undo"></i>
         </button>
-        <button className="icon-button" onClick={onRedo}>
+        <button 
+          className={`icon-button ${!selectedCompany ? 'disabled' : ''}`}
+          onClick={() => selectedCompany && onRedo && onRedo()}
+          disabled={!selectedCompany}
+        >
           <i className="fas fa-redo"></i>
         </button>
-        <button className="save-button" onClick={onSave}>
+        <button 
+          className={`save-button ${!selectedCompany ? 'disabled' : ''}`}
+          onClick={() => selectedCompany && onSave && onSave()}
+          disabled={!selectedCompany}
+        >
           Save Changes <i className="fas fa-save"></i>
         </button>
       </div>
       
       <InviteMemberModal 
-        isOpen={showInvitePopup} 
+        isOpen={showInvitePopup && !!selectedCompany} 
         onClose={() => setShowInvitePopup(false)} 
         title="Invite Member"
       />

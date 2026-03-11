@@ -54,4 +54,33 @@ const uploadToGridFS = async (req, res, next) => {
   }
 };
 
-module.exports = { upload, uploadToGridFS };
+// Specific middleware for reserve studies
+const uploadReserveStudyToGridFS = async (req, res, next) => {
+  if (!req.file) return next();
+  
+  try {
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'reserve-studies' });
+    const readableStream = Readable.from(req.file.buffer);
+    const uploadStream = bucket.openUploadStream(req.file.originalname, {
+      metadata: {
+        uploadedBy: req.user?.id,
+        uploadedAt: new Date()
+      }
+    });
+    
+    readableStream.pipe(uploadStream);
+    
+    uploadStream.on('finish', () => {
+      req.file.gridfsId = uploadStream.id;
+      next();
+    });
+    
+    uploadStream.on('error', (error) => {
+      next(error);
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { upload, uploadToGridFS, uploadReserveStudyToGridFS };

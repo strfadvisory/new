@@ -201,6 +201,17 @@
   cursor: pointer;
 }
 
+.view-menu-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f9fafb;
+  color: #9ca3af;
+}
+
+.view-menu-button.disabled:hover {
+  background: #f9fafb;
+}
+
 .view-menu {
   position: absolute;
   top: 40px;
@@ -246,6 +257,12 @@
   gap: 4px;
 }
 
+.users-container.disabled {
+  opacity: 0.5;
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
 .user-avatar {
   width: 28px;
   height: 28px;
@@ -260,6 +277,12 @@
   border: 2px solid white;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
   position: relative;
+}
+
+.user-avatar.disabled {
+  opacity: 0.6;
+  background: #f3f4f6;
+  color: #9ca3af;
 }
 
 .user-avatar:not(:first-child) {
@@ -285,6 +308,17 @@
   border: none;
 }
 
+.add-user-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f9fafb;
+  color: #d1d5db;
+}
+
+.add-user-button.disabled:hover {
+  background: #f9fafb;
+}
+
 .action-button {
   height: 36px;
   padding: 0 14px;
@@ -298,6 +332,17 @@
   cursor: pointer;
 }
 
+.action-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f9fafb;
+  color: #9ca3af;
+}
+
+.action-button.disabled:hover {
+  background: #f9fafb;
+}
+
 .icon-button {
   width: 36px;
   height: 36px;
@@ -308,6 +353,17 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.icon-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f9fafb;
+  color: #9ca3af;
+}
+
+.icon-button.disabled:hover {
+  background: #f9fafb;
 }
 
 .save-button {
@@ -324,4 +380,16 @@
   border: none;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.save-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f3f4f6;
+  color: #9ca3af;
+  box-shadow: none;
+}
+
+.save-button.disabled:hover {
+  background: #f3f4f6;
 }

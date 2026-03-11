@@ -1,7 +1,7 @@
 const ReserveStudy = require('../models/ReserveStudy');
 const mongoose = require('mongoose');
 const XLSX = require('xlsx');
-const { upload, uploadToGridFS } = require('../middleware/upload.jsx');
+const { upload, uploadReserveStudyToGridFS } = require('../middleware/upload.jsx');
 
 // Create new reserve study
 const createReserveStudy = async (req, res) => {
@@ -273,7 +273,7 @@ const deleteReserveStudy = async (req, res) => {
 
 module.exports = {
   upload,
-  uploadToGridFS,
+  uploadReserveStudyToGridFS,
   createReserveStudy,
   getReserveStudies,
   getReserveStudy,

@@ -11,7 +11,7 @@ const CompanyDropdown = () => {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [filteredCompanies, setFilteredCompanies] = useState<Company[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCompany, setSelectedCompany] = useState<string>('ABC Consultant enterprises');
+  const [selectedCompany, setSelectedCompany] = useState<string>('Reserve Fund Advisory');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = () => {
@@ -71,8 +71,8 @@ const CompanyDropdown = () => {
       <span style={styles.companyName}>
         {selectedCompany}
       </span>
-
-      <button style={styles.menuBtn} onClick={toggleMenu}>
+{/* onClick={toggleMenu} */}
+      <button style={styles.menuBtn}  >
         <img src="/3line.png" alt="Menu"   />
       </button>
 
@@ -140,6 +140,7 @@ const styles = {
     color: "white",
     fontSize: "20px",
     cursor: "pointer",
+    opacity:0   ,
   },
   dropdown: {
     position: "absolute" as const,
