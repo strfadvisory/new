@@ -43,11 +43,10 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
 
   return (
     <div className="login-container">
-      <AuthSidebar />
-      
+      <AuthSidebar /> 
       <div className="login-form-container">
         <div className="form-card">
-          <h2 className="form-title">Access your Account</h2>
+          <h2 className="form-title">Access your Account</h2> 
           <p className="form-description">Enter your credentials to access your account and manage your organization.</p>
           
           <form onSubmit={handleLogin}>
