@@ -63,7 +63,10 @@ const seedDefaultRoles = async () => {
     }
 
     const companyTypesPath = path.join(__dirname, 'static', 'icons', 'company-types.json');
+    const masterConfigPath = path.join(__dirname, 'master.json');
+    
     const companyTypes = JSON.parse(fs.readFileSync(companyTypesPath, 'utf8'));
+    const masterConfig = JSON.parse(fs.readFileSync(masterConfigPath, 'utf8'));
 
     const bucket = new GridFSBucket(mongoose.connection.db, { bucketName: 'icons' });
 
@@ -76,10 +79,28 @@ const seedDefaultRoles = async () => {
     await Role.deleteMany({ type: 'Master' });
     
     const masterRoles = [];
+    
+    // Create master roles with module permissions and sub-roles
     for (const companyType of companyTypes) {
       const iconId = await uploadIconToGridFS(companyType.id, bucket);
-      // Add small delay between uploads
       await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Find matching role configuration in master.json
+      const roleKey = Object.keys(masterConfig.roles).find(key => {
+        const roleData = masterConfig.roles[key];
+        return companyType.name.toLowerCase().includes(roleData.name.toLowerCase()) || 
+               roleData.name.toLowerCase().includes(companyType.name.toLowerCase());
+      });
+      
+      // Get module permissions for ADMIN level (master roles have full access)
+      const permissions = masterConfig.modules.map(module => ({
+        permissionId: module.key,
+        canEdit: module.permissions.ADMIN.canEdit,
+        limit: module.permissions.ADMIN.limit
+      }));
+      
+      // Get sub-roles from master config if available
+      const subRoles = roleKey && masterConfig.roles[roleKey] ? masterConfig.roles[roleKey].subRoles : [];
       
       masterRoles.push({
         name: companyType.name,
@@ -87,16 +108,15 @@ const seedDefaultRoles = async () => {
         icon: `/api/icons/${iconId}`,
         type: 'Master',
         status: true,
-        permissions: [],
-        nextSteps: [],
-        videos: [],
+        permissions,
+        subRoles,
         createdBy: superAdmin._id
       });
     }
 
     await Role.insertMany(masterRoles);
 
-    console.log(`Successfully seeded ${masterRoles.length} default master roles with GridFS icons`);
+    console.log(`Successfully seeded ${masterRoles.length} master roles with module permissions and sub-roles`);
     console.log('Master roles created:', masterRoles.map(role => role.name).join(', '));
 
   } catch (error) {

@@ -482,3 +482,7 @@ input:checked + .toggle-slider:before {
 .dropdown-option.danger:hover {
   background-color: #fef2f2;
 }
+
+.checkbox-group {
+  border-bottom: 1px solid #E3E3E3;
+}

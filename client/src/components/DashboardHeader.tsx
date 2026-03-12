@@ -115,11 +115,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         </nav>
       </div>
       <div className="header-right">
-        <div className="role-name">
-          {user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 
-           user?.role === 'ADMIN' ? 'Admin' : 
-           user?.role || 'User'}
-        </div>
+   
         <div className="notification-icon">
           <i className="fas fa-bell"></i>
         </div>

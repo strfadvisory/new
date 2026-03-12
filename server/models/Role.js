@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const roleSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, required: true },
-  icon: { type: String, required: true },
+  icon: { type: String, required: false },
   type: { type: String, enum: ['Master', 'User'], required: true },
   status: { type: Boolean, default: true },
   permissions: [{ 
@@ -11,8 +11,11 @@ const roleSchema = new mongoose.Schema({
     canEdit: { type: Boolean, default: true },
     limit: { type: String, default: '' }
   }],
-  nextSteps: [{ type: String }],
-  videos: [{ type: String }],
+  subRoles: [{
+    id: { type: String },
+    role: { type: String },
+    permissionLevel: { type: String, enum: ['ADMIN', 'EDITOR', 'VIEWER'] }
+  }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

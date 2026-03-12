@@ -23,6 +23,7 @@ interface Module {
   id: string;
   key: string;
   displayName: string;
+  description?: string;
   canEdit: boolean;
   canView: boolean;
   limit: string;
@@ -346,31 +347,60 @@ const RoleManager: React.FC<RoleManagerProps> = ({ selectedRole, onEdit, onDelet
                       <div className="permission-item">
                         <div className="permission-settings">
                           <div>
-                            <div className="checkbox-group">
+                            <div className="checkbox-group" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', padding: '12px 0' }}>
+                              <div style={{ flex: 1 }}>
+                                <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', margin: '0 0 4px 0' }}>
+                                  {module.key === 'SIMULATOR_MANAGEMENT' ? 'Manage Study Data' : 
+                                   module.key === 'ROLE_MANAGEMENT' ? 'View Role Permissions' :
+                                   module.key === 'USER_MANAGEMENT' ? 'View User Profiles' :
+                                   module.key === 'ASSOCIATION_CONTROL' ? 'View Association Details' : 'Can View'}
+                                </h4>
+                                <p style={{ fontSize: '14px', color: '#6b7280', margin: 0, lineHeight: '1.4' }}>
+                                  {module.key === 'SIMULATOR_MANAGEMENT' ? 'Allows users to access and manage their own simulator workspace.' :
+                                   module.key === 'ROLE_MANAGEMENT' ? 'Allows users to view existing roles and their permission configurations.' :
+                                   module.key === 'USER_MANAGEMENT' ? 'Allows users to view user profiles, status, and basic information.' :
+                                   module.key === 'ASSOCIATION_CONTROL' ? 'Allows users to view association profiles and organizational structure.' : 'Basic viewing permissions for this module.'}
+                                </p>
+                              </div>
                               <input 
                                 type="checkbox" 
                                 id={`view-${module.key}`}
                                 checked={getModulePermission(module.key).canView}
                                 onChange={(e) => updateModulePermission(module.key, 'canView', e.target.checked)}
+                                style={{ marginLeft: '16px', transform: 'scale(1.2)' }}
                               />
-                              <label htmlFor={`view-${module.key}`}>Can View</label>
                             </div>
-                            <div className="checkbox-group">
+                            <div className="checkbox-group" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', padding: '12px 0' }}>
+                              <div style={{ flex: 1 }}>
+                                <h4 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', margin: '0 0 4px 0' }}>
+                                  {module.key === 'SIMULATOR_MANAGEMENT' ? 'Edit Study Data' :
+                                   module.key === 'ROLE_MANAGEMENT' ? 'Modify Role Permissions' :
+                                   module.key === 'USER_MANAGEMENT' ? 'Manage User Accounts' :
+                                   module.key === 'ASSOCIATION_CONTROL' ? 'Control Association Settings' : 'Can Edit'}
+                                </h4>
+                                <p style={{ fontSize: '14px', color: '#6b7280', margin: 0, lineHeight: '1.4' }}>
+                                  {module.key === 'SIMULATOR_MANAGEMENT' ? 'Allows users to modify, update, and configure simulator workspace settings and data.' :
+                                   module.key === 'ROLE_MANAGEMENT' ? 'Allows users to create, modify, and delete roles with full permission management.' :
+                                   module.key === 'USER_MANAGEMENT' ? 'Allows users to create, edit, activate/deactivate user accounts and profiles.' :
+                                   module.key === 'ASSOCIATION_CONTROL' ? 'Allows users to modify association settings, invite members, and manage organizational controls.' : 'Full editing permissions for this module.'}
+                                </p>
+                              </div>
                               <input 
                                 type="checkbox" 
                                 id={`edit-${module.key}`}
                                 checked={getModulePermission(module.key).canEdit}
                                 onChange={(e) => updateModulePermission(module.key, 'canEdit', e.target.checked)}
+                                style={{ marginLeft: '16px', transform: 'scale(1.2)' }}
                               />
-                              <label htmlFor={`edit-${module.key}`}>Can Edit</label>
                             </div>
-                            <div className="limit-input">
-                              <label>Access Limit</label>
+                            <div className="limit-input" style={{ marginTop: '20px' }}>
+                              <label style={{ fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px', display: 'block' }}>Access Limit</label>
                               <input 
                                 type="text"
                                 placeholder="Enter limit (optional)"
                                 value={getModulePermission(module.key).limit}
                                 onChange={(e) => updateModulePermission(module.key, 'limit', e.target.value)}
+                                style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px' }}
                               />
                             </div>
                           </div>

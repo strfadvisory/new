@@ -2,6 +2,8 @@ const User = require('../models/User');
 const Role = require('../models/Role');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 const configService = require('../services/configService');
 const { sendOTPEmail, sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService.jsx');
 
@@ -62,40 +64,6 @@ const register = async (req, res) => {
       isVerified: false
     });
 
-    // Create Editor role - has all permissions with canEdit: true
-    const editorRole = await Role.create({
-      name: 'Editor',
-      description: 'Editor role with full access permissions',
-      icon: selectedRole.icon,
-      type: 'User',
-      status: true,
-      permissions: selectedRole.permissions.map(perm => ({
-        permissionId: perm.permissionId,
-        canEdit: true,
-        limit: perm.limit
-      })),
-      nextSteps: selectedRole.nextSteps,
-      videos: selectedRole.videos,
-      createdBy: user._id
-    });
-
-    // Create Member role - same permissions but canEdit: false
-    const memberRole = await Role.create({
-      name: 'Member',
-      description: 'Member role with view-only permissions',
-      icon: selectedRole.icon,
-      type: 'User',
-      status: true,
-      permissions: selectedRole.permissions.map(perm => ({
-        permissionId: perm.permissionId,
-        canEdit: false,
-        limit: perm.limit
-      })),
-      nextSteps: selectedRole.nextSteps,
-      videos: selectedRole.videos,
-      createdBy: user._id
-    });
-
     try {
       await sendOTPEmail(email, otp);
     } catch (emailError) {
@@ -111,8 +79,6 @@ const register = async (req, res) => {
       email: user.email,
       companyType: user.companyType,
       orgId: user.orgId,
-      editorRoleId: editorRole._id,
-      memberRoleId: memberRole._id,
       token
     });
   } catch (error) {
@@ -137,6 +103,7 @@ const login = async (req, res) => {
           lastName: user.lastName,
           email: user.email,
           role: 'SUPER_ADMIN',
+          selectedCompany: user.companyProfile?.companyName || null,
           isSuperAdmin: true,
           navigation: roleConfig?.navigation || [],
           permissions: roleConfig?.permissions || [],
@@ -162,6 +129,7 @@ const login = async (req, res) => {
         email: user.email,
         role: user.role || role?.name || 'USER',
         companyType: user.companyType,
+        selectedCompany: user.companyProfile?.companyName || null,
         isSuperAdmin: false,
         navigation,
         permissions: role?.permissions || {},
@@ -276,6 +244,7 @@ const createCompanyProfile = async (req, res) => {
       email: user.email,
       role: user.role || role?.name || 'USER',
       companyType: user.companyType,
+      selectedCompany: user.companyProfile?.companyName || null,
       navigation,
       permissions: role?.permissions || {},
       companyProfile: user.companyProfile

@@ -1,67 +1,101 @@
 {
-  "_id": "MASTER_ACCESS_V1",
-  "version": 1,
+  "roles": {
+    "BOARD_MEMBERS": {
+      "name": "Board Members",
+      "description": "Set up a governance entity to manage board members, oversee modules, and supervise operational activities.",
+      "subRoles": [
+        { "id": "BM_001", "role": "President", "permissionLevel": "VIEWER" },
+        { "id": "BM_002", "role": "Vice President", "permissionLevel": "VIEWER" },
+        { "id": "BM_003", "role": "Secretary", "permissionLevel": "VIEWER" },
+        { "id": "BM_004", "role": "Director", "permissionLevel": "VIEWER" },
+        { "id": "BM_005", "role": "Board Member", "permissionLevel": "VIEWER" },
+        { "id": "BM_006", "role": "Property Manager", "permissionLevel": "EDITOR" },
+        { "id": "BM_007", "role": "Administrator", "permissionLevel": "ADMIN" }
+      ]
+    },
+    "INVESTOR_ADVISOR": {
+      "name": "Investor Advisor",
+      "description": "Create an advisory organization to manage associations, users, and investment-related study and data modules.",
+      "subRoles": [
+        { "id": "IA_001", "role": "Property Advisor", "permissionLevel": "EDITOR" },
+        { "id": "IA_002", "role": "Director", "permissionLevel": "VIEWER" },
+        { "id": "IA_003", "role": "Viewer", "permissionLevel": "VIEWER" },
+        { "id": "IA_004", "role": "Administrator", "permissionLevel": "ADMIN" }
+      ]
+    },
+    "RESERVE_STUDY_COMPANY": {
+      "name": "Reserve Study Company",
+      "description": "Establish an organization to manage users, associations, study modules, and reserve planning operations.",
+      "subRoles": [
+        { "id": "RSC_001", "role": "Property Manager", "permissionLevel": "EDITOR" },
+        { "id": "RSC_002", "role": "Director", "permissionLevel": "VIEWER" },
+        { "id": "RSC_003", "role": "Viewer", "permissionLevel": "VIEWER" },
+        { "id": "RSC_004", "role": "Administrator", "permissionLevel": "ADMIN" }
+      ]
+    },
+    "BANK_OFFICE": {
+      "name": "Bank Office",
+      "description": "Set up a banking organization to manage financial services such as loans, investment plans, and fixed deposits, and collaborate with associations.",
+      "subRoles": [
+        { "id": "BO_001", "role": "Relationship Manager", "permissionLevel": "EDITOR" },
+        { "id": "BO_002", "role": "Branch Manager", "permissionLevel": "VIEWER" },
+        { "id": "BO_003", "role": "Viewer", "permissionLevel": "VIEWER" },
+        { "id": "BO_004", "role": "Administrator", "permissionLevel": "ADMIN" }
+      ]
+    },
+    "MANAGEMENT_COMPANY": {
+      "name": "Management Company",
+      "description": "Create and manage an organizational entity to oversee users, modules, and operational activities efficiently.",
+      "subRoles": [
+        { "id": "MC_001", "role": "Property Manager", "permissionLevel": "EDITOR" },
+        { "id": "MC_002", "role": "Vice President", "permissionLevel": "VIEWER" },
+        { "id": "MC_003", "role": "Director", "permissionLevel": "VIEWER" },
+        { "id": "MC_004", "role": "Viewer", "permissionLevel": "VIEWER" },
+        { "id": "MC_005", "role": "Administrator", "permissionLevel": "ADMIN" }
+      ]
+    }
+  },
+
   "modules": [
     {
       "id": "MOD_001",
       "key": "SIMULATOR_MANAGEMENT",
       "displayName": "Simulator Management",
-      "canEdit": true,
-      "canView": true,
-      "limit": ""
+      "permissions": {
+        "ADMIN": { "canView": true, "canEdit": true, "limit": "" },
+        "EDITOR": { "canView": true, "canEdit": true, "limit": "" },
+        "VIEWER": { "canView": true, "canEdit": false, "limit": "" }
+      }
     },
     {
       "id": "MOD_002",
       "key": "ROLE_MANAGEMENT",
       "displayName": "Role Management",
-      "canEdit": true,
-      "canView": true,
-      "limit": ""
+      "permissions": {
+        "ADMIN": { "canView": true, "canEdit": true, "limit": "" },
+        "EDITOR": { "canView": true, "canEdit": false, "limit": "" },
+        "VIEWER": { "canView": false, "canEdit": false, "limit": "" }
+      }
     },
     {
       "id": "MOD_003",
       "key": "USER_MANAGEMENT",
       "displayName": "User Management",
-      "canEdit": true,
-      "canView": true,
-      "limit": ""
+      "permissions": {
+        "ADMIN": { "canView": true, "canEdit": true, "limit": "" },
+        "EDITOR": { "canView": true, "canEdit": false, "limit": "" },
+        "VIEWER": { "canView": true, "canEdit": false, "limit": "" }
+      }
     },
     {
       "id": "MOD_004",
       "key": "ASSOCIATION_CONTROL",
       "displayName": "Association Control",
-      "canEdit": true,
-      "canView": true,
-      "limit": ""
+      "permissions": {
+        "ADMIN": { "canView": true, "canEdit": true, "limit": "" },
+        "EDITOR": { "canView": true, "canEdit": true, "limit": "" },
+        "VIEWER": { "canView": true, "canEdit": false, "limit": "" }
+      }
     }
-  ], 
-  "nextSteps": [
-    {
-      "id": "NS_001",
-      "title": "Invite Advisory",
-      "icon": "user",
-      "permissionIds": ["PERM_015"]
-    },
-    {
-      "id": "NS_002",
-      "title": "Invite a Association",
-      "icon": "building",
-      "permissionIds": ["PERM_020"]
-    },
-    {
-      "id": "NS_003",
-      "title": "Upload Reserve Study Data",
-      "icon": "file",
-      "permissionIds": ["PERM_002"]
-    },
-    {
-      "id": "NS_004",
-      "title": "Schedule Meeting with Expert",
-      "icon": "calendar",
-      "permissionIds": ["PERM_001"]
-    }
-  ],
-  "videos": [
-   
   ]
 }
