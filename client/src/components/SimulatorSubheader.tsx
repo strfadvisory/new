@@ -55,7 +55,6 @@ interface DropdownProps {
   selectedValue?: string;
   onSelectionChange?: (value: string, studyId?: string, associationData?: Association) => void;
   refreshTrigger?: number;
-  associationFilter?: string;
   selectedAssociationData?: Association | null;
 }
 
@@ -73,7 +72,6 @@ const Dropdown: React.FC<DropdownProps> = ({
   selectedValue,
   onSelectionChange,
   refreshTrigger,
-  associationFilter,
   selectedAssociationData
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -102,13 +100,11 @@ const Dropdown: React.FC<DropdownProps> = ({
   }, [refreshTrigger]);
 
   useEffect(() => {
-    if (showReserveStudyList && associationFilter !== undefined) {
+    if (showReserveStudyList && selectedAssociationData) {
       setReserveStudies([]);
-      if (associationFilter) {
-        fetchReserveStudies();
-      }
+      fetchReserveStudies();
     }
-  }, [associationFilter, showReserveStudyList]);
+  }, [selectedAssociationData, showReserveStudyList]);
 
   useEffect(() => {
     if ((showCompanyList || showUserList || showAssociationsList || showReserveStudyList) && isOpen) {
@@ -247,11 +243,16 @@ const Dropdown: React.FC<DropdownProps> = ({
   const fetchReserveStudies = async () => {
     setLoading(true);
     try {
-      let url = '/reserve-studies';
-      if (associationFilter) {
-        url += `?association=${encodeURIComponent(associationFilter)}`;
+      // Get association ID from selectedAssociationData
+      if (!selectedAssociationData?._id) {
+        console.warn('No association ID available for fetching reserve studies');
+        setReserveStudies([]);
+        return;
       }
-      const response = await apiService.get<{data: ReserveStudy[]}>(url);
+      
+      const response = await apiService.post<{data: ReserveStudy[]}>('/reserve-studies/list', {
+        associationId: selectedAssociationData._id
+      });
       const studies = Array.isArray(response.data) ? response.data : [];
       
       // Sort by creation date to ensure latest is first
@@ -261,13 +262,6 @@ const Dropdown: React.FC<DropdownProps> = ({
       
       setReserveStudies(sortedStudies);
       console.log('[Dropdown] Reserve studies fetched and sorted:', sortedStudies.length);
-      
-      // Auto-select first study if none selected and studies exist
-      if (showReserveStudyList && sortedStudies.length > 0 && !selectedValue && onSelectionChange) {
-        const firstStudy = sortedStudies[0];
-        console.log('[Dropdown] Auto-selecting first study:', firstStudy.studyName);
-        onSelectionChange(firstStudy.studyName, firstStudy._id);
-      }
     } catch (error) {
       console.error('Error fetching reserve studies:', error);
       setReserveStudies([]);
@@ -279,7 +273,7 @@ const Dropdown: React.FC<DropdownProps> = ({
   // Listen for reserve studies updates
   useEffect(() => {
     const handleReserveStudiesUpdate = () => {
-      if (showReserveStudyList) {
+      if (showReserveStudyList && selectedAssociationData) {
         fetchReserveStudies();
       }
     };
@@ -290,7 +284,7 @@ const Dropdown: React.FC<DropdownProps> = ({
     return () => {
       window.removeEventListener('reserveStudiesUpdated', handleReserveStudiesUpdate);
     };
-  }, [showReserveStudyList, associationFilter]);
+  }, [showReserveStudyList, selectedAssociationData]);
 
   const filteredReserveStudies = reserveStudies.filter(study =>
     (study.studyName || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -838,8 +832,10 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [refreshAssociations, setRefreshAssociations] = useState(0);
   const [refreshReserveStudies, setRefreshReserveStudies] = useState(0);
   const [selectedStudyId, setSelectedStudyId] = useState<string>('');
-  const [dataFetched, setDataFetched] = useState<string>(''); // Track which study data was fetched
+  const [dataFetched, setDataFetched] = useState<Set<string>>(new Set()); // Track which study data was fetched
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false); // Track loading state
+  const [fetchingStudyId, setFetchingStudyId] = useState<string>(''); // Track currently fetching study
+  const [lastFetchedStudy, setLastFetchedStudy] = useState<string>(''); // Additional safety check
   const [selectedAssociationData, setSelectedAssociationData] = useState<Association | null>(null);
   const [associations, setAssociations] = useState<Association[]>([]);
   const viewMenuRef = useRef<HTMLDivElement>(null);
@@ -847,47 +843,81 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
 
   useEffect(() => {
     const fetchExcelData = async () => {
-      // Only fetch if we have all required data, haven't fetched this study yet, and not currently loading
-      if (selectedAssociation && selectedCompany && selectedStudyId && onShowCalculator && 
-          dataFetched !== selectedStudyId && !isLoadingData) {
-        console.log('[SimulatorSubheader] Fetching Excel data for study:', selectedStudyId);
-        setDataFetched(selectedStudyId); // Mark as fetching to prevent duplicate calls
-        setIsLoadingData(true);
+      // Multiple layers of protection against duplicate calls
+      if (!selectedAssociation || !selectedCompany || !selectedStudyId || !onShowCalculator) {
+        return;
+      }
+      
+      // Check if already fetched
+      if (dataFetched.has(selectedStudyId)) {
+        console.log('[SimulatorSubheader] Data already fetched for study:', selectedStudyId);
+        return;
+      }
+      
+      // Check if currently loading
+      if (isLoadingData) {
+        console.log('[SimulatorSubheader] Already loading data, skipping...');
+        return;
+      }
+      
+      // Check if this specific study is being fetched
+      if (fetchingStudyId === selectedStudyId) {
+        console.log('[SimulatorSubheader] Already fetching this study:', selectedStudyId);
+        return;
+      }
+      
+      // Check if this was the last fetched study
+      if (lastFetchedStudy === selectedStudyId) {
+        console.log('[SimulatorSubheader] This study was just fetched:', selectedStudyId);
+        return;
+      }
+      
+      console.log('[SimulatorSubheader] Starting fetch for study:', selectedStudyId);
+      setFetchingStudyId(selectedStudyId);
+      setIsLoadingData(true);
+      setLastFetchedStudy(selectedStudyId);
+      
+      try {
+        const response = await apiService.get<any>(`/reserve-studies/${selectedStudyId}/data`);
+        console.log('[SimulatorSubheader] Excel data fetched successfully for:', selectedStudyId);
         
-        try {
-          const response = await apiService.get<any>(`/reserve-studies/${selectedStudyId}/data`);
-          console.log('[SimulatorSubheader] Excel data fetched successfully');
-          
-          // Send complete JSON to calculator page
-          const completeData = {
-            studyId: selectedStudyId,
-            association: selectedAssociation,
-            reserveStudy: selectedCompany,
-            data: response.data || response,
-            timestamp: new Date().toISOString()
-          };
-          
-          console.log('[SimulatorSubheader] Triggering calculator with data');
-          onShowCalculator(selectedAssociation, selectedCompany, completeData);
-        } catch (error) {
-          console.error('[SimulatorSubheader] Error fetching Excel data:', error);
-          // Reset fetched state on error to allow retry
-          setDataFetched('');
-          // Still show calculator even if data fetch fails
-          onShowCalculator(selectedAssociation, selectedCompany);
-        } finally {
-          setIsLoadingData(false);
-        }
+        // Mark as fetched
+        setDataFetched(prev => {
+          const newSet = new Set(prev);
+          newSet.add(selectedStudyId);
+          return newSet;
+        });
+        
+        // Send complete JSON to calculator page
+        const completeData = {
+          studyId: selectedStudyId,
+          association: selectedAssociation,
+          reserveStudy: selectedCompany,
+          data: response.data || response,
+          timestamp: new Date().toISOString()
+        };
+        
+        console.log('[SimulatorSubheader] Triggering calculator with data');
+        onShowCalculator(selectedAssociation, selectedCompany, completeData);
+      } catch (error) {
+        console.error('[SimulatorSubheader] Error fetching Excel data:', error);
+        // Reset last fetched on error to allow retry
+        setLastFetchedStudy('');
+        // Still show calculator even if data fetch fails
+        onShowCalculator(selectedAssociation, selectedCompany);
+      } finally {
+        setIsLoadingData(false);
+        setFetchingStudyId('');
       }
     };
     
-    // Only fetch if we have all required data, haven't fetched yet, and not loading
-    if (selectedAssociation && selectedCompany && selectedStudyId && 
-        dataFetched !== selectedStudyId && !isLoadingData) {
-      const timeoutId = setTimeout(fetchExcelData, 100);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [selectedAssociation, selectedCompany, selectedStudyId, dataFetched, isLoadingData]);
+    // Debounce the fetch call
+    const timeoutId = setTimeout(() => {
+      fetchExcelData();
+    }, 200);
+    
+    return () => clearTimeout(timeoutId);
+  }, [selectedAssociation, selectedCompany, selectedStudyId]);
 
   useEffect(() => {
     if (selectedAssociation && onCompanyChange) {
@@ -971,9 +1001,14 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       onCompanyChange(value, studyId);
     }
     if (studyId) {
-      setSelectedStudyId(studyId);
-      setDataFetched(''); // Reset to allow fetching new study data
-      setIsLoadingData(false); // Reset loading state
+      // Only update if it's actually a different study
+      if (selectedStudyId !== studyId) {
+        console.log('[SimulatorSubheader] Changing to new study:', studyId);
+        setSelectedStudyId(studyId);
+        setIsLoadingData(false);
+        setFetchingStudyId('');
+        // Don't reset lastFetchedStudy here - let the effect handle it
+      }
     }
   };
 
@@ -1046,7 +1081,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           selectedValue={selectedCompany}
           onSelectionChange={handleCompanyChange}
           refreshTrigger={refreshReserveStudies}
-          associationFilter={selectedAssociation}
+          selectedAssociationData={selectedAssociationData}
         />
       
         <div ref={viewMenuRef} className="view-menu-container">
@@ -1308,8 +1343,11 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             console.log('[SimulatorSubheader] Auto-selecting new study...');
             
             // Step 1: Update local state immediately
+            console.log('[SimulatorSubheader] Setting up new study:', newStudyId);
             setSelectedStudyId(newStudyId);
-            setDataFetched(''); // Reset to allow fetching new study data
+            setIsLoadingData(false);
+            setFetchingStudyId('');
+            setLastFetchedStudy(''); // Clear to allow new study fetch
             setSelectedView('Graph View');
             
             // Step 2: Notify parent components

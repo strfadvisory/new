@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { apiService } from '../services/ApiService';
+import { rolesApi } from '../api/services/rolesApi';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -15,10 +15,16 @@ interface InviteData {
   designation: string;
 }
 
+interface SubRole {
+  _id: string;
+  name: string;
+  permissionLevel: string;
+}
+
 const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ 
   isOpen, 
   onClose, 
-  title = 'Invite Member' 
+  title = 'Add New Member' 
 }) => {
   const [inviteData, setInviteData] = useState<InviteData>({
     selectedRole: '',
@@ -27,22 +33,32 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     adminEmail: '',
     designation: ''
   });
-  const [childRoles, setChildRoles] = useState<any[]>([]);
+  const [subRoles, setSubRoles] = useState<SubRole[]>([]);
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [loadingSubRoles, setLoadingSubRoles] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      fetchChildRoles();
+      fetchUserSubRoles();
     }
   }, [isOpen]);
 
-  const fetchChildRoles = async () => {
+  const fetchUserSubRoles = async () => {
     try {
-      const roles = await apiService.get('/roles/child-roles');
-      setChildRoles(Array.isArray(roles) ? roles : []);
+      setLoadingSubRoles(true);
+      const response = await rolesApi.getUserSubRoles();
+      console.log('SubRoles API Response:', response);
+      setSubRoles(response.subRoles || []);
+      
+      // Show debug info if available
+      if (response.debug) {
+        console.log('Debug Info:', response.debug);
+      }
     } catch (error) {
-      console.error('Error fetching roles:', error);
-      setChildRoles([]);
+      console.error('Error fetching user sub roles:', error);
+      setSubRoles([]);
+    } finally {
+      setLoadingSubRoles(false);
     }
   };
 
@@ -50,16 +66,29 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     e.preventDefault();
     setInviteLoading(true);
     try {
-      await apiService.post('/auth/invite-advisory', inviteData);
-      console.log('Invitation sent successfully');
-      setInviteData({
-        selectedRole: '',
-        firstName: '',
-        lastName: '',
-        adminEmail: '',
-        designation: ''
+      // Use the rolesApi or create a proper API service for invitations
+      const response = await fetch('/api/auth/invite-advisory', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(inviteData)
       });
-      onClose();
+      
+      if (response.ok) {
+        console.log('Invitation sent successfully');
+        setInviteData({
+          selectedRole: '',
+          firstName: '',
+          lastName: '',
+          adminEmail: '',
+          designation: ''
+        });
+        onClose();
+      } else {
+        throw new Error('Failed to send invitation');
+      }
     } catch (error) {
       console.error('Error sending invitation:', error);
     } finally {
@@ -73,166 +102,277 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     <>
       <div 
         className="modal-overlay" 
-        onClick={onClose} 
-        style={{ 
-          position: 'fixed', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          background: 'rgba(0,0,0,0.5)', 
-          zIndex: 1000 
+        onClick={onClose}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          zIndex: 1000
         }}
       ></div>
-      <div style={{ 
-        position: 'fixed', 
-        top: '50%', 
-        left: '50%', 
-        transform: 'translate(-50%, -50%)', 
-        background: 'white', 
-        borderRadius: '12px', 
-        padding: '24px', 
-        width: '90%', 
-        maxWidth: '500px', 
-        maxHeight: '90vh', 
-        overflowY: 'auto', 
-        zIndex: 1001 
+      <div style={{
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        background: 'white',
+        borderRadius: '10px',
+        width: '100%',
+        maxWidth: '500px',
+        margin: '20px',
+        border: '1px solid #e6e6e6',
+        zIndex: 1001,
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
       }}>
+        {/* Form Header */}
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '20px'
+          padding: '20px 20px 8px 20px',
+          borderBottom: '1px solid #e6e6e6'
         }}>
-          <h2 style={{ fontSize: '20px', fontWeight: '600', margin: 0 }}>{title}</h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: '#6b7280'
-            }}
-          >
-            X
-          </button>
+          <h2 style={{
+            fontSize: '20px',
+            fontWeight: '600',
+            color: '#2f2f2f',
+            margin: '0 0 8px 0'
+          }}>{title}</h2>
+          <p style={{
+            fontSize: '14px',
+            color: '#6b7280',
+            margin: '0',
+            lineHeight: '1.5'
+          }}>Invite a new member to join your organization with specific role permissions.</p>
         </div>
         
-        <form onSubmit={handleInviteSubmit}>
-          <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>Invite Super Admin</h3>
-          <select 
-            value={inviteData.selectedRole} 
-            onChange={(e) => setInviteData({...inviteData, selectedRole: e.target.value})} 
-            required 
-            style={{ 
-              width: '100%', 
-              padding: '10px', 
-              marginBottom: '12px', 
-              border: '1px solid #e5e7eb', 
-              borderRadius: '6px' 
-            }}
-          >
-            <option value="">Select Role</option>
-            {childRoles.map((role) => (
-              <option key={role._id} value={role._id}>{role.name}</option>
-            ))}
-          </select>
+        {/* Form Body */}
+        <form onSubmit={handleInviteSubmit} style={{ padding: '20px' }}>
+          {/* Role Selection */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '5px',
+              fontSize: '16px',
+              fontWeight: '500',
+              color: '#374151'
+            }}>Select Role *</label>
+            <select 
+              value={inviteData.selectedRole} 
+              onChange={(e) => setInviteData({...inviteData, selectedRole: e.target.value})} 
+              required
+              disabled={loadingSubRoles}
+              style={{
+                width: '100%',
+                height: '44px',
+                borderRadius: '8px',
+                border: '1px solid #dcdcdc',
+                padding: '0 14px',
+                fontSize: '14px',
+                background: loadingSubRoles ? '#f5f5f5' : '#fafafa',
+                transition: 'all 0.2s ease',
+                cursor: loadingSubRoles ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <option value="">
+                {loadingSubRoles ? 'Loading roles...' : 
+                 subRoles.length === 0 ? 'No sub-roles available' : 'Choose a role'}
+              </option>
+              {subRoles.map((role) => (
+                <option key={role._id} value={role._id}>
+                  {role.name} ({role.permissionLevel})
+                </option>
+              ))}
+            </select>
+            {subRoles.length === 0 && !loadingSubRoles && (
+              <p style={{
+                fontSize: '12px',
+                color: '#ef4444',
+                margin: '4px 0 0 0',
+                fontStyle: 'italic'
+              }}>
+                No sub-roles found. Please contact your administrator to set up role permissions.
+              </p>
+            )}
+            
+            {/* Debug information in development */}
+            {process.env.NODE_ENV === 'development' && (
+              <div style={{
+                fontSize: '11px',
+                color: '#6b7280',
+                marginTop: '8px',
+                padding: '8px',
+                background: '#f9fafb',
+                borderRadius: '4px',
+                border: '1px solid #e5e7eb'
+              }}>
+                <strong>Debug Info:</strong><br/>
+                SubRoles found: {subRoles.length}<br/>
+                {subRoles.length > 0 && (
+                  <>
+                    Roles: {subRoles.map(r => r.name).join(', ')}<br/>
+                  </>
+                )}
+                Check browser console for detailed logs.
+              </div>
+            )}
+          </div>
           
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: '1fr 1fr', 
-            gap: '12px', 
-            marginBottom: '12px' 
+          {/* Name Fields */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '15px',
+            marginBottom: '16px'
           }}>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '16px',
+                fontWeight: '500',
+                color: '#374151'
+              }}>First Name *</label>
+              <input 
+                type="text" 
+                placeholder="Enter first name"
+                value={inviteData.firstName} 
+                onChange={(e) => setInviteData({...inviteData, firstName: e.target.value})} 
+                required
+                style={{
+                  width: '100%',
+                  height: '44px',
+                  borderRadius: '8px',
+                  border: '1px solid #dcdcdc',
+                  padding: '0 14px',
+                  fontSize: '14px',
+                  background: '#fafafa',
+                  transition: 'all 0.2s ease'
+                }}
+              />
+            </div>
+            <div>
+              <label style={{
+                display: 'block',
+                marginBottom: '5px',
+                fontSize: '16px',
+                fontWeight: '500',
+                color: '#374151'
+              }}>Last Name *</label>
+              <input 
+                type="text" 
+                placeholder="Enter last name"
+                value={inviteData.lastName} 
+                onChange={(e) => setInviteData({...inviteData, lastName: e.target.value})} 
+                required
+                style={{
+                  width: '100%',
+                  height: '44px',
+                  borderRadius: '8px',
+                  border: '1px solid #dcdcdc',
+                  padding: '0 14px',
+                  fontSize: '14px',
+                  background: '#fafafa',
+                  transition: 'all 0.2s ease'
+                }}
+              />
+            </div>
+          </div>
+          
+          {/* Email Field */}
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '5px',
+              fontSize: '16px',
+              fontWeight: '500',
+              color: '#374151'
+            }}>Email Address *</label>
             <input 
-              type="text" 
-              placeholder="First Name" 
-              value={inviteData.firstName} 
-              onChange={(e) => setInviteData({...inviteData, firstName: e.target.value})} 
-              required 
-              style={{ 
-                padding: '10px', 
-                border: '1px solid #e5e7eb', 
-                borderRadius: '6px' 
-              }} 
-            />
-            <input 
-              type="text" 
-              placeholder="Last Name" 
-              value={inviteData.lastName} 
-              onChange={(e) => setInviteData({...inviteData, lastName: e.target.value})} 
-              required 
-              style={{ 
-                padding: '10px', 
-                border: '1px solid #e5e7eb', 
-                borderRadius: '6px' 
-              }} 
+              type="email" 
+              placeholder="Enter email address"
+              value={inviteData.adminEmail} 
+              onChange={(e) => setInviteData({...inviteData, adminEmail: e.target.value})} 
+              required
+              style={{
+                width: '100%',
+                height: '44px',
+                borderRadius: '8px',
+                border: '1px solid #dcdcdc',
+                padding: '0 14px',
+                fontSize: '14px',
+                background: '#fafafa',
+                transition: 'all 0.2s ease'
+              }}
             />
           </div>
           
-          <input 
-            type="email" 
-            placeholder="Email Address" 
-            value={inviteData.adminEmail} 
-            onChange={(e) => setInviteData({...inviteData, adminEmail: e.target.value})} 
-            required 
-            style={{ 
-              width: '100%', 
-              padding: '10px', 
-              marginBottom: '12px', 
-              border: '1px solid #e5e7eb', 
-              borderRadius: '6px' 
-            }} 
-          />
+          {/* Designation Field */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{
+              display: 'block',
+              marginBottom: '5px',
+              fontSize: '16px',
+              fontWeight: '500',
+              color: '#374151'
+            }}>Designation *</label>
+            <input 
+              type="text" 
+              placeholder="Enter designation"
+              value={inviteData.designation} 
+              onChange={(e) => setInviteData({...inviteData, designation: e.target.value})} 
+              required
+              style={{
+                width: '100%',
+                height: '44px',
+                borderRadius: '8px',
+                border: '1px solid #dcdcdc',
+                padding: '0 14px',
+                fontSize: '14px',
+                background: '#fafafa',
+                transition: 'all 0.2s ease'
+              }}
+            />
+          </div>
           
-          <input 
-            type="text" 
-            placeholder="Designation" 
-            value={inviteData.designation} 
-            onChange={(e) => setInviteData({...inviteData, designation: e.target.value})} 
-            required 
-            style={{ 
-              width: '100%', 
-              padding: '10px', 
-              marginBottom: '20px', 
-              border: '1px solid #e5e7eb', 
-              borderRadius: '6px' 
-            }} 
-          />
-          
+          {/* Form Actions */}
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
             <button
               type="button"
               onClick={onClose}
               style={{
-                padding: '12px 20px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                border: '1px solid #d1d5db',
                 background: 'white',
+                color: '#374151',
                 fontSize: '14px',
-                cursor: 'pointer'
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
               }}
             >
               Cancel
             </button>
             <button 
               type="submit" 
-              disabled={inviteLoading} 
-              style={{ 
-                padding: '12px 20px', 
-                background: inviteLoading ? '#9ca3af' : '#3b82f6', 
-                color: 'white', 
-                border: 'none', 
-                borderRadius: '6px', 
-                fontSize: '14px', 
-                fontWeight: '600', 
-                cursor: inviteLoading ? 'not-allowed' : 'pointer' 
+              disabled={inviteLoading}
+              style={{
+                padding: '12px 24px',
+                borderRadius: '8px',
+                border: 'none',
+                background: inviteLoading ? '#9ca3af' : '#1f4f8f',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: inviteLoading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease'
               }}
             >
               {inviteLoading ? (
                 <>
-                  <i className="fas fa-spinner fa-spin"></i> Sending...
+                  <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
+                  Sending Invite...
                 </>
               ) : (
                 'Send Invite'
@@ -240,6 +380,28 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             </button>
           </div>
         </form>
+        
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            background: 'none',
+            border: 'none',
+            fontSize: '20px',
+            cursor: 'pointer',
+            color: '#6b7280',
+            width: '24px',
+            height: '24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          ×
+        </button>
       </div>
     </>
   );

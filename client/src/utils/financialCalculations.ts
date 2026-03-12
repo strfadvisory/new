@@ -47,7 +47,8 @@ function calculateCompoundGrowth(principal: number, rate: number, years: number)
   return principal * Math.pow(1 + rate, years);
 }
 
-// Calculate Net Present Value
+// Calculate Net Present Value (currently unused but available for future features)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function calculateNPV(cashflows: number[], discountRate: number): number {
   return cashflows.reduce((npv, cf, year) => {
     return npv + cf / Math.pow(1 + discountRate, year);

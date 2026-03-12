@@ -1,5 +1,5 @@
 const express = require('express');
-const { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getMasterRoles, getUserPermissions, getUserNextSteps, getUserVideos } = require('../controllers/roleController');
+const { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getMasterRoles, getUserPermissions, getUserNextSteps, getUserVideos, getUserSubRoles } = require('../controllers/roleController');
 const { protect } = require('../middleware/authMiddleware.jsx');
 const { restrictToUserRole, requirePermission } = require('../middleware/userRoleMiddleware');
 
@@ -15,6 +15,7 @@ router.get('/default-permissions', protect, getUserPermissions);
 // User dashboard routes
 router.get('/user-nextsteps', protect, getUserNextSteps);
 router.get('/user-videos', protect, getUserVideos);
+router.get('/user-subroles', protect, getUserSubRoles);
 
 // Protected CRUD routes
 router.post('/', protect, createRole);

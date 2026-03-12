@@ -25,6 +25,21 @@ interface UserVideosResponse {
   }>;
 }
 
+interface UserSubRolesResponse {
+  subRoles: Array<{
+    _id: string;
+    name: string;
+    permissionLevel: string;
+  }>;
+  debug?: {
+    message: string;
+    roleName?: string;
+    roleType?: string;
+    subRolesCount?: number;
+    suggestion?: string;
+  };
+}
+
 // Roles API functions
 export const rolesApi = {
   // Get all roles
@@ -78,6 +93,12 @@ export const rolesApi = {
   // Get user videos
   getUserVideos: async (): Promise<UserVideosResponse> => {
     const response = await apiClient.get(API_ENDPOINTS.ROLES.USER_VIDEOS);
+    return response.data;
+  },
+
+  // Get user sub roles
+  getUserSubRoles: async (): Promise<UserSubRolesResponse> => {
+    const response = await apiClient.get(API_ENDPOINTS.ROLES.USER_SUBROLES);
     return response.data;
   },
 

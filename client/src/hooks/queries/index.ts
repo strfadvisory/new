@@ -6,3 +6,4 @@ export * from './useLibrary';
 export * from './useReserveStudies';
 export * from './useValidation';
 export * from './useMaster';
+export * from '../useSuperAdmin';

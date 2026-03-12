@@ -47,7 +47,16 @@ const associationSchema = new mongoose.Schema({
   websiteUrl: {
     type: String,
     trim: true
-  }
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  allowUser: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }]
 }, { 
   timestamps: true 
 });

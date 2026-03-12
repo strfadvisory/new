@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { useLocation } from 'react-router-dom';
+import SuperAdminDashboard from './superadmin/SuperAdminDashboard';
 import {
   useUserNextsteps,
   useUserVideos,
@@ -78,63 +79,9 @@ const Simulator: React.FC = () => {
 
   return (
     <div className="fluid-content" style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 0' }}>
+      <SuperAdminDashboard />
  
-      <div style={{ marginBottom: '40px' }}> 
-        <h1 style={{ fontSize: '32px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>Welcome, {user?.firstName}</h1>
-        <p style={{ fontSize: '16px', color: '#6b7280' }}>Choose your Company type you like to signup aw</p>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '60px' }}>
-        {videos.length > 0 ? videos.map((video, index) => (
-          <div key={index} style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div 
-              style={{ background: '#f3f4f6', borderRadius: '8px', height: '180px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundImage: video.thumbnail ? `url(${video.thumbnail})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', cursor: 'pointer' }}
-              onClick={() => {
-                setCurrentVideo(video);
-                setShowVideoModal(true);
-              }}
-            >
-              <div style={{ width: '60px', height: '60px', background: '#10b981', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className="fas fa-play" style={{ color: 'white', fontSize: '24px' }}></i>
-              </div>
-            </div>
-            <h3 style={{ fontSize: '16px', fontWeight: '500', color: '#1f2937' }}>{video.title}</h3>
-            <p style={{ fontSize: '14px', color: '#6b7280', margin: '8px 0 0 0' }}>{video.description}</p>
-          </div>
-        )) : (
-          <p style={{ color: '#6b7280', textAlign: 'center', padding: '20px' }}>No videos available</p>
-        )}
-      </div>
-
-      <div>
-        <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#1f2937', marginBottom: '24px' }}>Choose Next Step</h2>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {nextSteps.length > 0 ? nextSteps.map((step, index) => (
-            <div 
-              key={index} 
-              className="step-card"
-              onClick={() => {
-                if (step.title === 'Invite Advisory') {
-                  setShowInviteModal(true);
-                }
-              }}
-              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '24px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}
-            >
-              <div style={{ width: '48px', height: '48px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className={`fas fa-${step.icon}`} style={{ fontSize: '24px', color: '#1f2937' }}></i>
-              </div>
-              <div style={{ flex: 1, marginLeft: '20px' }}>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>{step.title}</h3>
-                <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>{step.description}</p>
-              </div>
-              <i className="fas fa-chevron-right" style={{ fontSize: '20px', color: '#9ca3af' }}></i>
-            </div>
-          )) : (
-            <p style={{ color: '#6b7280', textAlign: 'center', padding: '20px' }}>No next steps available</p>
-          )}
-        </div>
-      </div>
+ 
 
       {showInviteModal && (
         <>

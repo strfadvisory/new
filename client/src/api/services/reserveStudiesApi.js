@@ -3,17 +3,27 @@ import { API_ENDPOINTS } from '../config';
 
 // Reserve Studies API functions
 export const reserveStudiesApi = {
-  // Get all reserve studies
-  getReserveStudies: async (params = {}) => {
-    const response = await apiClient.get(API_ENDPOINTS.RESERVE_STUDIES.BASE, { params });
+  // Get all reserve studies (now requires associationId)
+  getReserveStudies: async (associationId) => {
+    if (!associationId) {
+      throw new Error('Association ID is required');
+    }
+    const response = await apiClient.post(`${API_ENDPOINTS.RESERVE_STUDIES.BASE}/list`, { associationId });
     return response.data;
   },
 
-  // Get reserve studies by association
-  getReserveStudiesByAssociation: async (association) => {
-    const response = await apiClient.get(API_ENDPOINTS.RESERVE_STUDIES.BASE, {
-      params: { association }
-    });
+  // Get all reserve studies for superadmin (no associationId required)
+  getAllReserveStudies: async () => {
+    const response = await apiClient.get(API_ENDPOINTS.RESERVE_STUDIES.ALL);
+    return response.data;
+  },
+
+  // Get reserve studies by association (updated to use new method)
+  getReserveStudiesByAssociation: async (associationId) => {
+    if (!associationId) {
+      throw new Error('Association ID is required');
+    }
+    const response = await apiClient.post(`${API_ENDPOINTS.RESERVE_STUDIES.BASE}/list`, { associationId });
     return response.data;
   },
 

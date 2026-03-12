@@ -183,6 +183,67 @@ const getUserVideos = async (req, res) => {
   }
 };
 
+const getUserSubRoles = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate('roleId');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    console.log('User found:', user.email);
+    console.log('User isSuperAdmin:', user.isSuperAdmin);
+    console.log('User roleId:', user.roleId);
+    
+    const role = user.roleId;
+    if (!role) {
+      console.log('No role found for user');
+      return res.json({ 
+        subRoles: [], 
+        debug: { 
+          message: 'No role assigned to user',
+          suggestion: 'User needs to be assigned a role with subRoles'
+        } 
+      });
+    }
+
+    console.log('Role found:', role.name);
+    console.log('Role subRoles:', role.subRoles);
+    
+    if (!role.subRoles || role.subRoles.length === 0) {
+      console.log('No subRoles found in role');
+      return res.json({ 
+        subRoles: [], 
+        debug: { 
+          message: 'No subRoles found in user role', 
+          roleName: role.name,
+          roleType: role.type,
+          suggestion: 'Contact administrator to configure subRoles for this role'
+        } 
+      });
+    }
+
+    // Get subRoles only from the user's specific role
+    const subRoles = role.subRoles.map(subRole => ({
+      _id: subRole.id,
+      name: subRole.role,
+      permissionLevel: subRole.permissionLevel
+    }));
+
+    console.log('Mapped subRoles from user role:', subRoles);
+
+    res.json({ 
+      subRoles,
+      debug: {
+        message: 'SubRoles found from user specific role',
+        roleName: role.name,
+        roleType: role.type,
+        subRolesCount: subRoles.length
+      }
+    });
+  } catch (error) {
+    console.error('Error in getUserSubRoles:', error);
+    res.status(400).json({ message: error.message, debug: { error: error.toString() } });
+  }
+};
+
 module.exports = { 
   createRole, 
   getAllRoles, 
@@ -192,5 +253,6 @@ module.exports = {
   getMasterRoles,
   getUserPermissions,
   getUserNextSteps,
-  getUserVideos
+  getUserVideos,
+  getUserSubRoles
 };

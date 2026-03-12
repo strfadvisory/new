@@ -4,21 +4,32 @@ import { QUERY_KEYS } from '../../api/config';
 
 // Reserve Studies Query Hooks
 
-// Get all reserve studies
-export const useReserveStudies = (params = {}) => {
+// Get all reserve studies (now requires associationId)
+export const useReserveStudies = (associationId, enabled = true) => {
   return useQuery({
-    queryKey: QUERY_KEYS.RESERVE_STUDIES.ALL,
-    queryFn: () => reserveStudiesApi.getReserveStudies(params),
+    queryKey: QUERY_KEYS.RESERVE_STUDIES.BY_ASSOCIATION(associationId),
+    queryFn: () => reserveStudiesApi.getReserveStudies(associationId),
+    enabled: enabled && !!associationId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+};
+
+// Get all reserve studies for superadmin (no associationId required)
+export const useAllReserveStudies = (enabled = true) => {
+  return useQuery({
+    queryKey: QUERY_KEYS.RESERVE_STUDIES.ALL_SUPERADMIN,
+    queryFn: reserveStudiesApi.getAllReserveStudies,
+    enabled: enabled,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
 
 // Get reserve studies by association
-export const useReserveStudiesByAssociation = (association, enabled = true) => {
+export const useReserveStudiesByAssociation = (associationId, enabled = true) => {
   return useQuery({
-    queryKey: QUERY_KEYS.RESERVE_STUDIES.BY_ASSOCIATION(association),
-    queryFn: () => reserveStudiesApi.getReserveStudiesByAssociation(association),
-    enabled: enabled && !!association,
+    queryKey: QUERY_KEYS.RESERVE_STUDIES.BY_ASSOCIATION(associationId),
+    queryFn: () => reserveStudiesApi.getReserveStudiesByAssociation(associationId),
+    enabled: enabled && !!associationId,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
@@ -42,12 +53,11 @@ export const useCreateReserveStudy = () => {
   return useMutation({
     mutationFn: reserveStudiesApi.createReserveStudy,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESERVE_STUDIES.ALL });
-      // Invalidate all association-specific queries
+      // Invalidate all association-specific queries and superadmin queries
       queryClient.invalidateQueries({ 
         predicate: (query) => 
           query.queryKey[0] === 'reserve-studies' && 
-          query.queryKey[1] === 'by-association'
+          (query.queryKey[1] === 'by-association' || query.queryKey[1] === 'all-superadmin')
       });
     },
   });
@@ -61,15 +71,14 @@ export const useUpdateReserveStudy = () => {
     mutationFn: ({ studyId, studyData }) => 
       reserveStudiesApi.updateReserveStudy(studyId, studyData),
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESERVE_STUDIES.ALL });
       queryClient.invalidateQueries({ 
         queryKey: QUERY_KEYS.RESERVE_STUDIES.BY_ID(variables.studyId) 
       });
-      // Invalidate association-specific queries
+      // Invalidate association-specific queries and superadmin queries
       queryClient.invalidateQueries({ 
         predicate: (query) => 
           query.queryKey[0] === 'reserve-studies' && 
-          query.queryKey[1] === 'by-association'
+          (query.queryKey[1] === 'by-association' || query.queryKey[1] === 'all-superadmin')
       });
     },
   });
@@ -82,12 +91,11 @@ export const useDeleteReserveStudy = () => {
   return useMutation({
     mutationFn: reserveStudiesApi.deleteReserveStudy,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.RESERVE_STUDIES.ALL });
-      // Invalidate all association-specific queries
+      // Invalidate all association-specific queries and superadmin queries
       queryClient.invalidateQueries({ 
         predicate: (query) => 
           query.queryKey[0] === 'reserve-studies' && 
-          query.queryKey[1] === 'by-association'
+          (query.queryKey[1] === 'by-association' || query.queryKey[1] === 'all-superadmin')
       });
     },
   });

@@ -27,6 +27,15 @@ const reserveStudySchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  allowUser: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
   associationId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Association'

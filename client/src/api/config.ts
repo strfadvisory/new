@@ -37,6 +37,7 @@ export const API_ENDPOINTS = {
     COMPANY_TYPES: '/roles/company-types',
     USER_NEXTSTEPS: '/roles/user-nextsteps',
     USER_VIDEOS: '/roles/user-videos',
+    USER_SUBROLES: '/roles/user-subroles',
     CHILD_ROLES: '/roles/child-roles',
     USER_NEXTSTEP: '/roles/user-nextstep',
     DEFAULT_PERMISSIONS: '/roles/default-permissions',
@@ -55,6 +56,7 @@ export const API_ENDPOINTS = {
   // Reserve Studies endpoints
   RESERVE_STUDIES: {
     BASE: '/reserve-studies',
+    ALL: '/reserve-studies/all', // For superadmin to get all reserve studies
   },
   
   // Master endpoints
@@ -93,6 +95,7 @@ export const QUERY_KEYS = {
     COMPANY_TYPES: ['roles', 'company-types'] as const,
     USER_NEXTSTEPS: ['roles', 'user-nextsteps'] as const,
     USER_VIDEOS: ['roles', 'user-videos'] as const,
+    USER_SUBROLES: ['roles', 'user-subroles'] as const,
     CHILD_ROLES: ['roles', 'child-roles'] as const,
     DEFAULT_PERMISSIONS: ['roles', 'default-permissions'] as const,
   },
@@ -112,6 +115,7 @@ export const QUERY_KEYS = {
   // Reserve Studies queries
   RESERVE_STUDIES: {
     ALL: ['reserve-studies', 'all'] as const,
+    ALL_SUPERADMIN: ['reserve-studies', 'all-superadmin'] as const, // For superadmin
     BY_ASSOCIATION: (association: string) => ['reserve-studies', 'by-association', association] as const,
     BY_ID: (id: string) => ['reserve-studies', 'detail', id] as const,
   },

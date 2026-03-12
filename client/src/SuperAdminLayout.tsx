@@ -393,7 +393,6 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const headerTabs = [
     { id: 'simulators', label: 'Simulators', path: '/admin/simulators' },
     { id: 'companies', label: 'Companies', path: '/admin/companies' },
-    { id: 'role-manager', label: 'Role Manager', path: '/admin/role-manager' },
     { id: 'library', label: 'Library', path: '/admin/library' },
     { id: 'ltm-manager', label: 'LTM Manager', path: '#' }
   ];

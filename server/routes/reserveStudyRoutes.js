@@ -5,9 +5,11 @@ const {
   uploadReserveStudyToGridFS,
   createReserveStudy,
   getReserveStudies,
+  getAllReserveStudies,
   getReserveStudy,
   getReserveStudyData,
   downloadReserveStudy,
+  updateReserveStudy,
   deleteReserveStudy
 } = require('../controllers/reserveStudyController');
 const { protect } = require('../middleware/authMiddleware.jsx');
@@ -17,10 +19,12 @@ router.use(protect);
 
 // Routes
 router.post('/', upload.single('excelFile'), uploadReserveStudyToGridFS, createReserveStudy);
-router.get('/', getReserveStudies);
+router.post('/list', getReserveStudies);
+router.get('/all', getAllReserveStudies); // New route for superadmin
 router.get('/:id', getReserveStudy);
 router.get('/:id/data', getReserveStudyData);
 router.get('/:id/download', downloadReserveStudy);
+router.put('/:id', updateReserveStudy);
 router.delete('/:id', deleteReserveStudy);
 
 module.exports = router;

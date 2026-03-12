@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
+import AddAssociationPopup from '../../components/AddAssociationPopup';
+import InviteMemberModal from '../../components/InviteMemberModal';
 
 const SuperAdminDashboard: React.FC = () => {
   const [selectedAssociation, setSelectedAssociation] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
+  const [showCreateAssociationModal, setShowCreateAssociationModal] = useState(false);
+  const [showInviteMemberModal, setShowInviteMemberModal] = useState(false);
+
+  const handleAssociationSuccess = () => {
+    // Handle successful association creation
+    console.log('Association created successfully');
+  };
 
   return (
     <div style={{  minHeight: '100vh', padding: '40px 20px' }}>
@@ -48,17 +57,19 @@ const SuperAdminDashboard: React.FC = () => {
         {/* Action Cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Invite New Associations */}
-          <div style={{
-            background: 'white',
-            border: '1px solid #e6e6e6',
-            borderRadius: '10px',
-            padding: '24px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '20px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}>
+          <div 
+            onClick={() => setShowCreateAssociationModal(true)}
+            style={{
+              background: 'white',
+              border: '1px solid #e6e6e6',
+              borderRadius: '10px',
+              padding: '24px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '20px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}>
             <div style={{
               width: '48px',
               height: '48px',
@@ -89,17 +100,19 @@ const SuperAdminDashboard: React.FC = () => {
           </div>
 
           {/* Add New Members */}
-          <div style={{
-            background: 'white',
-            border: '1px solid #e6e6e6',
-            borderRadius: '10px',
-            padding: '24px',
-            display: 'flex',
-            alignItems: 'flex-start',
-            gap: '20px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}>
+          <div 
+            onClick={() => setShowInviteMemberModal(true)}
+            style={{
+              background: 'white',
+              border: '1px solid #e6e6e6',
+              borderRadius: '10px',
+              padding: '24px',
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '20px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}>
             <div style={{
               width: '48px',
               height: '48px',
@@ -131,6 +144,20 @@ const SuperAdminDashboard: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Add Association Popup */}
+        <AddAssociationPopup
+          isOpen={showCreateAssociationModal}
+          onClose={() => setShowCreateAssociationModal(false)}
+          onSuccess={handleAssociationSuccess}
+        />
+
+        {/* Invite Member Modal */}
+        <InviteMemberModal
+          isOpen={showInviteMemberModal}
+          onClose={() => setShowInviteMemberModal(false)}
+          title="Add New Member"
+        />
       </div>
     </div>
   );

@@ -2,8 +2,14 @@ const Association = require('../models/Association');
 
 const getAllAssociations = async (req, res) => {
   try {
-    const associations = await Association.find()
-      .sort({ createdAt: -1 });
+    let filter = {};
+    
+    // If user is superadmin, show all associations
+    if (!req.user.isSuperAdmin) {
+      filter.allowUser = { $in: [req.user.id] };
+    }
+    
+    const associations = await Association.find(filter).sort({ createdAt: -1 });
     
     res.json(associations);
   } catch (error) {
@@ -56,7 +62,9 @@ const createAssociation = async (req, res) => {
       phone,
       email,
       linkedinUrl,
-      websiteUrl
+      websiteUrl,
+      createdBy: req.user.id,
+      allowUser: [req.user.id]
     });
     
     await association.save();
@@ -85,7 +93,8 @@ const updateAssociation = async (req, res) => {
       phone, 
       email, 
       linkedinUrl, 
-      websiteUrl 
+      websiteUrl,
+      allowUser
     } = req.body;
     
     const association = await Association.findByIdAndUpdate(
@@ -101,7 +110,8 @@ const updateAssociation = async (req, res) => {
         phone, 
         email, 
         linkedinUrl, 
-        websiteUrl 
+        websiteUrl,
+        ...(allowUser && { allowUser })
       },
       { new: true }
     );
