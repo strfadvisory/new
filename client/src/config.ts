@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
   companyTypes: `${API_BASE_URL}/roles/company-types`,
   userNextsteps: `${API_BASE_URL}/roles/user-nextsteps`,
   userVideos: `${API_BASE_URL}/roles/user-videos`,
+  userSubRoles: `${API_BASE_URL}/roles/user-subroles`,
   childRoles: `${API_BASE_URL}/roles/child-roles`,
   userNextstep: `${API_BASE_URL}/roles/user-nextstep`,
   defaultPermissions: `${API_BASE_URL}/roles/default-permissions`,

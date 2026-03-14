@@ -244,6 +244,32 @@ const getUserSubRoles = async (req, res) => {
   }
 };
 
+const getRoleSubRoles = async (req, res) => {
+  try {
+    const { id: roleId } = req.params;
+    
+    const role = await Role.findById(roleId);
+    if (!role) {
+      return res.status(404).json({ message: 'Role not found' });
+    }
+
+    const subRoles = role.subRoles?.map(subRole => ({
+      _id: subRole.id,
+      name: subRole.role,
+      permissionLevel: subRole.permissionLevel
+    })) || [];
+
+    res.json({ 
+      subRoles,
+      roleName: role.name,
+      roleType: role.type
+    });
+  } catch (error) {
+    console.error('Error in getRoleSubRoles:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = { 
   createRole, 
   getAllRoles, 
@@ -254,5 +280,6 @@ module.exports = {
   getUserPermissions,
   getUserNextSteps,
   getUserVideos,
-  getUserSubRoles
+  getUserSubRoles,
+  getRoleSubRoles
 };

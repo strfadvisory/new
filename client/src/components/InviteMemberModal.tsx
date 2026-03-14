@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { rolesApi } from '../api/services/rolesApi';
-import { authApi } from '../api/services/authApi';
+import { useAddMember } from '../hooks/queries/useAuth';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -35,8 +35,8 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     designation: ''
   });
   const [subRoles, setSubRoles] = useState<SubRole[]>([]);
-  const [inviteLoading, setInviteLoading] = useState(false);
   const [loadingSubRoles, setLoadingSubRoles] = useState(false);
+  const addMemberMutation = useAddMember();
 
   useEffect(() => {
     if (isOpen) {
@@ -65,15 +65,12 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setInviteLoading(true);
     try {
-      await authApi.addMember(inviteData);
+      await addMemberMutation.mutateAsync(inviteData);
       setInviteData({ selectedRole: '', firstName: '', lastName: '', email: '', designation: '' });
       onClose();
     } catch (error) {
       console.error('Error sending invitation:', error);
-    } finally {
-      setInviteLoading(false);
     }
   };
 
@@ -318,20 +315,20 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             </button>
             <button 
               type="submit" 
-              disabled={inviteLoading}
+              disabled={addMemberMutation.isPending}
               style={{
                 padding: '12px 24px',
                 borderRadius: '8px',
                 border: 'none',
-                background: inviteLoading ? '#9ca3af' : '#1f4f8f',
+                background: addMemberMutation.isPending ? '#9ca3af' : '#1f4f8f',
                 color: 'white',
                 fontSize: '14px',
                 fontWeight: '600',
-                cursor: inviteLoading ? 'not-allowed' : 'pointer',
+                cursor: addMemberMutation.isPending ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s ease'
               }}
             >
-              {inviteLoading ? (
+              {addMemberMutation.isPending ? (
                 <>
                   <i className="fas fa-spinner fa-spin" style={{ marginRight: '8px' }}></i>
                   Sending Invite...

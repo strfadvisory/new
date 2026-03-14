@@ -234,6 +234,20 @@ export const roleService = {
     return response.json();
   },
 
+  getUserSubRoles: async () => {
+    const response = await fetch(API_ENDPOINTS.userSubRoles, {
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
+  getRoleSubRoles: async (roleId: string) => {
+    const response = await fetch(`${API_ENDPOINTS.roles}/${roleId}/subroles`, {
+      headers: getAuthHeaders()
+    });
+    return response.json();
+  },
+
   getChildRoles: async () => {
     const response = await fetch(API_ENDPOINTS.childRoles, {
       headers: getAuthHeaders()

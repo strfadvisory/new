@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './AllCompanies.css';
-import { useCompanies, useRemoveLogo, useDeleteUser } from '../../services/hooks';
+import { useCompanies, useRemoveLogo, useDeleteUser, useRoleSubRoles } from '../../services/hooks';
 import { API_ENDPOINTS } from '../../config';
 
 interface User {
@@ -34,11 +34,12 @@ interface User {
 const AllCompanies: React.FC = () => {
   const { data: users = [], isLoading, error } = useCompanies();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const { data: subRolesData } = useRoleSubRoles(selectedUser?.roleId?._id || '');
   const [searchTerm, setSearchTerm] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -120,7 +121,7 @@ const AllCompanies: React.FC = () => {
     return `${addr.address1 || ''} ${addr.address2 || ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.zipCode || ''}`.trim();
   };
 
-  const filteredUsers = typedUsers.filter((user: User) => 
+  const filteredUsers = typedUsers.filter((user: User) =>
     `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -158,8 +159,8 @@ const AllCompanies: React.FC = () => {
               >
                 <div className="company-logo">
                   {user.companyProfile?.logoId ? (
-                    <img 
-                      src={`${API_ENDPOINTS.file}/${user.companyProfile.logoId}`} 
+                    <img
+                      src={`${API_ENDPOINTS.file}/${user.companyProfile.logoId}`}
                       alt={user.companyProfile.companyName || `${user.firstName} ${user.lastName}`}
                       onError={(e) => {
                         e.currentTarget.src = '/logo.png';
@@ -181,7 +182,7 @@ const AllCompanies: React.FC = () => {
       </div>
 
       <div className="companies-right-panel">
-        <div style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto', position: 'relative', overflow: 'visible' }}> 
+        <div style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto', position: 'relative', overflow: 'visible' }}>
           {selectedUser && (
             <>
               {/* Company Detail Header */}
@@ -189,16 +190,16 @@ const AllCompanies: React.FC = () => {
                 <h2 className="company-detail-title">
                   Company Detail
                 </h2>
-                
+
                 <div className="custom-dropdown" ref={dropdownRef}>
                   <button
                     onClick={() => setDropdownOpen(!dropdownOpen)}
                     className="dropdown-btn"
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="1"/>
-                      <circle cx="12" cy="5" r="1"/>
-                      <circle cx="12" cy="19" r="1"/>
+                      <circle cx="12" cy="12" r="1" />
+                      <circle cx="12" cy="5" r="1" />
+                      <circle cx="12" cy="19" r="1" />
                     </svg>
                   </button>
                   {dropdownOpen && (
@@ -217,14 +218,14 @@ const AllCompanies: React.FC = () => {
                 </div>
               </div>
 
-              <div className="detail-section" style={{position: 'relative', display: 'flex', gap: '24px', alignItems: 'center'}}>
+              <div className="detail-section" style={{ position: 'relative', display: 'flex', gap: '24px', alignItems: 'center' }}>
                 <div className='logobox'>
                   {selectedUser.companyProfile?.logoId ? (
                     <>
-                      <img 
-                        src={`${API_ENDPOINTS.file}/${selectedUser.companyProfile.logoId}`} 
-                        alt="Company Logo" 
-                        style={{width: '100%', height: '100%', objectFit: 'contain'}} 
+                      <img
+                        src={`${API_ENDPOINTS.file}/${selectedUser.companyProfile.logoId}`}
+                        alt="Company Logo"
+                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                         onError={(e) => {
                           console.error('Failed to load logo:', `${API_ENDPOINTS.file}/${selectedUser.companyProfile?.logoId}`);
                           // Replace with placeholder image
@@ -233,21 +234,21 @@ const AllCompanies: React.FC = () => {
                         }}
                         onLoad={() => console.log('Logo loaded successfully')}
                       />
-                   
+
                     </>
                   ) : (
-                    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280', fontSize: '14px', flexDirection: 'column', gap: '8px'}}>
-                      <i className="fas fa-building" style={{fontSize: '24px', color: '#d1d5db'}}></i>
-       
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280', fontSize: '14px', flexDirection: 'column', gap: '8px' }}>
+                      <i className="fas fa-building" style={{ fontSize: '24px', color: '#d1d5db' }}></i>
+
                     </div>
                   )}
                 </div>
-                <div className='companybox'> 
+                <div className='companybox'>
                   <div className="detail-value">{selectedUser.companyProfile?.companyName || 'N/A'}</div>
                   <div className="detail-value">{selectedUser.roleId?.name || selectedUser.designation}</div>
                 </div>
               </div>
-            
+
               <div className="detail-section">
                 <div className="detail-label">Description</div>
                 <div className="detail-value">{selectedUser.companyProfile?.description || 'No description available'}</div>
@@ -264,29 +265,25 @@ const AllCompanies: React.FC = () => {
                   <div className="admin-info">{getFullAddress(selectedUser)}</div>
                   <div className="admin-contact">{selectedUser.email}, {selectedUser.phone}</div>
                 </div>
-              </div>
-
-              <div className="detail-section">
-                <div className="section-header">
-                  <div className="detail-label">Members</div>
-                  <div className="section-actions">
-                    <input type="text" placeholder="Search by name" className="inline-search" />
-                    <select className="inline-select"><option>All Members</option></select>
-                    <select className="inline-select"><option>Sort by</option></select>
-                  </div>
+              </div>  
+              {selectedUser?.roleId?._id && subRolesData?.subRoles?.length > 0 ? (
+                subRolesData.subRoles.map((subRole: any, index: number) => ( 
+                  <div className="detail-section" key={index}>
+                    <div className="section-header">
+                      <div className="detail-label">{subRole.name}</div>
+                      <div className="section-actions">
+                        <input type="text" placeholder="Search by name" className="inline-search" />
+                        <select className="inline-select"><option>All Members</option></select>
+                        <select className="inline-select"><option>Sort by</option></select>
+                      </div>
+                    </div>
+                  </div>  
+                ))
+              ) : (
+                <div className="no-sub-roles">
+                  {selectedUser?.roleId?._id ? 'No sub-roles available for this role' : 'No role assigned'}
                 </div>
-              </div>
-
-              <div className="detail-section">
-                <div className="section-header">
-                  <div className="detail-label">Association</div>
-                  <div className="section-actions">
-                    <input type="text" placeholder="Search by name" className="inline-search" />
-                    <select className="inline-select"><option>All Property Manager</option></select>
-                    <select className="inline-select"><option>Sort by</option></select>
-                  </div>
-                </div>
-              </div>
+              )} 
             </>
           )}
         </div>

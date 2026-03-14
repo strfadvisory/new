@@ -162,3 +162,16 @@ export const useUploadFile = () => {
     mutationFn: authApi.uploadFile,
   });
 };
+
+// Add member mutation
+export const useAddMember = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<any, Error, InviteData>({
+    mutationFn: authApi.addMember,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.USERS });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.ORG_USERS });
+    },
+  });
+};

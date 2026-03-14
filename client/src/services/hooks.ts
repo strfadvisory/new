@@ -201,6 +201,21 @@ export const useUserVideos = () => {
   });
 };
 
+export const useUserSubRoles = () => {
+  return useQuery({
+    queryKey: ['userSubRoles'],
+    queryFn: roleService.getUserSubRoles
+  });
+};
+
+export const useRoleSubRoles = (roleId: string) => {
+  return useQuery({
+    queryKey: ['roleSubRoles', roleId],
+    queryFn: () => roleService.getRoleSubRoles(roleId),
+    enabled: !!roleId
+  });
+};
+
 export const useChildRoles = () => {
   return useQuery({
     queryKey: ['childRoles'],
