@@ -124,4 +124,10 @@ export const authApi = {
     const response = await apiClient.post('/auth/addmember', inviteData);
     return response.data;
   },
+
+  // Resend member invitation
+  resendMemberInvitation: async (userId: string) => {
+    const response = await apiClient.post(`/auth/resend-member-invitation/${userId}`);
+    return response.data;
+  },
 };

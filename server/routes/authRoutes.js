@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, verifyOTP, resendOTP, createCompanyProfile, addMember, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken } = require('../controllers/authController');
+const { register, login, verifyOTP, resendOTP, createCompanyProfile, addMember, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken, resendMemberInvitation, verifyMemberToken, completeMember } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware.jsx');
 const { upload, uploadToGridFS } = require('../middleware/upload.jsx');
 const User = require('../models/User');
@@ -15,6 +15,9 @@ router.get('/verify-reset-token/:token', verifyResetToken);
 router.post('/reset-password/:token', resetPassword);
 router.post('/company-profile', protect, upload.single('logo'), uploadToGridFS, createCompanyProfile);
 router.post('/addmember', protect, addMember);
+router.post('/resend-member-invitation/:userId', protect, resendMemberInvitation);
+router.get('/verify-member/:token', verifyMemberToken);
+router.post('/complete-member/:token', completeMember);
 router.post('/invite-advisory', protect, inviteAdvisory);
 router.get('/verify-advisory/:token', verifyAdvisoryToken);
 router.post('/complete-advisory-profile/:token', completeAdvisoryProfile);

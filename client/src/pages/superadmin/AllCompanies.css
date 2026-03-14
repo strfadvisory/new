@@ -464,3 +464,63 @@
   margin: 0;
   line-height: 1.5;
 }
+
+/* UserManagement — status & verified badges */
+.um-badge-row {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+
+.um-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.um-status-active    { background: #dcfce7; color: #15803d; }
+.um-status-inactive  { background: #f3f4f6; color: #6b7280; }
+.um-status-pending   { background: #fef9c3; color: #a16207; }
+.um-status-suspended { background: #fee2e2; color: #b91c1c; }
+
+.um-verified   { background: #dbeafe; color: #1d4ed8; }
+.um-unverified { background: #fef3c7; color: #b45309; }
+
+/* Right panel status cards row */
+.um-status-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.um-status-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  min-width: 130px;
+}
+
+.um-status-card-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.um-status-card-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}

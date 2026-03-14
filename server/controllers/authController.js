@@ -557,4 +557,117 @@ const verifyResetToken = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile, addMember, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken };
+const verifyMemberToken = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = await User.findOne({
+      verificationToken: token,
+      verificationTokenExpiry: { $gt: new Date() }
+    }).populate('parentcompany', 'firstName lastName companyProfile');
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification link' });
+    }
+
+    const companyName = user.parentcompany?.companyProfile?.companyName ||
+      (user.parentcompany ? `${user.parentcompany.firstName} ${user.parentcompany.lastName}` : '');
+
+    res.json({
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      companyName
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const completeMember = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const user = await User.findOne({
+      verificationToken: token,
+      verificationTokenExpiry: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired verification link' });
+    }
+
+    user.password = password;
+    user.isVerified = true;
+    user.status = 'Active';
+    user.verificationToken = undefined;
+    user.verificationTokenExpiry = undefined;
+    await user.save();
+
+    const authToken = generateToken(user._id);
+    res.json({
+      message: 'Account activated successfully',
+      token: authToken,
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const resendMemberInvitation = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const loggedInUser = req.user;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.status !== 'pending') {
+      return res.status(400).json({ message: 'User is not in pending status' });
+    }
+
+    // Generate fresh token
+    const verificationToken = jwt.sign({ email: user.email }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+    user.verificationToken = verificationToken;
+    user.verificationTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await user.save();
+
+    const verificationLink = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-member/${verificationToken}`;
+
+    console.log('\n========== RESEND INVITATION ==========');
+    console.log('To:', user.email);
+    console.log('Verification URL:', verificationLink);
+    console.log('=======================================\n');
+
+    try {
+      await sendMemberInvitationEmail(
+        user.email,
+        verificationLink,
+        `${user.firstName} ${user.lastName}`.trim(),
+        loggedInUser.companyProfile?.companyName || `${loggedInUser.firstName} ${loggedInUser.lastName}`,
+        `${loggedInUser.firstName} ${loggedInUser.lastName}`
+      );
+    } catch (emailError) {
+      console.log('Email send failed. Link:', verificationLink);
+    }
+
+    res.json({ message: 'Invitation resent successfully', verificationLink });
+  } catch (error) {
+    console.error('Resend invitation error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile, addMember, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken, resendMemberInvitation, verifyMemberToken, completeMember };

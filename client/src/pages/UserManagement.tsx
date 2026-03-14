@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './superadmin/AllCompanies.css';
 import { useAuthUsers, useRemoveLogo, useDeleteUser } from '../hooks/queries/useAuth';
+import { authApi } from '../api/services/authApi';
+import { API_ENDPOINTS } from '../api/config';
 import InviteMemberModal from '../components/InviteMemberModal';
 
 interface User {
@@ -10,10 +12,10 @@ interface User {
   email: string;
   phone: string;
   designation: string;
-  roleId?: {
-    _id: string;
-    name: string;
-  };
+  status?: string;
+  isVerified?: boolean;
+  createdAt?: string;
+  roleId?: { _id: string; name: string };
   address?: {
     address1?: string;
     address2?: string;
@@ -32,49 +34,74 @@ interface User {
 }
 
 const UserManagement: React.FC = () => {
+  const { data: users = [], isLoading, error } = useAuthUsers();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // React Query hooks
-  const { data: users = [], isLoading: loading } = useAuthUsers();
   const removeLogoMutation = useRemoveLogo();
   const deleteUserMutation = useDeleteUser();
 
-  // Set first user as selected when data loads
-  React.useEffect(() => {
-    if (users.length > 0 && !selectedUser) {
-      setSelectedUser(users[0]);
-    }
-  }, [users, selectedUser]);
+  const typedUsers = Array.isArray(users) ? users as User[] : [];
 
-  const handleRemoveLogo = async () => {
-    if (!selectedUser?._id) return;
-    try {
-      await removeLogoMutation.mutateAsync(selectedUser._id);
-    } catch (error) {
-      console.error('Error removing logo:', error);
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
+
+  useEffect(() => {
+    if (typedUsers.length > 0 && !selectedUser) {
+      setSelectedUser(typedUsers[0]);
     }
+  }, [typedUsers, selectedUser]);
+
+  const handleRemoveLogo = () => {
+    if (!selectedUser?._id) return;
+    removeLogoMutation.mutate(selectedUser._id);
   };
 
-  const handleDeleteUser = async () => {
+  const handleDeleteUser = () => {
     if (!selectedUser?._id) return;
     setConfirmOpen(true);
+    setDropdownOpen(false);
   };
 
-  const confirmDelete = async () => {
+  const handleResendInvitation = async () => {
     if (!selectedUser?._id) return;
+    setDropdownOpen(false);
+    setResendLoading(true);
     try {
-      await deleteUserMutation.mutateAsync(selectedUser._id);
-      const updatedUsers = users.filter((u: User) => u._id !== selectedUser._id);
-      setSelectedUser(updatedUsers.length > 0 ? updatedUsers[0] : null);
-    } catch (error) {
-      console.error('Error deleting user:', error);
+      const res = await authApi.resendMemberInvitation(selectedUser._id);
+      console.log('\n========== INVITATION RESENT ==========');
+      console.log('To:', selectedUser.email);
+      console.log('Verification URL:', res.verificationLink);
+      console.log('=======================================\n');
+      alert('Invitation resent successfully!');
+    } catch (error: any) {
+      alert(error?.response?.data?.message || 'Failed to resend invitation');
     } finally {
-      setConfirmOpen(false);
+      setResendLoading(false);
     }
+  };
+
+  const confirmDelete = () => {
+    if (!selectedUser?._id) return;
+    deleteUserMutation.mutate(selectedUser._id, {
+      onSuccess: () => {
+        const updatedUsers = typedUsers.filter((u: User) => u._id !== selectedUser._id);
+        setSelectedUser(updatedUsers.length > 0 ? updatedUsers[0] : null);
+        setConfirmOpen(false);
+      }
+    });
   };
 
   const getFullAddress = (user: User) => {
@@ -83,26 +110,18 @@ const UserManagement: React.FC = () => {
     return `${addr.address1 || ''} ${addr.address2 || ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.zipCode || ''}`.trim();
   };
 
-  const filteredUsers = users.filter((user: User) => 
+  const filteredUsers = typedUsers.filter((user: User) =>
     `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="companies-container">
+      {/* Left Panel */}
       <div className="companies-left-panel">
         <div className="companies-header">
           <div className="header-top">
             <h2 className="results-title">{filteredUsers.length} Results founded</h2>
-            <a 
-              href="#" 
-              className="add-new-link"
-              onClick={(e) => {
-                e.preventDefault();
-                setInviteModalOpen(true);
-              }}
-            >
-              + Add New  
-            </a>
+            <a href="#" className="add-new-link" onClick={(e) => { e.preventDefault(); setInviteModalOpen(true); }}>+ Add New</a>
           </div>
           <input
             type="text"
@@ -112,10 +131,15 @@ const UserManagement: React.FC = () => {
             className="companies-search"
           />
         </div>
-        
         <div className="companies-list">
-          {loading ? (
+          {isLoading ? (
             <div style={{ padding: '20px', textAlign: 'center' }}>Loading...</div>
+          ) : error ? (
+            <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>
+              Error loading users: {error instanceof Error ? error.message : 'Unknown error'}
+            </div>
+          ) : typedUsers.length === 0 ? (
+            <div style={{ padding: '20px', textAlign: 'center' }}>No users found</div>
           ) : (
             filteredUsers.map((user: User) => (
               <div
@@ -125,15 +149,26 @@ const UserManagement: React.FC = () => {
               >
                 <div className="company-logo">
                   {user.companyProfile?.logoId ? (
-                    <img src={`/api/auth/file/${user.companyProfile.logoId}`} alt="User Logo" />
+                    <img
+                      src={`${API_ENDPOINTS.AUTH.FILE}/${user.companyProfile.logoId}`}
+                      alt={`${user.firstName} ${user.lastName}`}
+                      onError={(e) => { e.currentTarget.src = '/logo.png'; e.currentTarget.onerror = null; }}
+                    />
                   ) : (
                     <i className="fas fa-user" style={{ color: '#64748b', fontSize: '20px' }}></i>
                   )}
                 </div>
                 <div className="company-info">
                   <div className="company-name">{user.firstName} {user.lastName}</div>
-                  <div className="company-level">{user.designation}</div>
-                  <div className="company-address">{user.email}</div>
+                  <div className="company-address">{user.roleId?.name || user.designation}</div>
+                  <div className="um-badge-row">
+                    <span className={`um-badge um-status-${(user.status || 'active').toLowerCase()}`}>
+                      {user.status || 'Active'}
+                    </span>
+                    <span className={`um-badge ${user.isVerified ? 'um-verified' : 'um-unverified'}`}>
+                      {user.isVerified ? '✓ Verified' : '✗ Unverified'}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))
@@ -141,81 +176,118 @@ const UserManagement: React.FC = () => {
         </div>
       </div>
 
+      {/* Right Panel */}
       <div className="companies-right-panel">
-        <div className="fluid-content" style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 0' }}>
+        <div style={{ padding: '24px', paddingBottom: '50px', maxWidth: '800px', margin: '0 auto', position: 'relative', overflow: 'visible' }}>
           {selectedUser ? (
             <>
-              <div style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div className="role-info">
-                  <h1 style={{ fontSize: '32px', fontWeight: '600', color: '#1f2937', marginBottom: '8px' }}>User Management - {selectedUser.firstName} {selectedUser.lastName}</h1>
-                  <div className="role-type-badge">
-                    <span className="badge badge-user">
-                      {selectedUser.designation}
+              <div className="company-detail-header">
+                <h2 className="company-detail-title">User Detail</h2>
+                <div className="custom-dropdown" ref={dropdownRef}>
+                  <button onClick={() => setDropdownOpen(!dropdownOpen)} className="dropdown-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+                    </svg>
+                  </button>
+                  {dropdownOpen && (
+                    <div className="dropdown-content">
+                      <button onClick={handleDeleteUser} className="dropdown-option danger">Remove User</button>
+                      {selectedUser.status?.toLowerCase() === 'pending' && (
+                        <button
+                          onClick={handleResendInvitation}
+                          disabled={resendLoading}
+                          className="dropdown-option"
+                        >
+                          {resendLoading ? 'Sending...' : 'Resend Invitation'}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="detail-section" style={{ position: 'relative', display: 'flex', gap: '24px', alignItems: 'center' }}>
+                <div className="logobox">
+                  {selectedUser.companyProfile?.logoId ? (
+                    <img
+                      src={`${API_ENDPOINTS.AUTH.FILE}/${selectedUser.companyProfile.logoId}`}
+                      alt="Logo"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                      onError={(e) => { e.currentTarget.src = '/logo.png'; e.currentTarget.onerror = null; }}
+                    />
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#6b7280' }}>
+                      <i className="fas fa-user" style={{ fontSize: '24px', color: '#d1d5db' }}></i>
+                    </div>
+                  )}
+                </div>
+                <div className="companybox">
+                  <div className="detail-value">{selectedUser.firstName} {selectedUser.lastName}</div>
+                  <div className="detail-value">{selectedUser.roleId?.name || selectedUser.designation}</div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <div className="detail-label">Account Status</div>
+                <div className="um-status-row">
+                  <div className="um-status-card">
+                    <span className="um-status-card-label">Status</span>
+                    <span className={`um-badge um-status-${(selectedUser.status || 'active').toLowerCase()}`} style={{ fontSize: '13px', padding: '4px 12px' }}>
+                      {selectedUser.status || 'Active'}
                     </span>
                   </div>
+                  <div className="um-status-card">
+                    <span className="um-status-card-label">Email Verification</span>
+                    <span className={`um-badge ${selectedUser.isVerified ? 'um-verified' : 'um-unverified'}`} style={{ fontSize: '13px', padding: '4px 12px' }}>
+                      {selectedUser.isVerified ? '✓ Verified' : '✗ Not Verified'}
+                    </span>
+                  </div>
+                  {selectedUser.createdAt && (
+                    <div className="um-status-card">
+                      <span className="um-status-card-label">Member Since</span>
+                      <span className="um-status-card-value">{new Date(selectedUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="role-actions">
-                  <div className="custom-dropdown">
-                    <button
-                      onClick={() => setDropdownOpen(!dropdownOpen)}
-                      className="dropdown-btn"
-                    >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="1"/>
-                        <circle cx="12" cy="5" r="1"/>
-                        <circle cx="12" cy="19" r="1"/>
-                      </svg>
-                    </button>
-                    {dropdownOpen && (
-                      <div className="dropdown-content">
-                        <button onClick={() => { handleDeleteUser(); setDropdownOpen(false); }} className="dropdown-option danger">
-                          Remove User
-                        </button>
-                      </div>
-                    )}
+              </div>
+
+              <div className="detail-section">
+                <div className="detail-label">Description</div>
+                <div className="detail-value">{selectedUser.companyProfile?.description || 'No description available'}</div>
+              </div>
+
+              <div className="detail-section">
+                <div className="detail-label">Address</div>
+                <div className="detail-value">{getFullAddress(selectedUser)}</div>
+              </div>
+
+              <div className="detail-section">
+                <div className="detail-label">Contact Information</div>
+                <div className="admin-card">
+                  <div className="admin-name">{selectedUser.firstName} {selectedUser.lastName}</div>
+                  <div className="admin-info">{getFullAddress(selectedUser)}</div>
+                  <div className="admin-contact">{selectedUser.email}{selectedUser.phone ? `, ${selectedUser.phone}` : ''}</div>
+                </div>
+              </div>
+
+              <div className="detail-section">
+                <div className="section-header">
+                  <div className="detail-label">Members</div>
+                  <div className="section-actions">
+                    <input type="text" placeholder="Search by name" className="inline-search" />
+                    <select className="inline-select"><option>All Members</option></select>
+                    <select className="inline-select"><option>Sort by</option></select>
                   </div>
                 </div>
               </div>
-              
-              <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '32px' }}>
-                {selectedUser.companyProfile?.description || 'User profile and company information'}
-              </p>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', padding: '24px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
-                  <div style={{ width: '80px', height: '80px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                    {selectedUser.companyProfile?.logoId ? (
-                      <>
-                        <img src={`/api/auth/file/${selectedUser.companyProfile.logoId}`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
-                        <button onClick={handleRemoveLogo} style={{ position: 'absolute', top: '-8px', right: '-8px', width: '24px', height: '24px', borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '12px' }}>×</button>
-                      </>
-                    ) : (
-                      <i className="fas fa-building" style={{ fontSize: '32px', color: '#64748b' }}></i>
-                    )}
-                  </div>
-                  <div style={{ flex: 1, marginLeft: '20px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>{selectedUser.companyProfile?.companyName || 'Company Name'}</h3>
-                    <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>{selectedUser.roleId?.name || selectedUser.designation}</p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', padding: '24px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
-                  <div style={{ width: '48px', height: '48px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <i className="fas fa-map-marker-alt" style={{ fontSize: '20px', color: '#1f2937' }}></i>
-                  </div>
-                  <div style={{ flex: 1, marginLeft: '20px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Address</h3>
-                    <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>{getFullAddress(selectedUser)}</p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', padding: '24px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)' }}>
-                  <div style={{ width: '48px', height: '48px', background: '#f3f4f6', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <i className="fas fa-user" style={{ fontSize: '20px', color: '#1f2937' }}></i>
-                  </div>
-                  <div style={{ flex: 1, marginLeft: '20px' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#1f2937', marginBottom: '4px' }}>Contact Information</h3>
-                    <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>{selectedUser.email} • {selectedUser.phone}</p>
+              <div className="detail-section">
+                <div className="section-header">
+                  <div className="detail-label">Association</div>
+                  <div className="section-actions">
+                    <input type="text" placeholder="Search by name" className="inline-search" />
+                    <select className="inline-select"><option>All Property Manager</option></select>
+                    <select className="inline-select"><option>Sort by</option></select>
                   </div>
                 </div>
               </div>
@@ -227,58 +299,30 @@ const UserManagement: React.FC = () => {
                   <i className="fas fa-user"></i>
                 </div>
                 <h3 className="no-selection-title">Select a user to view details</h3>
-                <p className="no-selection-description">Choose a user from the sidebar to view their profile and company information.</p>
+                <p className="no-selection-description">Choose a user from the sidebar to view their profile and information.</p>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Confirm Delete Modal */}
       {confirmOpen && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }} onClick={() => setConfirmOpen(false)}>
-          <div style={{
-            background: 'white',
-            padding: '24px',
-            borderRadius: '8px',
-            minWidth: '400px',
-            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
-          }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001 }}
+          onClick={() => setConfirmOpen(false)}>
+          <div style={{ background: 'white', padding: '24px', borderRadius: '8px', minWidth: '400px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+            onClick={(e) => e.stopPropagation()}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#1f2937', fontWeight: '600' }}>Confirm Delete</h3>
             <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#6b7280' }}>Are you sure you want to delete this user?</p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setConfirmOpen(false)} style={{
-                padding: '8px 16px',
-                border: '1px solid #d1d5db',
-                borderRadius: '6px',
-                background: 'white',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>Cancel</button>
-              <button onClick={confirmDelete} style={{
-                padding: '8px 16px',
-                border: '1px solid #ef4444',
-                borderRadius: '6px',
-                background: 'white',
-                color: '#ef4444',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}>Remove this</button>
+              <button onClick={() => setConfirmOpen(false)} style={{ padding: '8px 16px', border: '1px solid #d1d5db', borderRadius: '4px', background: 'white', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={confirmDelete} style={{ padding: '8px 16px', border: 'none', borderRadius: '4px', background: '#dc3545', color: 'white', cursor: 'pointer' }}>Delete</button>
             </div>
           </div>
         </div>
       )}
-      
-      <InviteMemberModal 
+
+      <InviteMemberModal
         isOpen={inviteModalOpen}
         onClose={() => setInviteModalOpen(false)}
         title="Add New Member"
