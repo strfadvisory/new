@@ -55,12 +55,134 @@ router.get('/profile', protect, async (req, res) => {
 
 router.get('/users', protect, async (req, res) => {
   try {
-    const users = await User.find({ createdBy: req.user._id })
+    let users;
+    
+    // If user is super admin, show all users
+    if (req.user.isSuperAdmin) {
+      users = await User.find({})
+        .populate('roleId', 'name')
+        .select('-password -otp -otpExpiry');
+    }
+    // If user is ADMIN role, show users they created
+    else if (req.user.role === 'ADMIN') {
+      users = await User.find({ createdBy: req.user._id })
+        .populate('roleId', 'name')
+        .select('-password -otp -otpExpiry');
+    }
+    // If user is USER role, show users in their organization
+    else if (req.user.role === 'USER') {
+      // Find users where current user is in their memberfor array, or users created by companies user is member of
+      const currentUser = await User.findById(req.user._id);
+      
+      // Get companies user is member of
+      const memberOfCompanies = currentUser.memberfor || [];
+      
+      // Find users created by those companies, plus users where current user is in memberfor
+      users = await User.find({
+        $or: [
+          { createdBy: { $in: memberOfCompanies } },
+          { memberfor: req.user._id },
+          { _id: req.user._id } // Include current user
+        ]
+      })
       .populate('roleId', 'name')
       .select('-password -otp -otpExpiry');
+    }
+    else {
+      // For other roles, show users they created
+      users = await User.find({ createdBy: req.user._id })
+        .populate('roleId', 'name')
+        .select('-password -otp -otpExpiry');
+    }
+    
     res.json(users);
   } catch (error) {
+    console.error('Error fetching users:', error);
     res.status(500).json({ message: 'Error fetching users' });
+  }
+});
+
+// New endpoint to get users with organization request status
+router.get('/users-with-requests', protect, async (req, res) => {
+  try {
+    const loggedInUser = req.user;
+    
+    // Get users created by current user (existing members)
+    const createdUsers = await User.find({ createdBy: loggedInUser._id })
+      .populate('roleId', 'name')
+      .select('-password -otp -otpExpiry');
+    
+    // Get users who have pending/accepted/rejected requests from current user
+    const usersWithRequests = await User.find({
+      'reqorg.orgId': loggedInUser._id
+    })
+    .populate('roleId', 'name')
+    .select('-password -otp -otpExpiry');
+    
+    // Helper function to resolve role ID to role name
+    const resolveRoleName = (roleId) => {
+      if (!roleId || !roleId.includes('_')) {
+        return roleId; // Return as-is if not an ID
+      }
+      
+      // Load master data
+      const fs = require('fs');
+      const path = require('path');
+      try {
+        const masterPath = path.join(__dirname, '../master.json');
+        const masterData = JSON.parse(fs.readFileSync(masterPath, 'utf8'));
+        
+        // Search through all role categories
+        for (const roleCategory of Object.keys(masterData.roles)) {
+          const categoryRoles = masterData.roles[roleCategory].subRoles || [];
+          const foundRole = categoryRoles.find(r => r.id === roleId);
+          if (foundRole) {
+            return foundRole.role;
+          }
+        }
+      } catch (error) {
+        console.error('Error loading master data:', error);
+      }
+      
+      return roleId; // Return original if not found
+    };
+    
+    // Combine and format the results
+    const allUsers = [];
+    
+    // Add created users with 'member' status
+    createdUsers.forEach(user => {
+      allUsers.push({
+        ...user.toObject(),
+        requestStatus: user.status === 'pending' ? 'invitation_pending' : 'member',
+        requestRole: resolveRoleName(user.designation) || 'Member'
+      });
+    });
+    
+    // Add users with organization requests
+    usersWithRequests.forEach(user => {
+      const request = user.reqorg.find(req => req.orgId.toString() === loggedInUser._id.toString());
+      if (request) {
+        // Check if user is already in createdUsers to avoid duplicates
+        const existingIndex = allUsers.findIndex(u => u._id.toString() === user._id.toString());
+        if (existingIndex === -1) {
+          allUsers.push({
+            ...user.toObject(),
+            requestStatus: request.status, // pending, accepted, rejected
+            requestRole: resolveRoleName(request.role)
+          });
+        } else {
+          // Update existing user with request info
+          allUsers[existingIndex].requestStatus = request.status;
+          allUsers[existingIndex].requestRole = resolveRoleName(request.role);
+        }
+      }
+    });
+    
+    res.json(allUsers);
+  } catch (error) {
+    console.error('Error fetching users with requests:', error);
+    res.status(500).json({ message: 'Error fetching users with requests' });
   }
 });
 

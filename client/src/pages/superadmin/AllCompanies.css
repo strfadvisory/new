@@ -488,6 +488,10 @@
 .um-status-inactive  { background: #f3f4f6; color: #6b7280; }
 .um-status-pending   { background: #fef9c3; color: #a16207; }
 .um-status-suspended { background: #fee2e2; color: #b91c1c; }
+.um-status-accepted  { background: #dcfce7; color: #15803d; }
+.um-status-rejected  { background: #fee2e2; color: #b91c1c; }
+.um-status-invitation { background: #dbeafe; color: #1d4ed8; }
+.um-status-member    { background: #d1fae5; color: #065f46; }
 
 .um-verified   { background: #dbeafe; color: #1d4ed8; }
 .um-unverified { background: #fef3c7; color: #b45309; }

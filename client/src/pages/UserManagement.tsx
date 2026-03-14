@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './superadmin/AllCompanies.css';
-import { useAuthUsers, useRemoveLogo, useDeleteUser } from '../hooks/queries/useAuth';
+import { useUsersWithRequests, useRemoveLogo, useDeleteUser } from '../hooks/queries/useAuth';
 import { authApi } from '../api/services/authApi';
 import { API_ENDPOINTS } from '../api/config';
 import InviteMemberModal from '../components/InviteMemberModal';
@@ -17,6 +17,8 @@ interface User {
   isVerified?: boolean;
   createdAt?: string;
   roleId?: { _id: string; name: string };
+  requestStatus?: string; // New field for request status
+  requestRole?: string;   // New field for request role
   address?: {
     address1?: string;
     address2?: string;
@@ -35,7 +37,7 @@ interface User {
 }
 
 const UserManagement: React.FC = () => {
-  const { data: users = [], isLoading, error } = useAuthUsers();
+  const { data: users = [], isLoading, error } = useUsersWithRequests();
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -48,6 +50,27 @@ const UserManagement: React.FC = () => {
   const deleteUserMutation = useDeleteUser();
 
   const typedUsers = Array.isArray(users) ? users as User[] : [];
+
+  // Helper function to get status badge info
+  const getStatusBadge = (user: User) => {
+    if (user.requestStatus) {
+      switch (user.requestStatus) {
+        case 'pending':
+          return { text: 'Request Pending', class: 'um-status-pending' };
+        case 'accepted':
+          return { text: 'Request Accepted', class: 'um-status-accepted' };
+        case 'rejected':
+          return { text: 'Request Rejected', class: 'um-status-rejected' };
+        case 'invitation_pending':
+          return { text: 'Invitation Pending', class: 'um-status-invitation' };
+        case 'member':
+          return { text: 'Active Member', class: 'um-status-member' };
+        default:
+          return { text: user.status || 'Active', class: `um-status-${(user.status || 'active').toLowerCase()}` };
+      }
+    }
+    return { text: user.status || 'Active', class: `um-status-${(user.status || 'active').toLowerCase()}` };
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -161,10 +184,10 @@ const UserManagement: React.FC = () => {
                 </div>
                 <div className="company-info">
                   <div className="company-name">{user.firstName} {user.lastName}</div>
-                  <div className="company-address">{user.roleId?.name || user.designation}</div>
+                  <div className="company-address">{user.requestRole || user.roleId?.name || user.designation}</div>
                   <div className="um-badge-row">
-                    <span className={`um-badge um-status-${(user.status || 'active').toLowerCase()}`}>
-                      {user.status || 'Active'}
+                    <span className={`um-badge ${getStatusBadge(user).class}`}>
+                      {getStatusBadge(user).text}
                     </span>
                     <span className={`um-badge ${user.isVerified ? 'um-verified' : 'um-unverified'}`}>
                       {user.isVerified ? '✓ Verified' : '✗ Unverified'}
@@ -224,7 +247,7 @@ const UserManagement: React.FC = () => {
                 </div>
                 <div className="companybox">
                   <div className="detail-value">{selectedUser.firstName} {selectedUser.lastName}</div>
-                  <div className="detail-value">{selectedUser.roleId?.name || selectedUser.designation}</div>
+                  <div className="detail-value">{selectedUser.requestRole || selectedUser.roleId?.name || selectedUser.designation}</div>
                 </div>
               </div>
 
@@ -233,8 +256,8 @@ const UserManagement: React.FC = () => {
                 <div className="um-status-row">
                   <div className="um-status-card">
                     <span className="um-status-card-label">Status</span>
-                    <span className={`um-badge um-status-${(selectedUser.status || 'active').toLowerCase()}`} style={{ fontSize: '13px', padding: '4px 12px' }}>
-                      {selectedUser.status || 'Active'}
+                    <span className={`um-badge ${getStatusBadge(selectedUser).class}`} style={{ fontSize: '13px', padding: '4px 12px' }}>
+                      {getStatusBadge(selectedUser).text}
                     </span>
                   </div>
                   <div className="um-status-card">
@@ -247,6 +270,12 @@ const UserManagement: React.FC = () => {
                     <div className="um-status-card">
                       <span className="um-status-card-label">Member Since</span>
                       <span className="um-status-card-value">{new Date(selectedUser.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                    </div>
+                  )}
+                  {selectedUser.requestRole && (
+                    <div className="um-status-card">
+                      <span className="um-status-card-label">Requested Role</span>
+                      <span className="um-status-card-value">{selectedUser.requestRole}</span>
                     </div>
                   )}
                 </div>

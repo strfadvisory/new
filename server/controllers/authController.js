@@ -321,7 +321,8 @@ const addMember = async (req, res) => {
 
       res.status(201).json({ 
         message: 'Member invitation sent successfully', 
-        userId: newUser._id 
+        userId: newUser._id,
+        userExists: false
       });
     } else {
       // Case B: Email already exists - add organization request
@@ -332,7 +333,10 @@ const addMember = async (req, res) => {
       );
       
       if (existingRequest) {
-        return res.status(400).json({ message: 'Organization request already exists' });
+        return res.status(400).json({ 
+          message: 'Organization request already exists',
+          status: existingRequest.status
+        });
       }
 
       existingUser.reqorg.push({
@@ -344,7 +348,11 @@ const addMember = async (req, res) => {
 
       await existingUser.save();
 
-      res.json({ message: 'User already exists. Organization request sent.' });
+      res.json({ 
+        message: 'User already exists. Organization request sent.',
+        userExists: true,
+        userId: existingUser._id
+      });
     }
   } catch (error) {
     console.error('Add member error:', error);

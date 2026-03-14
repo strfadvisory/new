@@ -131,16 +131,55 @@ const getUserPermissions = async (req, res) => {
       });
     }
 
-    const role = user.roleId;
-    const permissions = role?.permissions || [];
-    
-    // Pass the full permissions array to getUserNavigation
-    const navigation = masterDataService.getUserNavigation(permissions);
-    
-    res.json({ 
-      permissions: permissions,
-      navigation,
-      menu: navigation
+    // Handle users with roleId (new structure)
+    if (user.roleId) {
+      const role = user.roleId;
+      const permissions = role?.permissions || [];
+      
+      // Pass the full permissions array to getUserNavigation
+      const navigation = masterDataService.getUserNavigation(permissions);
+      
+      return res.json({ 
+        permissions: permissions,
+        navigation,
+        menu: navigation
+      });
+    }
+
+    // Handle users with legacy role field (USER, ADMIN, etc.)
+    if (user.role === 'ADMIN') {
+      // ADMIN users get all modules
+      const allModules = masterDataService.masterData.modules.map(module => ({
+        level: module.displayName,
+        path: `/dashboard/${module.key.toLowerCase().replace('_', '-')}`
+      }));
+      
+      return res.json({
+        permissions: ['ADMIN'],
+        navigation: allModules,
+        menu: allModules
+      });
+    }
+
+    // USER role gets default navigation (same as ADMIN for now)
+    if (user.role === 'USER') {
+      const defaultModules = masterDataService.masterData.modules.map(module => ({
+        level: module.displayName,
+        path: `/dashboard/${module.key.toLowerCase().replace('_', '-')}`
+      }));
+      
+      return res.json({
+        permissions: ['USER'],
+        navigation: defaultModules,
+        menu: defaultModules
+      });
+    }
+
+    // Fallback for any other role
+    return res.json({
+      permissions: [],
+      navigation: [],
+      menu: []
     });
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -220,14 +259,35 @@ const getUserSubRoles = async (req, res) => {
       });
     }
 
-    // Get subRoles only from the user's specific role
-    const subRoles = role.subRoles.map(subRole => ({
-      _id: subRole.id,
-      name: subRole.role,
-      permissionLevel: subRole.permissionLevel
-    }));
+    // Get subRoles from the user's specific role and resolve role names
+    const subRoles = role.subRoles.map(subRole => {
+      // Try to resolve the role name from master data
+      let roleName = subRole.role;
+      
+      // If the role field contains an ID, try to resolve it
+      if (subRole.role && subRole.role.includes('_')) {
+        // Load master data to resolve role names
+        const masterData = masterDataService.masterData;
+        if (masterData && masterData.roles) {
+          // Search through all role categories
+          Object.keys(masterData.roles).forEach(roleCategory => {
+            const categoryRoles = masterData.roles[roleCategory].subRoles || [];
+            const foundRole = categoryRoles.find(r => r.id === subRole.role);
+            if (foundRole) {
+              roleName = foundRole.role;
+            }
+          });
+        }
+      }
+      
+      return {
+        _id: subRole.id,
+        name: roleName,
+        permissionLevel: subRole.permissionLevel
+      };
+    });
 
-    console.log('Mapped subRoles from user role:', subRoles);
+    console.log('Mapped subRoles with resolved names:', subRoles);
 
     res.json({ 
       subRoles,

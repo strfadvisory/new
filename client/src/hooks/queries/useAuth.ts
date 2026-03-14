@@ -163,6 +163,15 @@ export const useUploadFile = () => {
   });
 };
 
+// Get users with request status
+export const useUsersWithRequests = () => {
+  return useQuery({
+    queryKey: ['auth', 'users-with-requests'],
+    queryFn: authApi.getUsersWithRequests,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+};
+
 // Add member mutation
 export const useAddMember = () => {
   const queryClient = useQueryClient();
@@ -172,6 +181,7 @@ export const useAddMember = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.USERS });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.ORG_USERS });
+      queryClient.invalidateQueries({ queryKey: ['auth', 'users-with-requests'] });
     },
   });
 };

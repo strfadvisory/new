@@ -66,11 +66,20 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await addMemberMutation.mutateAsync(inviteData);
+      const response = await addMemberMutation.mutateAsync(inviteData);
+      
+      // Show appropriate message based on response
+      if (response.userExists) {
+        alert(`User already exists! Organization request has been sent to ${inviteData.email}`);
+      } else {
+        alert(`Invitation sent successfully to ${inviteData.email}`);
+      }
+      
       setInviteData({ selectedRole: '', firstName: '', lastName: '', email: '', designation: '' });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending invitation:', error);
+      alert(error.response?.data?.message || 'Failed to send invitation');
     }
   };
 

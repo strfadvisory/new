@@ -125,6 +125,12 @@ export const authApi = {
     return response.data;
   },
 
+  // Get users with request status
+  getUsersWithRequests: async () => {
+    const response = await apiClient.get('/auth/users-with-requests');
+    return response.data;
+  },
+
   // Resend member invitation
   resendMemberInvitation: async (userId: string) => {
     const response = await apiClient.post(`/auth/resend-member-invitation/${userId}`);

@@ -45,8 +45,8 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
   const [userCompanies, setUserCompanies] = useState<Company[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'companies' | 'requests'>('companies');
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -75,7 +75,6 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
       await switchCompany(companyId);
       onCompanyChanged?.();
       onClose();
-      // Optionally reload the page or update context
       window.location.reload();
     } catch (error) {
       console.error('Error switching company:', error);
@@ -87,12 +86,10 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
       setProcessingRequest(requestId);
       await handleOrgRequest(requestId, action);
       
-      // Update local state
       setPendingRequests(prev => 
         prev.filter(req => req._id !== requestId)
       );
       
-      // If accepted, refresh companies list
       if (action === 'accept') {
         const companiesData = await getUserCompanies();
         setUserCompanies(companiesData);
@@ -103,6 +100,32 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
       setProcessingRequest(null);
     }
   };
+
+  // Combine companies and requests for unified display
+  const allItems = [
+    ...userCompanies.map(company => ({
+      id: company._id,
+      type: 'company' as const,
+      name: company.companyProfile.companyName,
+      subtitle: 'Admin Type',
+      address: 'Address',
+      status: company.isOwn ? 'current' : 'available',
+      data: company
+    })),
+    ...pendingRequests.map(request => ({
+      id: request._id,
+      type: 'request' as const,
+      name: request.orgId.companyProfile.companyName,
+      subtitle: 'Admin Type',
+      address: 'Address',
+      status: request.status,
+      data: request
+    }))
+  ];
+
+  const filteredItems = allItems.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!isOpen) return null;
 
@@ -127,89 +150,48 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
         left: '50%',
         transform: 'translate(-50%, -50%)',
         background: 'white',
-        borderRadius: '10px',
+        borderRadius: '8px',
         width: '100%',
-        maxWidth: '600px',
+        maxWidth: '500px',
         maxHeight: '80vh',
         margin: '20px',
-        border: '1px solid #e6e6e6',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
         zIndex: 1001,
-        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         overflow: 'hidden'
       }}>
         {/* Modal Header */}
         <div style={{
-          padding: '20px 20px 8px 20px',
-          borderBottom: '1px solid #e6e6e6'
+          padding: '24px 24px 20px 24px',
+          borderBottom: '1px solid #e5e7eb'
         }}>
           <h2 style={{
             fontSize: '20px',
             fontWeight: '600',
-            color: '#2f2f2f',
-            margin: '0 0 8px 0'
+            color: '#111827',
+            margin: '0 0 20px 0',
+            lineHeight: '1.2'
           }}>Change Company</h2>
-          <p style={{
-            fontSize: '14px',
-            color: '#6b7280',
-            margin: '0',
-            lineHeight: '1.5'
-          }}>Switch between your companies or manage pending invitations.</p>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ padding: '0 20px', borderBottom: '1px solid #e6e6e6', background: '#f9fafb' }}>
-          <div style={{ display: 'flex', gap: '0' }}>
-            <button
-              onClick={() => setActiveTab('companies')}
+          
+          {/* Search Input */}
+          <div style={{ position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Search by name"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               style={{
-                padding: '12px 24px',
-                border: 'none',
-                background: activeTab === 'companies' ? 'white' : 'transparent',
-                color: activeTab === 'companies' ? '#1f4f8f' : '#6b7280',
-                borderRadius: '6px 6px 0 0',
+                width: '100%',
+                padding: '12px 16px',
+                border: '1px solid #d1d5db',
+                borderRadius: '6px',
                 fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                borderBottom: activeTab === 'companies' ? '2px solid #1f4f8f' : '2px solid transparent'
+                background: '#f9fafb',
+                outline: 'none',
+                color: '#6b7280',
+                boxSizing: 'border-box'
               }}
-            >
-              My Companies ({userCompanies.length})
-            </button>
-            <button
-              onClick={() => setActiveTab('requests')}
-              style={{
-                padding: '12px 24px',
-                border: 'none',
-                background: activeTab === 'requests' ? 'white' : 'transparent',
-                color: activeTab === 'requests' ? '#1f4f8f' : '#6b7280',
-                borderRadius: '6px 6px 0 0',
-                fontSize: '14px',
-                fontWeight: '500',
-                cursor: 'pointer',
-                borderBottom: activeTab === 'requests' ? '2px solid #1f4f8f' : '2px solid transparent',
-                position: 'relative'
-              }}
-            >
-              Pending Requests
-              {pendingRequests.length > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '4px',
-                  right: '4px',
-                  backgroundColor: '#ef4444',
-                  color: 'white',
-                  borderRadius: '50%',
-                  width: '18px',
-                  height: '18px',
-                  fontSize: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {pendingRequests.length}
-                </span>
-              )}
-            </button>
+            />
           </div>
         </div>
 
@@ -217,175 +199,135 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
         <div style={{ 
           maxHeight: '400px', 
           overflowY: 'auto',
-          padding: activeTab === 'companies' ? '0' : '0'
+          padding: '0'
         }}>
           {loading ? (
             <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
               Loading...
             </div>
-          ) : activeTab === 'companies' ? (
-            // Companies List
-            <div>
-              {userCompanies.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
-                  No companies available
-                </div>
-              ) : (
-                userCompanies.map((company) => (
-                  <div 
-                    key={company._id}
-                    onClick={() => handleCompanySwitch(company._id)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '16px 20px',
-                      borderBottom: '1px solid #f3f4f6',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f9fafb';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'white';
-                    }}
-                  >
-                    <div style={{
-                      width: '48px',
-                      height: '48px',
-                      backgroundColor: '#f3f4f6',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '18px',
-                      fontWeight: '600',
-                      color: '#1f4f8f',
-                      marginRight: '16px'
-                    }}>
-                      {company.companyProfile.companyName.charAt(0).toUpperCase()}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        color: '#1f2937',
-                        margin: '0 0 4px 0'
-                      }}>
-                        {company.companyProfile.companyName}
-                      </h3>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#6b7280',
-                        margin: '0'
-                      }}>
-                        {company.isOwn ? 'Your Company' : `Member of ${company.firstName} ${company.lastName}'s company`}
-                      </p>
-                    </div>
-                    <div style={{ marginLeft: '16px' }}>
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M9 18L15 12L9 6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                  </div>
-                ))
-              )}
+          ) : filteredItems.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
+              No companies found
             </div>
           ) : (
-            // Pending Requests List
-            <div>
-              {pendingRequests.length === 0 ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
-                  No pending requests
+            filteredItems.map((item, index) => (
+              <div 
+                key={item.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '16px 24px',
+                  borderBottom: index === filteredItems.length - 1 ? 'none' : '1px solid #f3f4f6',
+                  gap: '16px'
+                }}
+              >
+                {/* Company Avatar */}
+                <div style={{
+                  width: '48px',
+                  height: '48px',
+                  backgroundColor: '#e5e7eb',
+                  borderRadius: '6px',
+                  flexShrink: 0
+                }} />
+                
+                {/* Company Info */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h3 style={{
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    color: '#111827',
+                    margin: '0 0 4px 0',
+                    lineHeight: '1.2'
+                  }}>
+                    {item.name}
+                  </h3>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#9ca3af',
+                    margin: '0 0 2px 0',
+                    lineHeight: '1.2'
+                  }}>
+                    {item.subtitle}
+                  </p>
+                  <p style={{
+                    fontSize: '14px',
+                    color: '#9ca3af',
+                    margin: '0',
+                    lineHeight: '1.2'
+                  }}>
+                    {item.address}
+                  </p>
                 </div>
-              ) : (
-                pendingRequests.map((request) => (
-                  <div 
-                    key={request._id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '16px 20px',
-                      borderBottom: '1px solid #f3f4f6'
-                    }}
-                  >
+                
+                {/* Action Button */}
+                <div style={{ flexShrink: 0 }}>
+                  {item.type === 'request' && item.status === 'pending' ? (
+                    <button
+                      onClick={() => handleRequestAction(item.id, 'accept')}
+                      disabled={processingRequest === item.id}
+                      style={{
+                        padding: '10px 20px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: '#10b981',
+                        color: 'white',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: processingRequest === item.id ? 'not-allowed' : 'pointer',
+                        opacity: processingRequest === item.id ? 0.6 : 1,
+                        transition: 'all 0.2s ease',
+                        minWidth: '80px'
+                      }}
+                    >
+                      {processingRequest === item.id ? 'Processing...' : 'Accept'}
+                    </button>
+                  ) : item.status === 'accepted' || item.status === 'current' ? (
                     <div style={{
-                      width: '48px',
-                      height: '48px',
-                      backgroundColor: '#fef3c7',
-                      borderRadius: '8px',
+                      padding: '10px 20px',
+                      borderRadius: '6px',
+                      background: '#2563eb',
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: '500',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '18px',
-                      marginRight: '16px'
+                      minWidth: '80px'
                     }}>
-                      📋
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: '4px' }}>
+                        <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{
-                        fontSize: '16px',
-                        fontWeight: '600',
-                        color: '#1f2937',
-                        margin: '0 0 4px 0'
-                      }}>
-                        {request.orgId.companyProfile.companyName}
-                      </h3>
-                      <p style={{
+                  ) : (
+                    <button
+                      onClick={() => item.type === 'company' && handleCompanySwitch(item.id)}
+                      style={{
+                        padding: '10px 20px',
+                        border: '1px solid #d1d5db',
+                        borderRadius: '6px',
+                        background: 'white',
+                        color: '#374151',
                         fontSize: '14px',
-                        color: '#6b7280',
-                        margin: '2px 0'
-                      }}>
-                        Role: <strong>{request.role}</strong>
-                      </p>
-                      <p style={{
-                        fontSize: '14px',
-                        color: '#6b7280',
-                        margin: '2px 0'
-                      }}>
-                        Invited by: {request.requestedBy.firstName} {request.requestedBy.lastName}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', marginLeft: '16px' }}>
-                      <button
-                        onClick={() => handleRequestAction(request._id, 'accept')}
-                        disabled={processingRequest === request._id}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: '#10b981',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          cursor: processingRequest === request._id ? 'not-allowed' : 'pointer',
-                          opacity: processingRequest === request._id ? 0.6 : 1
-                        }}
-                      >
-                        {processingRequest === request._id ? 'Processing...' : 'Accept'}
-                      </button>
-                      <button
-                        onClick={() => handleRequestAction(request._id, 'reject')}
-                        disabled={processingRequest === request._id}
-                        style={{
-                          padding: '8px 16px',
-                          backgroundColor: '#ef4444',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          cursor: processingRequest === request._id ? 'not-allowed' : 'pointer',
-                          opacity: processingRequest === request._id ? 0.6 : 1
-                        }}
-                      >
-                        {processingRequest === request._id ? 'Processing...' : 'Reject'}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        minWidth: '80px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = '#f9fafb';
+                        e.currentTarget.style.borderColor = '#9ca3af';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'white';
+                        e.currentTarget.style.borderColor = '#d1d5db';
+                      }}
+                    >
+                      Change
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))
           )}
         </div>
 
@@ -394,18 +336,28 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
           onClick={onClose}
           style={{
             position: 'absolute',
-            top: '20px',
-            right: '20px',
+            top: '16px',
+            right: '16px',
             background: 'none',
             border: 'none',
             fontSize: '20px',
             cursor: 'pointer',
             color: '#6b7280',
-            width: '24px',
-            height: '24px',
+            width: '32px',
+            height: '32px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            borderRadius: '4px',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#f3f4f6';
+            e.currentTarget.style.color = '#374151';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#6b7280';
           }}
         >
           ×
