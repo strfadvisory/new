@@ -291,7 +291,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
         ]} />
         
         <div className="profile-form" style={{maxWidth: '800px', margin: '0 auto'}}>
-          <div className="form-card">
+          <div className="form-card" style={{position:'relative' , maxHeight: 'none', marginBottom: '40px'}}>
             <h2 className="form-title">Create your profile</h2>
             <p className="form-description">Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
             

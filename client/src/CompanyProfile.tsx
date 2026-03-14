@@ -204,7 +204,8 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
             padding: '0',
             border: '1px solid #e6e6e6',
             width: '100%',
-            maxWidth: '800px'
+            maxWidth: '800px',
+            position:'relative' , maxHeight: 'none', marginBottom: '40px'
           }}>
             <h2 className="form-title" style={{
               fontSize: '20px',
