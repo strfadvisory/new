@@ -41,3 +41,39 @@ export const getUserProfile = async () => {
     throw new Error(error.response?.data?.message || 'Failed to fetch profile');
   }
 };
+
+export const getUserCompanies = async () => {
+  try {
+    const response = await axiosInstance.get('/users/user-companies');
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch companies');
+  }
+};
+
+export const getPendingRequests = async () => {
+  try {
+    const response = await axiosInstance.get('/users/pending-requests');
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch pending requests');
+  }
+};
+
+export const handleOrgRequest = async (requestId: string, action: 'accept' | 'reject') => {
+  try {
+    const response = await axiosInstance.put(`/users/org-request/${requestId}`, { action });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to handle request');
+  }
+};
+
+export const switchCompany = async (companyId: string) => {
+  try {
+    const response = await axiosInstance.post('/users/switch-company', { companyId });
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to switch company');
+  }
+};

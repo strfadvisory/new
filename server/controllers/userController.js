@@ -211,6 +211,161 @@ const deleteAccount = async (req, res) => {
   }
 };
 
+const getUserCompanies = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Get companies where user is a member
+    const user = await User.findById(userId)
+      .populate({
+        path: 'memberfor',
+        select: 'companyProfile firstName lastName _id',
+        populate: {
+          path: 'companyProfile'
+        }
+      })
+      .select('memberfor parentcompany companyProfile firstName lastName');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let companies = [];
+    
+    // Add user's own company if they have one
+    if (user.companyProfile && user.companyProfile.companyName) {
+      companies.push({
+        _id: user._id,
+        companyProfile: user.companyProfile,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isOwn: true
+      });
+    }
+    
+    // Add companies user is member of
+    if (user.memberfor && user.memberfor.length > 0) {
+      companies = [...companies, ...user.memberfor.map(company => ({
+        ...company.toObject(),
+        isOwn: false
+      }))];
+    }
+    
+    res.json(companies);
+  } catch (error) {
+    console.error('Error fetching user companies:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const getPendingRequests = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    const user = await User.findById(userId)
+      .populate({
+        path: 'reqorg.orgId',
+        select: 'companyProfile firstName lastName'
+      })
+      .populate({
+        path: 'reqorg.requestedBy',
+        select: 'firstName lastName email'
+      })
+      .select('reqorg');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Filter only pending requests
+    const pendingRequests = user.reqorg.filter(req => req.status === 'pending');
+    
+    res.json(pendingRequests);
+  } catch (error) {
+    console.error('Error fetching pending requests:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const handleOrgRequest = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { requestId } = req.params;
+    const { action } = req.body; // 'accept' or 'reject'
+    
+    if (!['accept', 'reject'].includes(action)) {
+      return res.status(400).json({ message: 'Invalid action. Must be accept or reject' });
+    }
+    
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Find the request in reqorg array
+    const requestIndex = user.reqorg.findIndex(req => req._id.toString() === requestId);
+    if (requestIndex === -1) {
+      return res.status(404).json({ message: 'Request not found' });
+    }
+    
+    const request = user.reqorg[requestIndex];
+    if (request.status !== 'pending') {
+      return res.status(400).json({ message: 'Request is not pending' });
+    }
+    
+    // Update request status
+    user.reqorg[requestIndex].status = action === 'accept' ? 'accepted' : 'rejected';
+    user.reqorg[requestIndex].respondedAt = new Date();
+    
+    // If accepted, add to memberfor array
+    if (action === 'accept') {
+      if (!user.memberfor.includes(request.orgId)) {
+        user.memberfor.push(request.orgId);
+      }
+    }
+    
+    await user.save();
+    
+    res.json({ 
+      message: `Request ${action}ed successfully`,
+      request: user.reqorg[requestIndex]
+    });
+  } catch (error) {
+    console.error('Error handling organization request:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const switchCompany = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { companyId } = req.body;
+    
+    // Verify user has access to this company
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if it's user's own company or they're a member
+    const hasAccess = user._id.toString() === companyId || 
+                     user.memberfor.some(id => id.toString() === companyId);
+    
+    if (!hasAccess) {
+      return res.status(403).json({ message: 'Access denied to this company' });
+    }
+    
+    // Update current company context (you can store this in session or token)
+    res.json({ 
+      message: 'Company switched successfully',
+      currentCompany: companyId
+    });
+  } catch (error) {
+    console.error('Error switching company:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllUsers,
   updateUserStatus,
@@ -219,5 +374,9 @@ module.exports = {
   getAdminUsers,
   getCompanies,
   createCompanyProfile,
-  deleteAccount
+  deleteAccount,
+  getUserCompanies,
+  getPendingRequests,
+  handleOrgRequest,
+  switchCompany
 };

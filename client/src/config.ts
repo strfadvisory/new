@@ -24,6 +24,10 @@ export const API_ENDPOINTS = {
   allUsers: `${API_BASE_URL}/users`,
   adminUsers: `${API_BASE_URL}/users/admins`,
   companies: `${API_BASE_URL}/users/companies`,
+  userCompanies: `${API_BASE_URL}/users/user-companies`,
+  pendingRequests: `${API_BASE_URL}/users/pending-requests`,
+  orgRequest: `${API_BASE_URL}/users/org-request`,
+  switchCompany: `${API_BASE_URL}/users/switch-company`,
   userStatus: `${API_BASE_URL}/users/:id/status`,
   createCompanyProfile: `${API_BASE_URL}/users/create-company-profile`,
   

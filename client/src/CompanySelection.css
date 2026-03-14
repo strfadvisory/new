@@ -38,7 +38,6 @@
 
 .company-header {
   text-align: left;
- 
 }
 
 .company-header h1 {
@@ -63,15 +62,14 @@
   align-items: center;
   padding: 16px;
   background: white;
- 
- border-bottom: none;
+  border-bottom: none;
   margin-bottom: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .company-item:hover {
- background-color: #0E519B0D;
+  background-color: #0E519B0D;
 }
 
 .company-icon {
@@ -127,6 +125,129 @@
 
 .company-not-listed:hover {
   color: #2563eb;
+}
+
+/* Tabs Styles */
+.tabs-container {
+  background: #f9fafb;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tab {
+  padding: 12px 24px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.tab.active {
+  color: #1f4f8f;
+  border-bottom-color: #1f4f8f;
+  background: white;
+}
+
+.tab:hover:not(.active) {
+  color: #374151;
+  background: #f3f4f6;
+}
+
+/* Pending Requests Styles */
+.pending-requests-list {
+  padding: 0;
+}
+
+.request-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  background: white;
+  border-bottom: 1px solid #f3f4f6;
+  transition: all 0.2s ease;
+}
+
+.request-item:hover {
+  background-color: #f9fafb;
+}
+
+.request-item:last-child {
+  border-bottom: none;
+}
+
+.request-icon {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.request-details {
+  flex: 1;
+}
+
+.request-details h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+}
+
+.request-details p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 2px 0;
+  line-height: 1.4;
+}
+
+.request-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 16px;
+  flex-shrink: 0;
+}
+
+.accept-btn, .reject-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.accept-btn {
+  background-color: #10b981;
+  color: white;
+}
+
+.accept-btn:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.reject-btn {
+  background-color: #ef4444;
+  color: white;
+}
+
+.reject-btn:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.accept-btn:disabled, .reject-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .logo-image {
