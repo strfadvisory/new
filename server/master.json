@@ -68,16 +68,6 @@
       }
     },
     {
-      "id": "MOD_002",
-      "key": "ROLE_MANAGEMENT",
-      "displayName": "Role Management",
-      "permissions": {
-        "ADMIN": { "canView": true, "canEdit": true, "limit": "" },
-        "EDITOR": { "canView": true, "canEdit": false, "limit": "" },
-        "VIEWER": { "canView": false, "canEdit": false, "limit": "" }
-      }
-    },
-    {
       "id": "MOD_003",
       "key": "USER_MANAGEMENT",
       "displayName": "User Management",

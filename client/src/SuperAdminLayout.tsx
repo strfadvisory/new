@@ -6,8 +6,7 @@ import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
 import AllCompanies from './pages/superadmin/AllCompanies';
 import AllUsers from './pages/superadmin/AllUsers';
 import Analytics from './pages/superadmin/Analytics';
-import SystemSettings from './pages/superadmin/SystemSettings';
-import RoleManager from './pages/superadmin/RoleManager';
+import SystemSettings from './pages/superadmin/SystemSettings'; 
 import Library from './pages/superadmin/Library';
 import LTMManager from './pages/superadmin/LTMManager';
 import { API_BASE_URL } from './config';
@@ -525,7 +524,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                   <Route path="users" element={<AllUsers />} />
                   <Route path="analytics" element={<Analytics />} />
                   <Route path="settings" element={<SystemSettings />} />
-                  <Route path="role-manager" element={<RoleManager selectedRole={selectedRole} onEdit={handleEditRole} onDelete={handleDeleteRole} onRoleUpdate={handleRoleUpdate} isUserContext={false} />} />
+                  
                   <Route path="library" element={<Library selectedItem={selectedLibraryItem} onEdit={handleEditLibraryItem} onDelete={handleDeleteLibraryItem} />} />
                   <Route path="ltm-manager" element={<LTMManager />} />
                 </Routes>

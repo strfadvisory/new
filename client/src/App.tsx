@@ -23,7 +23,6 @@ import Associations from './pages/Associations';
 import Users from './pages/Users';
 import Banking from './pages/Banking';
 import UserManagement from './pages/UserManagement';
-import DashboardRoleManager from './pages/DashboardRoleManager';
 import AssociationControl from './pages/AssociationControl';
 import Profile from './pages/Profile';
 
@@ -181,8 +180,6 @@ function App() {
             <Route path="associations" element={<Associations />} />
             <Route path="user-management" element={<UserManagement />} />
             <Route path="banking" element={<Banking />} />
-            <Route path="role-manager" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
-            <Route path="role-management" element={<DashboardRoleManager user={user} onLogout={handleLogout} />} />
             <Route path="association-control" element={<AssociationControl user={user} onLogout={handleLogout} />} />
           </Route>
           <Route path="/profile" element={user ? <DashboardLayout user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /> : <Navigate to="/login" replace />}>

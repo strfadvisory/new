@@ -8,13 +8,6 @@
       "limit": ""
     },
     {
-      "module": "ROLE_MANAGEMENT",
-      "displayName": "Role Management",
-      "canEdit": true,
-      "canView": true,
-      "limit": ""
-    },
-    {
       "module": "USER_MANAGEMENT",
       "displayName": "User Management",
       "canEdit": true,

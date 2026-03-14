@@ -387,9 +387,15 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
           </div>
         ) : (
           <div className="no-selection">
-            <i className="fas fa-building" style={{ fontSize: '64px', color: '#e5e7eb', marginBottom: '16px' }}></i>
-            <h3>Select an Association</h3>
-            <p>Choose an association from the list to view and manage its details.</p>
+            <div className="no-selection-content">
+              <div className="no-selection-icon">
+                <i className="fas fa-building"></i>
+              </div>
+              <h3 className="no-selection-title">Select an Association</h3>
+              <p className="no-selection-description">
+                Choose an association from the list to view and manage its details.
+              </p>
+            </div>
           </div>
         )}
       </div>

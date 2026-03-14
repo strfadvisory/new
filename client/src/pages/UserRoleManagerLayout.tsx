@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { API_BASE_URL } from '../config';
-import RoleManager from './superadmin/RoleManager';
+import { API_BASE_URL } from '../config'; 
 import '../Dashboard.css';
 import './superadmin/AllCompanies.css';
 
@@ -284,13 +283,7 @@ const UserRoleManagerLayout: React.FC = () => {
       </div>
       
       <div className="companies-right-panel" style={{ flex: 1 }}>
-        <RoleManager 
-          selectedRole={selectedRole} 
-          onEdit={handleEditRole} 
-          onDelete={handleDeleteRole} 
-          onRoleUpdate={handleRoleUpdate}
-          isUserContext={true}
-        />
+       
       </div>
 
       {/* Add/Edit Modal */}
