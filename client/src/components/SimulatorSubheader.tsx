@@ -1289,7 +1289,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
         </div>
         <button 
           className={`action-button ${!selectedCompany ? 'disabled' : ''}`}
-          onClick={() => selectedCompany && onReset && onReset()}
+          // onClick={() => selectedCompany && onReset && onReset()}
           disabled={!selectedCompany}
         >
           <i className="fas fa-undo"></i> Reset All

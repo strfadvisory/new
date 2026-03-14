@@ -23,6 +23,13 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
     const state = getSignupState();
     return state.useMyAddress || false;
   });
+  const [selectedCompanyType, setSelectedCompanyType] = useState(() => {
+    const state = getSignupState();
+    return state.roleName || 'Management Company';
+  });
+  
+  console.log('Current signup state:', getSignupState());
+  console.log('Selected company type:', selectedCompanyType);
 
   // Listen for state changes
   useEffect(() => {
@@ -31,6 +38,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
       const savedState = getSignupState();
       setFormData(savedFormData);
       setUseMyAddress(savedState.useMyAddress || false);
+      setSelectedCompanyType(savedState.roleName || 'Management Company');
     };
     
     window.addEventListener('signupStateChanged', handleStateChange);
@@ -215,7 +223,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
               marginBottom: '8px',
               borderBottom: '1px solid #e6e6e6',
               padding: '20px 20px 8px 20px'
-            }}>Create Management Company</h2>
+            }}>Create {selectedCompanyType}</h2>
             <p className="form-description" style={{
               fontSize: '14px',
               color: '#6b7280',
@@ -223,7 +231,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
               marginBottom: '20px',
               lineHeight: '1.5',
               padding: '0 20px'
-            }}>Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
+            }}>Set up your organizational profile to manage users, modules, and operations efficiently.</p>
             
             <form onSubmit={handleSubmit} style={{padding: '20px'}}>
             
@@ -232,7 +240,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
                   type="text"
                   className="form-input"
                   name="companyName"
-                  placeholder="Company Name *"
+                  placeholder={`${selectedCompanyType} Name *`}
                   value={formData.companyName}
                   onChange={handleInputChange}
                   required
@@ -319,8 +327,8 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
               </div>
             
               <div className="section-title" style={{margin: '30px 0 15px 0'}}>
-                <h3 style={{fontSize: '16px', fontWeight: '600', marginBottom: '3px', color: '#1f2937'}}>Company Contact Details</h3>
-                <p style={{color: '#6b7280', fontSize: '13px', lineHeight: '1.4', margin: '0'}}>Provide contact information for your management company.</p>
+                <h3 style={{fontSize: '16px', fontWeight: '600', marginBottom: '3px', color: '#1f2937'}}>Contact Details</h3>
+                <p style={{color: '#6b7280', fontSize: '13px', lineHeight: '1.4', margin: '0'}}>Provide contact information for your organization.</p>
               </div>
             
               <div className="form-group" style={{marginBottom: '20px'}}>
@@ -372,7 +380,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
                   type="email"
                   className="form-input"
                   name="email"
-                  placeholder="Company contact Email"
+                  placeholder="Organization Contact Email"
                   value={formData.email}
                   onChange={handleInputChange}
                   style={{

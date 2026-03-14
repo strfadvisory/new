@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './superadmin/AllCompanies.css';
 import { useAuthUsers, useRemoveLogo, useDeleteUser } from '../hooks/queries/useAuth';
+import InviteMemberModal from '../components/InviteMemberModal';
 
 interface User {
   _id: string;
@@ -35,6 +36,7 @@ const UserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   // React Query hooks
   const { data: users = [], isLoading: loading } = useAuthUsers();
@@ -91,7 +93,16 @@ const UserManagement: React.FC = () => {
         <div className="companies-header">
           <div className="header-top">
             <h2 className="results-title">{filteredUsers.length} Results founded</h2>
-            <a href="#" className="add-new-link">+ Add New</a>
+            <a 
+              href="#" 
+              className="add-new-link"
+              onClick={(e) => {
+                e.preventDefault();
+                setInviteModalOpen(true);
+              }}
+            >
+              + Add New  
+            </a>
           </div>
           <input
             type="text"
@@ -211,8 +222,13 @@ const UserManagement: React.FC = () => {
             </>
           ) : (
             <div className="no-selection">
-              <h3>Select a user to view details</h3>
-              <p>Choose a user from the sidebar to view their profile and company information.</p>
+              <div className="no-selection-content">
+                <div className="no-selection-icon">
+                  <i className="fas fa-user"></i>
+                </div>
+                <h3 className="no-selection-title">Select a user to view details</h3>
+                <p className="no-selection-description">Choose a user from the sidebar to view their profile and company information.</p>
+              </div>
             </div>
           )}
         </div>
@@ -261,6 +277,12 @@ const UserManagement: React.FC = () => {
           </div>
         </div>
       )}
+      
+      <InviteMemberModal 
+        isOpen={inviteModalOpen}
+        onClose={() => setInviteModalOpen(false)}
+        title="Add New Member"
+      />
     </div>
   );
 };

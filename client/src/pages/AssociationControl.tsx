@@ -197,8 +197,7 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
                   )}
                 </div>
                 <div className="company-info">
-                  <div className="company-name">{association.name}</div>
-                  <div className="company-level">Association</div>
+                  <div className="company-name">{association.name}</div> 
                   <div className="company-address">{association.description || 'Association Control'}</div>
                 </div>
               </div>

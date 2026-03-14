@@ -72,8 +72,8 @@ const CompanyDropdown = () => {
   return (
     <div className="company-dropdown" ref={dropdownRef}>
       <div className="company-info">
-        <div className="company-name">{selectedCompany}sss</div>
-        <div className="user-role">{profile?.role}</div>
+        <div className="company-name" style={{color:"white"}}>{selectedCompany} </div>
+        <div className="user-role" style={{color:"white"}}>{profile?.role}</div>
       </div>
       
       <button className="menu-toggle" onClick={toggleMenu}>
@@ -149,8 +149,7 @@ const CompanyDropdown = () => {
         
         .company-name {
           font-size: 15px;
-          font-weight: 500;
-          color: white;
+          font-weight: 500; 
           line-height: 1.2;
           margin-bottom: 2px;
           white-space: nowrap;

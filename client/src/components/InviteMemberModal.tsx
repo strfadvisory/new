@@ -195,27 +195,8 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
               </p>
             )}
             
-            {/* Debug information in development */}
-            {process.env.NODE_ENV === 'development' && (
-              <div style={{
-                fontSize: '11px',
-                color: '#6b7280',
-                marginTop: '8px',
-                padding: '8px',
-                background: '#f9fafb',
-                borderRadius: '4px',
-                border: '1px solid #e5e7eb'
-              }}>
-                <strong>Debug Info:</strong><br/>
-                SubRoles found: {subRoles.length}<br/>
-                {subRoles.length > 0 && (
-                  <>
-                    Roles: {subRoles.map(r => r.name).join(', ')}<br/>
-                  </>
-                )}
-                Check browser console for detailed logs.
-              </div>
-            )}
+           
+        
           </div>
           
           {/* Name Fields */}
