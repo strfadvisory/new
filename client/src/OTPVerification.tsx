@@ -136,8 +136,8 @@ const OTPVerification: React.FC<OTPVerificationProps> = ({ onVerify, onBack, onN
           { label: 'OTP Verification', active: true }
         ]} />
         
-        <div style={{ maxWidth: '800px', width: '100%', margin: '0 auto', padding: '20px' }}>
-          <div className="form-card" style={{ background: '#ffffff', borderRadius: '10px', padding: '0', border: '1px solid #e6e6e6', width: '100%' }}>
+        <div style={{ maxWidth: '800px', width: '100%', margin: '0 auto' }}> 
+          <div className="form-card" style={{ background: '#ffffff', borderRadius: '10px', padding: '0', border: '1px solid #e6e6e6', width: '100%' , position: 'relative'  }}>
             <h2 className="form-title" style={{ fontSize: '20px', fontWeight: '600', color: '#2f2f2f', margin: '0', marginBottom: '8px', borderBottom: '1px solid #e6e6e6', padding: '20px 20px 8px 20px' }}>OTP Verification</h2>
             <p className="form-description" style={{ fontSize: '14px', color: '#6b7280', margin: '0', marginBottom: '20px', lineHeight: '1.5', padding: '0 20px' }}>Verify your email address {maskEmail(email)}. Enter the OTP sent to your registered contact to verify and access the system.</p>
             

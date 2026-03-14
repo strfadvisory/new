@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_ENDPOINTS } from '../config';
-import CompanyDropdown from './CompanyDropdown';
+import ChangeCompanyModal from './ChangeCompanyModal';
 import ProfileModal from './ProfileModal';
 import ChangePasswordModal from './ChangePasswordModal';
 import DeleteAccountModal from './DeleteAccountModal';
@@ -31,6 +31,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [showChangeCompanyModal, setShowChangeCompanyModal] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -78,6 +79,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     createCompanyProfileIfNeeded();
   }, [user, isSuperAdmin, onUserUpdate]);
 
+  const handleCompanyChanged = () => {
+    // Refresh the page to update company context
+    window.location.reload();
+  };
+
   return (
     <header className="dashboard-header">
       <div className="header-left">
@@ -86,7 +92,16 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </div>
           
           <div className="logo-text">
-           <CompanyDropdown />
+           <div className="company-dropdown">
+             <div className="company-info">
+               <div className="company-name" style={{color:"white"}}>{companyName}</div>
+               <div className="user-role" style={{color:"white"}}>{user?.role}</div>
+             </div>
+             
+             <button className="menu-toggle" onClick={() => setShowChangeCompanyModal(true)}>
+               <img src="/3line.png" alt="Menu" />
+             </button>
+           </div>
         </div>
         <nav className="header-nav">
           {isSuperAdmin ? (
@@ -144,6 +159,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         </div>
       </div>
       
+      <ChangeCompanyModal 
+        isOpen={showChangeCompanyModal}
+        onClose={() => setShowChangeCompanyModal(false)}
+        onCompanyChanged={handleCompanyChanged}
+        isInitialSelection={false}
+      />
+      
       <ProfileModal 
         isOpen={showProfileModal} 
         onClose={() => setShowProfileModal(false)} 
@@ -167,6 +189,60 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         isOpen={showDeleteAccount} 
         onClose={() => setShowDeleteAccount(false)} 
       />
+      
+      <style>{`
+        .company-dropdown {
+          padding: 12px 20px;
+          width: 300px;
+          color: white;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          position: relative;
+        }
+        
+        .company-info {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          flex: 1;
+        }
+        
+        .company-name {
+          font-size: 15px;
+          font-weight: 500; 
+          line-height: 1.2;
+          margin-bottom: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          max-width: 200px;
+        }
+        
+        .user-role {
+          color: #6C9CD2;
+          font-size: 12px;
+          font-family: 'DM Sans', sans-serif;
+          font-weight: 400;
+          line-height: 1;
+        }
+        
+        .menu-toggle {
+          background: transparent;
+          border: none;
+          color: white;
+          cursor: pointer;
+          padding: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .menu-toggle img {
+          width: 20px;
+          height: 20px;
+        }
+      `}</style>
     </header>
   );
 };

@@ -5,6 +5,7 @@ import { QueryProvider } from './hooks/QueryProvider';
 import { updateSignupState, getSignupState, clearSignupState, getFormData } from './utils/signupState';
 import { API_ENDPOINTS } from './config';
 import SignupStateDebug from './components/SignupStateDebug';
+import ChangeCompanyModal from './components/ChangeCompanyModal';
 import Login from './Login';
 import ForgotPassword from './ForgotPassword';
 import ResetPassword from './ResetPassword';
@@ -34,6 +35,8 @@ function App() {
   const [selectedRoleId, setSelectedRoleId] = useState<string>('');
   const [selectedRoleName, setSelectedRoleName] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string>('');
+  const [showCompanySelectionModal, setShowCompanySelectionModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string>('');
   const navigate = useNavigate();
 
   // Load persisted state on app start
@@ -52,7 +55,18 @@ function App() {
     const userData = localStorage.getItem('user');
     
     if (token && userData) {
-      setUser(JSON.parse(userData));
+      const user = JSON.parse(userData);
+      setUser(user);
+      
+      // Check if non-super admin user needs company selection
+      if (!user.isSuperAdmin) {
+        const hasSelectedCompany = localStorage.getItem('selectedCompany');
+        if (!hasSelectedCompany) {
+          // Show company selection modal for non-super admin users without selected company
+          setShowCompanySelectionModal(true);
+          setPendingNavigation('/dashboard/simulator'); // Default navigation
+        }
+      }
     }
     setLoading(false);
   }, []);
@@ -81,23 +95,49 @@ function App() {
     if (userData.isSuperAdmin) {
       navigate('/admin/simulators');
     } else {
-      // Fetch user permissions to get first navigation item
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(API_ENDPOINTS.userPermissions, {
-          headers: {
-            'Authorization': `Bearer ${token}`
+      // Check if user has already selected a company
+      const hasSelectedCompany = localStorage.getItem('selectedCompany');
+      
+      if (!hasSelectedCompany) {
+        // Show company selection modal first
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(API_ENDPOINTS.userPermissions, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const data = await response.json();
+          const targetPath = (response.ok && data.menu && data.menu.length > 0) 
+            ? data.menu[0].path 
+            : '/dashboard/simulator';
+          
+          setPendingNavigation(targetPath);
+          setShowCompanySelectionModal(true);
+        } catch (error) {
+          console.error('Error fetching permissions:', error);
+          setPendingNavigation('/dashboard/simulator');
+          setShowCompanySelectionModal(true);
+        }
+      } else {
+        // Navigate directly if company already selected
+        try {
+          const token = localStorage.getItem('token');
+          const response = await fetch(API_ENDPOINTS.userPermissions, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const data = await response.json();
+          if (response.ok && data.menu && data.menu.length > 0) {
+            navigate(data.menu[0].path);
+          } else {
+            navigate('/dashboard/simulator');
           }
-        });
-        const data = await response.json();
-        if (response.ok && data.menu && data.menu.length > 0) {
-          navigate(data.menu[0].path);
-        } else {
+        } catch (error) {
+          console.error('Error fetching permissions:', error);
           navigate('/dashboard/simulator');
         }
-      } catch (error) {
-        console.error('Error fetching permissions:', error);
-        navigate('/dashboard/simulator');
       }
     }
   };
@@ -152,9 +192,32 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('tempEmail');
+    localStorage.removeItem('selectedCompany');
     setUser(null);
     navigate('/login');
   };
+
+  const handleCompanySelectionComplete = () => {
+    setShowCompanySelectionModal(false);
+    if (pendingNavigation) {
+      navigate(pendingNavigation);
+      setPendingNavigation('');
+    } else {
+      // Fallback navigation
+      navigate('/dashboard/simulator');
+    }
+  };
+
+  // Add effect to handle company selection requirement on route changes
+  useEffect(() => {
+    if (user && !user.isSuperAdmin && !localStorage.getItem('selectedCompany')) {
+      const currentPath = window.location.pathname;
+      if (currentPath.startsWith('/dashboard') || currentPath === '/profile') {
+        setShowCompanySelectionModal(true);
+        setPendingNavigation(currentPath);
+      }
+    }
+  }, [user]);
 
   if (loading) return null;
 
@@ -162,6 +225,17 @@ function App() {
     <QueryProvider>
       <div className="App">
         {/* {  <SignupStateDebug />  } */}
+        
+        {/* Company Selection Modal for non-super admin users */}
+        {showCompanySelectionModal && (
+          <ChangeCompanyModal 
+            isOpen={showCompanySelectionModal}
+            onClose={() => {}} // Prevent closing without selection
+            onCompanyChanged={handleCompanySelectionComplete}
+            isInitialSelection={true}
+          />
+        )}
+        
         <Routes>
           <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator'} replace />} />
           <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator'} replace />} />
@@ -173,7 +247,11 @@ function App() {
           <Route path="/verify-advisory/:token" element={<AdvisoryVerification />} />
           <Route path="/verify-member/:token" element={<MemberVerification />} />
           <Route path="/admin/*" element={user?.isSuperAdmin ? <SuperAdminLayout user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
-          <Route path="/dashboard" element={user && !user.isSuperAdmin ? <DashboardLayout user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /> : <Navigate to="/login" replace />}>
+          <Route path="/dashboard" element={user && !user.isSuperAdmin ? (
+            localStorage.getItem('selectedCompany') || showCompanySelectionModal ? 
+              <DashboardLayout user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /> : 
+              <Navigate to="/login" replace />
+          ) : <Navigate to="/login" replace />}>
             <Route index element={<Dashboard user={user} onLogout={handleLogout} />} />
             <Route path="simulator" element={<Simulator />} />
             <Route path="simulator-management" element={<Simulator />} />
@@ -184,7 +262,11 @@ function App() {
             <Route path="banking" element={<Banking />} />
             <Route path="association-control" element={<AssociationControl user={user} onLogout={handleLogout} />} />
           </Route>
-          <Route path="/profile" element={user ? <DashboardLayout user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /> : <Navigate to="/login" replace />}>
+          <Route path="/profile" element={user ? (
+            user.isSuperAdmin || localStorage.getItem('selectedCompany') || showCompanySelectionModal ? 
+              <DashboardLayout user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} /> : 
+              <Navigate to="/login" replace />
+          ) : <Navigate to="/login" replace />}>
             <Route index element={<Profile />} />
           </Route>
           <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator') : '/login'} replace />} />

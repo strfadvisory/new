@@ -104,16 +104,21 @@ const CompanyDropdown = () => {
                 <div className="no-results">No companies found</div>
               ) : (
                 filteredCompanies.map((company) => (
-                  <div key={company._id} className="company-card">
-                    <div className="company-avatar"></div>
+                  <div key={company._id} className="company-card" onClick={() => handleCompanySelect(company.companyName)}>
+                    <div className="company-avatar">
+                      {company.companyName.charAt(0).toUpperCase()}
+                    </div>
                     <div className="company-details">
                       <div className="company-name">{company.companyName}</div>
-                      <div className="company-type">Admin Type</div>
+                      <div className="company-type">No Contact Person</div>
                       <div className="company-address">Address</div>
                     </div>
                     <button 
                       className="select-btn"
-                      onClick={() => handleCompanySelect(company.companyName)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCompanySelect(company.companyName);
+                      }}
                     >
                       Select
                     </button>
@@ -188,7 +193,9 @@ const CompanyDropdown = () => {
           left: 0;
           right: 0;
           bottom: 0;
-          background-color: rgba(0, 0, 0, 0.5);
+          background-color: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           display: flex;
           justify-content: center;
           align-items: center;
@@ -197,15 +204,18 @@ const CompanyDropdown = () => {
         
         .popup-modal {
           background-color: white;
-          border-radius: 12px;
-          width: 500px;
-          max-height: 600px;
+          border-radius: 8px;
+          width: 100%;
+          max-width: 500px;
+          max-height: 80vh;
+          margin: 20px;
           overflow: hidden;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
         
         .popup-header {
-          padding: 20px 24px;
+          padding: 24px 24px 20px 24px;
           border-bottom: 1px solid #e5e7eb;
           display: flex;
           justify-content: space-between;
@@ -214,27 +224,35 @@ const CompanyDropdown = () => {
         
         .popup-header h3 {
           margin: 0;
-          font-size: 18px;
+          font-size: 20px;
           font-weight: 600;
-          color: #374151;
+          color: #111827;
+          line-height: 1.2;
         }
         
         .close-btn {
           background: none;
           border: none;
-          font-size: 24px;
-          color: #9ca3af;
+          font-size: 20px;
+          color: #6b7280;
           cursor: pointer;
           padding: 0;
-          width: 24px;
-          height: 24px;
+          width: 32px;
+          height: 32px;
           display: flex;
           align-items: center;
           justify-content: center;
+          border-radius: 4px;
+          transition: all 0.2s ease;
+        }
+        
+        .close-btn:hover {
+          background-color: #f3f4f6;
+          color: #374151;
         }
         
         .search-container {
-          padding: 20px 24px;
+          padding: 0 24px 20px 24px;
           border-bottom: 1px solid #e5e7eb;
         }
         
@@ -242,74 +260,98 @@ const CompanyDropdown = () => {
           width: 100%;
           padding: 12px 16px;
           border: 1px solid #d1d5db;
-          border-radius: 8px;
+          border-radius: 6px;
           font-size: 14px;
           outline: none;
           box-sizing: border-box;
           background-color: #f9fafb;
+          color: #6b7280;
         }
         
         .search-input:focus {
-          border-color: #3b82f6;
+          border-color: #2b6cb0;
           background-color: white;
         }
         
         .company-list {
-          max-height: 350px;
+          max-height: 400px;
           overflow-y: auto;
-          padding: 16px 24px;
+          padding: 0;
         }
         
         .company-card {
           display: flex;
           align-items: center;
-          padding: 16px;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          margin-bottom: 12px;
+          padding: 16px 24px;
+          border-bottom: 1px solid #f3f4f6;
+          gap: 16px;
+          background-color: white;
+          cursor: pointer;
+          transition: background-color 0.2s ease;
+        }
+        
+        .company-card:last-child {
+          border-bottom: none;
+        }
+        
+        .company-card:hover {
           background-color: #f9fafb;
         }
         
         .company-avatar {
           width: 48px;
           height: 48px;
-          background-color: #d1d5db;
-          border-radius: 8px;
-          margin-right: 16px;
+          background-color: #f3f4f6;
+          border: 1px solid #e5e7eb;
+          border-radius: 6px;
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          font-weight: 600;
+          color: #6b7280;
         }
         
         .company-details {
           flex: 1;
+          min-width: 0;
         }
         
         .company-card .company-name {
           font-size: 16px;
           font-weight: 600;
-          color: #374151;
-          margin-bottom: 4px;
+          color: #111827;
+          margin: 0 0 4px 0;
+          line-height: 1.2;
         }
         
         .company-type {
           font-size: 14px;
-          color: #6b7280;
-          margin-bottom: 2px;
+          color: #9ca3af;
+          margin: 0 0 2px 0;
+          line-height: 1.2;
         }
         
         .company-address {
           font-size: 14px;
-          color: #6b7280;
+          color: #9ca3af;
+          margin: 0;
+          line-height: 1.2;
         }
         
         .select-btn {
           background-color: white;
           border: 1px solid #d1d5db;
           border-radius: 6px;
-          padding: 8px 16px;
+          padding: 10px 20px;
           font-size: 14px;
           font-weight: 500;
           color: #374151;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s ease;
+          flex-shrink: 0;
+          min-width: 80px;
         }
         
         .select-btn:hover {
@@ -318,21 +360,29 @@ const CompanyDropdown = () => {
         }
         
         .popup-footer {
-          padding: 20px 24px;
-          border-top: 1px solid #e5e7eb;
+          padding: 16px 20px;
+          border-top: 1px solid #e6e6e6;
+          text-align: center;
+          font-family: 'DM Sans';
+          font-weight: 700;
+          font-size: 16px;
+          line-height: 24px;
         }
         
         .add-company-btn {
           background: none;
           border: none;
-          color: #3b82f6;
-          font-size: 14px;
-          font-weight: 500;
+          color: #1f4f8f;
+          font-size: 16px;
+          font-weight: 700;
           cursor: pointer;
           padding: 0;
+          font-family: 'DM Sans';
+          text-decoration: none;
         }
         
         .add-company-btn:hover {
+          color: #173f74;
           text-decoration: underline;
         }
         
