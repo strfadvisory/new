@@ -33,10 +33,13 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const [selectedLibraryItem, setSelectedLibraryItem] = useState<any>(null);
   const [iconPreview, setIconPreview] = useState<string>('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  // Simulator state using component state (no localStorage needed in SPA)
   const [showCalculator, setShowCalculator] = useState(false);
-  const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '', excelData: null as any });
+  const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '', excelData: null });
   const [selectedAssociation, setSelectedAssociation] = useState('');
   const [selectedCompany, setSelectedCompany] = useState('');
+  
   const [formData, setFormData] = useState({
     _id: '',
     name: '',
@@ -50,7 +53,8 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const currentPage = location.pathname.split('/').pop() || 'role-manager';
 
   const handleShowCalculator = (association: string, reserveStudy: string, excelData?: any) => {
-    setCalculatorData({ association, reserveStudy, excelData });
+    const newCalculatorData = { association, reserveStudy, excelData };
+    setCalculatorData(newCalculatorData);
     setShowCalculator(true);
   };
 
@@ -78,13 +82,16 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
       fetchLibraryItems();
     }
     
-    if (page !== 'simulators') {
-      setShowCalculator(false);
-      setSelectedAssociation('');
-      setSelectedCompany('');
-      setCalculatorData({ association: '', reserveStudy: '', excelData: null });
-    }
+    // No longer reset simulator state on route changes
+    // The state is now persistent and will survive navigation
   }, [location.pathname]);
+
+  // Cleanup simulator state on component unmount (user logout)
+  React.useEffect(() => {
+    return () => {
+      // No cleanup needed for component state in SPA
+    };
+  }, []);
 
   const fetchLibraryItems = async () => {
     try {
@@ -407,7 +414,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         />
         
         <div className="dashboard-content">
-          {currentPage === 'simulators' && (
+          {location.pathname === '/admin/simulators' && (
             <SimulatorSubheader 
               onShowCalculator={handleShowCalculator} 
               onReset={handleReset}
@@ -510,7 +517,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
             </div>}
             
             <div className="companies-right-panel" style={currentPage === 'companies' || currentPage === 'simulators' ? { marginLeft: 0, width: '100%', flex: 1 } : { flex: 1 }}>
-              {showCalculator ? (
+              {showCalculator && location.pathname === '/admin/simulators' ? (
                 <CalculatorPage 
                   association={calculatorData.association} 
                   reserveStudy={calculatorData.reserveStudy}

@@ -5,6 +5,8 @@ import InviteMemberModal from './InviteMemberModal';
 import AddAssociationPopup from './AddAssociationPopup';
 import AddReserveStudyPopup from './AddReserveStudyPopup';
 import { viewModeEmitter, studySelectionEmitter, refreshReserveStudiesDropdown } from '../utils/eventEmitter';
+import { useSimulatorState } from '../hooks/useSimulatorState';
+import type { Association } from '../utils/simulatorStateManager';
 import './SimulatorSubheader.css';
 
 interface ReserveStudy {
@@ -21,14 +23,6 @@ interface ReserveStudy {
 interface Company {
   _id: string;
   name: string;
-  description?: string;
-  icon?: string;
-}
-
-interface Association {
-  _id: string;
-  name: string;
-  type?: string;
   description?: string;
   icon?: string;
 }
@@ -86,6 +80,55 @@ const Dropdown: React.FC<DropdownProps> = ({
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean; studyId: string; studyName: string}>({show: false, studyId: '', studyName: ''});
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  console.log('[Dropdown] Render with props:', {
+    label,
+    selectedValue,
+    showReserveStudyList,
+    selectedAssociationData: selectedAssociationData?._id,
+    reserveStudiesCount: reserveStudies.length
+  });
+
+  // Reset search term when dropdown closes to prevent stale search state
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchTerm('');
+    }
+  }, [isOpen]);
+
+  // Ensure dropdown state is consistent with selectedValue prop
+  useEffect(() => {
+    if (selectedValue && !isOpen) {
+      // Force refresh data when selectedValue changes and dropdown is closed
+      if (showAssociationsList && associations.length === 0) {
+        fetchAssociations();
+      }
+      if (showReserveStudyList && reserveStudies.length === 0 && selectedAssociationData) {
+        fetchReserveStudies();
+      }
+    }
+  }, [selectedValue, isOpen, selectedAssociationData]);
+
+  // CRITICAL: Force immediate data load when component mounts with valid association data
+  useEffect(() => {
+    console.log('[Dropdown] Mount/Update effect triggered:', {
+      showReserveStudyList,
+      selectedValue,
+      selectedAssociationData: selectedAssociationData?._id,
+      reserveStudiesLength: reserveStudies.length
+    });
+
+    if (showReserveStudyList && selectedValue && selectedAssociationData?._id) {
+      console.log('[Dropdown] FORCE LOADING reserve studies for persisted state');
+      setReserveStudies([]); // Clear first
+      fetchReserveStudies();
+    }
+    
+    if (showAssociationsList && selectedValue && associations.length === 0) {
+      console.log('[Dropdown] FORCE LOADING associations for persisted state');
+      fetchAssociations();
+    }
+  }, [showReserveStudyList, showAssociationsList, selectedValue, selectedAssociationData?._id]);
+
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
       if (showAssociationsList) {
@@ -101,6 +144,7 @@ const Dropdown: React.FC<DropdownProps> = ({
 
   useEffect(() => {
     if (showReserveStudyList && selectedAssociationData) {
+      console.log('[Dropdown] Association data changed, refreshing reserve studies:', selectedAssociationData._id);
       setReserveStudies([]);
       fetchReserveStudies();
     }
@@ -241,14 +285,26 @@ const Dropdown: React.FC<DropdownProps> = ({
   );
 
   const fetchReserveStudies = async () => {
+    console.log('[Dropdown] fetchReserveStudies called with:', {
+      selectedAssociationData: selectedAssociationData?._id,
+      loading
+    });
+    
+    if (loading) {
+      console.log('[Dropdown] Already loading, skipping fetch');
+      return;
+    }
+    
     setLoading(true);
     try {
       // Get association ID from selectedAssociationData
       if (!selectedAssociationData?._id) {
-        console.warn('No association ID available for fetching reserve studies');
+        console.warn('[Dropdown] No association ID available for fetching reserve studies');
         setReserveStudies([]);
         return;
       }
+      
+      console.log('[Dropdown] Fetching reserve studies for association:', selectedAssociationData._id);
       
       const response = await apiService.post<{data: ReserveStudy[]}>('/reserve-studies/list', {
         associationId: selectedAssociationData._id
@@ -261,9 +317,9 @@ const Dropdown: React.FC<DropdownProps> = ({
       );
       
       setReserveStudies(sortedStudies);
-      console.log('[Dropdown] Reserve studies fetched and sorted:', sortedStudies.length);
+      console.log('[Dropdown] Reserve studies fetched and set:', sortedStudies.length, sortedStudies.map(s => s.studyName));
     } catch (error) {
-      console.error('Error fetching reserve studies:', error);
+      console.error('[Dropdown] Error fetching reserve studies:', error);
       setReserveStudies([]);
     } finally {
       setLoading(false);
@@ -804,6 +860,8 @@ interface SimulatorSubheaderProps {
   selectedCompany?: string;
   onAssociationChange?: (value: string, associationData?: Association) => void;
   onCompanyChange?: (value: string, studyId?: string) => void;
+  selectedAssociationData?: Association | null;
+  selectedStudyId?: string;
 }
 
 const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
@@ -816,9 +874,21 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   selectedAssociation = '',
   selectedCompany = '',
   onAssociationChange,
-  onCompanyChange
+  onCompanyChange,
+  selectedAssociationData: propSelectedAssociationData = null,
+  selectedStudyId: propSelectedStudyId = ''
 }) => {
-  console.log('[SimulatorSubheader] Received props:', { onChangeView: !!onChangeView, onReset: !!onReset, selectedAssociation, selectedCompany });
+  console.log('[SimulatorSubheader] Received props:', {
+    selectedAssociation,
+    selectedCompany,
+    selectedAssociationData: propSelectedAssociationData?._id,
+    selectedStudyId: propSelectedStudyId
+  });
+  
+  // Use centralized state management
+  const { state: simulatorState, updateAssociation, updateCompany, updateState } = useSimulatorState();
+  
+  // Local component state
   const [selectedView, setSelectedView] = useState('Graph View');
   const [showViewMenu, setShowViewMenu] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -831,26 +901,43 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [showAddReserveStudyPopup, setShowAddReserveStudyPopup] = useState(false);
   const [refreshAssociations, setRefreshAssociations] = useState(0);
   const [refreshReserveStudies, setRefreshReserveStudies] = useState(0);
-  const [selectedStudyId, setSelectedStudyId] = useState<string>('');
-  const [dataFetched, setDataFetched] = useState<Set<string>>(new Set()); // Track which study data was fetched
-  const [isLoadingData, setIsLoadingData] = useState<boolean>(false); // Track loading state
-  const [fetchingStudyId, setFetchingStudyId] = useState<string>(''); // Track currently fetching study
-  const [lastFetchedStudy, setLastFetchedStudy] = useState<string>(''); // Additional safety check
-  const [selectedAssociationData, setSelectedAssociationData] = useState<Association | null>(null);
+  const [dataFetched, setDataFetched] = useState<Set<string>>(new Set());
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
+  const [fetchingStudyId, setFetchingStudyId] = useState<string>('');
+  const [lastFetchedStudy, setLastFetchedStudy] = useState<string>('');
   const [associations, setAssociations] = useState<Association[]>([]);
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
+  console.log('[SimulatorSubheader] Current simulator state:', {
+    selectedAssociation: simulatorState.selectedAssociation,
+    selectedCompany: simulatorState.selectedCompany,
+    selectedAssociationData: simulatorState.selectedAssociationData?._id,
+    selectedStudyId: simulatorState.selectedStudyId
+  });
+
+  // Handle reset functionality
+  const handleReset = () => {
+    // Clear all simulator state
+    setDataFetched(new Set());
+    setSelectedView('Graph View');
+    
+    // Call parent reset if provided
+    if (onReset) {
+      onReset();
+    }
+  };
+
   useEffect(() => {
     const fetchExcelData = async () => {
       // Multiple layers of protection against duplicate calls
-      if (!selectedAssociation || !selectedCompany || !selectedStudyId || !onShowCalculator) {
+      if (!simulatorState.selectedAssociation || !simulatorState.selectedCompany || !simulatorState.selectedStudyId || !onShowCalculator) {
         return;
       }
       
       // Check if already fetched
-      if (dataFetched.has(selectedStudyId)) {
-        console.log('[SimulatorSubheader] Data already fetched for study:', selectedStudyId);
+      if (dataFetched.has(simulatorState.selectedStudyId)) {
+        console.log('[SimulatorSubheader] Data already fetched for study:', simulatorState.selectedStudyId);
         return;
       }
       
@@ -861,50 +948,50 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       }
       
       // Check if this specific study is being fetched
-      if (fetchingStudyId === selectedStudyId) {
-        console.log('[SimulatorSubheader] Already fetching this study:', selectedStudyId);
+      if (fetchingStudyId === simulatorState.selectedStudyId) {
+        console.log('[SimulatorSubheader] Already fetching this study:', simulatorState.selectedStudyId);
         return;
       }
       
       // Check if this was the last fetched study
-      if (lastFetchedStudy === selectedStudyId) {
-        console.log('[SimulatorSubheader] This study was just fetched:', selectedStudyId);
+      if (lastFetchedStudy === simulatorState.selectedStudyId) {
+        console.log('[SimulatorSubheader] This study was just fetched:', simulatorState.selectedStudyId);
         return;
       }
       
-      console.log('[SimulatorSubheader] Starting fetch for study:', selectedStudyId);
-      setFetchingStudyId(selectedStudyId);
+      console.log('[SimulatorSubheader] Starting fetch for study:', simulatorState.selectedStudyId);
+      setFetchingStudyId(simulatorState.selectedStudyId);
       setIsLoadingData(true);
-      setLastFetchedStudy(selectedStudyId);
+      setLastFetchedStudy(simulatorState.selectedStudyId);
       
       try {
-        const response = await apiService.get<any>(`/reserve-studies/${selectedStudyId}/data`);
-        console.log('[SimulatorSubheader] Excel data fetched successfully for:', selectedStudyId);
+        const response = await apiService.get<any>(`/reserve-studies/${simulatorState.selectedStudyId}/data`);
+        console.log('[SimulatorSubheader] Excel data fetched successfully for:', simulatorState.selectedStudyId);
         
         // Mark as fetched
         setDataFetched(prev => {
           const newSet = new Set(prev);
-          newSet.add(selectedStudyId);
+          newSet.add(simulatorState.selectedStudyId);
           return newSet;
         });
         
         // Send complete JSON to calculator page
         const completeData = {
-          studyId: selectedStudyId,
-          association: selectedAssociation,
-          reserveStudy: selectedCompany,
+          studyId: simulatorState.selectedStudyId,
+          association: simulatorState.selectedAssociation,
+          reserveStudy: simulatorState.selectedCompany,
           data: response.data || response,
           timestamp: new Date().toISOString()
         };
         
         console.log('[SimulatorSubheader] Triggering calculator with data');
-        onShowCalculator(selectedAssociation, selectedCompany, completeData);
+        onShowCalculator(simulatorState.selectedAssociation, simulatorState.selectedCompany, completeData);
       } catch (error) {
         console.error('[SimulatorSubheader] Error fetching Excel data:', error);
         // Reset last fetched on error to allow retry
         setLastFetchedStudy('');
         // Still show calculator even if data fetch fails
-        onShowCalculator(selectedAssociation, selectedCompany);
+        onShowCalculator(simulatorState.selectedAssociation, simulatorState.selectedCompany);
       } finally {
         setIsLoadingData(false);
         setFetchingStudyId('');
@@ -917,16 +1004,16 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
     }, 200);
     
     return () => clearTimeout(timeoutId);
-  }, [selectedAssociation, selectedCompany, selectedStudyId]);
+  }, [simulatorState.selectedAssociation, simulatorState.selectedCompany, simulatorState.selectedStudyId]);
 
   useEffect(() => {
-    if (selectedAssociation && onCompanyChange) {
+    if (simulatorState.selectedAssociation && onCompanyChange) {
       onCompanyChange('');
       setRefreshReserveStudies(prev => prev + 1);
     }
-  }, [selectedAssociation]);
+  }, [simulatorState.selectedAssociation]);
 
-  // Fetch associations on mount to get association data
+  // Fetch associations on mount to get association data and restore persisted state
   useEffect(() => {
     const fetchAssociationsData = async () => {
       try {
@@ -934,11 +1021,16 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
         const associationsData = Array.isArray(data) ? data : [];
         setAssociations(associationsData);
         
-        // Update selected association data if there's a match
-        if (selectedAssociation) {
-          const selected = associationsData.find(assoc => assoc.name === selectedAssociation);
+        // Update selected association data if there's a match with persisted state
+        if (simulatorState.selectedAssociation && !simulatorState.selectedAssociationData) {
+          const selected = associationsData.find(assoc => assoc.name === simulatorState.selectedAssociation);
           if (selected) {
-            setSelectedAssociationData(selected);
+            console.log('[SimulatorSubheader] Restoring association data from API:', selected);
+            updateAssociation(selected.name, selected);
+            // Notify parent to update persisted state
+            if (onAssociationChange) {
+              onAssociationChange(selected.name, selected);
+            }
           }
         }
       } catch (error) {
@@ -947,7 +1039,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
     };
     
     fetchAssociationsData();
-  }, [selectedAssociation]);
+  }, [simulatorState.selectedAssociation, simulatorState.selectedAssociationData, onAssociationChange, updateAssociation]);
 
   useEffect(() => {
     fetchUsers();
@@ -1002,9 +1094,9 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
     }
     if (studyId) {
       // Only update if it's actually a different study
-      if (selectedStudyId !== studyId) {
+      if (simulatorState.selectedStudyId !== studyId) {
         console.log('[SimulatorSubheader] Changing to new study:', studyId);
-        setSelectedStudyId(studyId);
+        updateCompany(value, studyId);
         setIsLoadingData(false);
         setFetchingStudyId('');
         // Don't reset lastFetchedStudy here - let the effect handle it
@@ -1016,11 +1108,12 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
     <div className="simulator-subheader">
       <div className="left-section">
         <Dropdown 
+          key={`associations-${simulatorState.selectedAssociation}`}
           label="Associations" 
-          icon={selectedAssociationData?.icon ? (
+          icon={simulatorState.selectedAssociationData?.icon ? (
             <img 
-              src={selectedAssociationData.icon} 
-              alt={selectedAssociationData.name}
+              src={simulatorState.selectedAssociationData.icon} 
+              alt={simulatorState.selectedAssociationData.name}
               style={{
                 width: '16px',
                 height: '16px',
@@ -1033,7 +1126,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
                 target.style.display = 'none';
                 const parent = target.parentElement;
                 if (parent) {
-                  parent.innerHTML = selectedAssociationData?.name?.charAt(0)?.toUpperCase() || 'A';
+                  parent.innerHTML = simulatorState.selectedAssociationData?.name?.charAt(0)?.toUpperCase() || 'A';
                   parent.style.fontSize = '10px';
                   parent.style.fontWeight = '600';
                   parent.style.color = '#374151';
@@ -1043,7 +1136,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
                 }
               }}
             />
-          ) : selectedAssociation ? (
+          ) : simulatorState.selectedAssociation ? (
             <div style={{
               fontSize: '10px',
               fontWeight: '600',
@@ -1054,46 +1147,47 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
               width: '100%',
               height: '100%'
             }}>
-              {selectedAssociation.charAt(0).toUpperCase()}
+              {simulatorState.selectedAssociation.charAt(0).toUpperCase()}
             </div>
           ) : null} 
           showAssociationsList={true} 
           bottomButtonText="+ Create an Associations" 
           onBottomButtonClick={() => setShowCreateAssociationPopup(true)}
-          selectedValue={selectedAssociation}
+          selectedValue={simulatorState.selectedAssociation}
           onSelectionChange={(value, studyId, associationData) => {
             if (onAssociationChange) {
               onAssociationChange(value, associationData);
             }
             if (associationData) {
-              setSelectedAssociationData(associationData);
+              updateAssociation(value, associationData);
             }
           }}
           refreshTrigger={refreshAssociations}
-          selectedAssociationData={selectedAssociationData}
+          selectedAssociationData={simulatorState.selectedAssociationData}
         />
         <Dropdown 
+          key={`reserve-studies-${simulatorState.selectedCompany}-${simulatorState.selectedAssociationData?._id}-${simulatorState.selectedStudyId}`}
           label="Reserve Studies" 
           icon={<div />} 
           showReserveStudyList={true} 
           bottomButtonText="+ Add New Reserve Study"
           onBottomButtonClick={() => setShowAddReserveStudyPopup(true)}
-          selectedValue={selectedCompany}
+          selectedValue={simulatorState.selectedCompany}
           onSelectionChange={handleCompanyChange}
           refreshTrigger={refreshReserveStudies}
-          selectedAssociationData={selectedAssociationData}
+          selectedAssociationData={simulatorState.selectedAssociationData}
         />
       
         <div ref={viewMenuRef} className="view-menu-container">
           <button 
-            className={`view-menu-button ${!selectedCompany ? 'disabled' : ''}`} 
-            onClick={() => selectedCompany && setShowViewMenu(!showViewMenu)}
-            disabled={!selectedCompany}
+            className={`view-menu-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`} 
+            onClick={() => simulatorState.selectedCompany && setShowViewMenu(!showViewMenu)}
+            disabled={!simulatorState.selectedCompany}
           >
             {selectedView} <i className={selectedView === 'Graph View' ? 'fas fa-chart-bar' : 'fas fa-list'}></i>
           </button>
           
-          {showViewMenu && selectedCompany && (
+          {showViewMenu && simulatorState.selectedCompany && (
             <div className="view-menu">
               <div className="view-menu-item" onClick={() => { 
                 console.log('[SimulatorSubheader] Graph View clicked');
@@ -1119,14 +1213,14 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       </div>
       
       <div className="right-section">
-        <div ref={userDropdownRef} className={`users-container ${!selectedCompany ? 'disabled' : ''}`} style={{ position: 'relative' }}>
+        <div ref={userDropdownRef} className={`users-container ${!simulatorState.selectedCompany ? 'disabled' : ''}`} style={{ position: 'relative' }}>
           {users.map((user, index) => (
             <div 
               key={user._id} 
-              className={`user-avatar ${!selectedCompany ? 'disabled' : ''}`}
-              style={{ zIndex: 30 - (index * 10), cursor: selectedCompany ? 'pointer' : 'not-allowed' }}
+              className={`user-avatar ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
+              style={{ zIndex: 30 - (index * 10), cursor: simulatorState.selectedCompany ? 'pointer' : 'not-allowed' }}
               onClick={() => {
-                if (!selectedCompany) return;
+                if (!simulatorState.selectedCompany) return;
                 setShowUserDropdown(!showUserDropdown);
                 if (!showUserDropdown) fetchDropdownUsers();
               }}
@@ -1135,13 +1229,13 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             </div>
           ))}
           <button 
-            className={`add-user-button ${!selectedCompany ? 'disabled' : ''}`}
-            onClick={() => selectedCompany && setShowInvitePopup(true)}
-            disabled={!selectedCompany}
+            className={`add-user-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
+            onClick={() => simulatorState.selectedCompany && setShowInvitePopup(true)}
+            disabled={!simulatorState.selectedCompany}
           >
             <i className="fas fa-user"></i>
           </button>
-          {showUserDropdown && selectedCompany && (
+          {showUserDropdown && simulatorState.selectedCompany && (
             <div style={{
               position: 'absolute',
               top: '45px',
@@ -1288,37 +1382,37 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           )}
         </div>
         <button 
-          className={`action-button ${!selectedCompany ? 'disabled' : ''}`}
-          // onClick={() => selectedCompany && onReset && onReset()}
-          disabled={!selectedCompany}
+          className={`action-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
+          onClick={() => simulatorState.selectedCompany && handleReset()}
+          disabled={!simulatorState.selectedCompany}
         >
           <i className="fas fa-undo"></i> Reset All
         </button>
         <button 
-          className={`icon-button ${!selectedCompany ? 'disabled' : ''}`}
-          onClick={() => selectedCompany && onUndo && onUndo()}
-          disabled={!selectedCompany}
+          className={`icon-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
+          onClick={() => simulatorState.selectedCompany && onUndo && onUndo()}
+          disabled={!simulatorState.selectedCompany}
         >
           <i className="fas fa-undo"></i>
         </button>
         <button 
-          className={`icon-button ${!selectedCompany ? 'disabled' : ''}`}
-          onClick={() => selectedCompany && onRedo && onRedo()}
-          disabled={!selectedCompany}
+          className={`icon-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
+          onClick={() => simulatorState.selectedCompany && onRedo && onRedo()}
+          disabled={!simulatorState.selectedCompany}
         >
           <i className="fas fa-redo"></i>
         </button>
         <button 
-          className={`save-button ${!selectedCompany ? 'disabled' : ''}`}
-          onClick={() => selectedCompany && onSave && onSave()}
-          disabled={!selectedCompany}
+          className={`save-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
+          onClick={() => simulatorState.selectedCompany && onSave && onSave()}
+          disabled={!simulatorState.selectedCompany}
         >
           Save Changes <i className="fas fa-save"></i>
         </button>
       </div>
       
       <InviteMemberModal 
-        isOpen={showInvitePopup && !!selectedCompany} 
+        isOpen={showInvitePopup && !!simulatorState.selectedCompany} 
         onClose={() => setShowInvitePopup(false)} 
         title="Invite Member"
       />
@@ -1344,7 +1438,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             
             // Step 1: Update local state immediately
             console.log('[SimulatorSubheader] Setting up new study:', newStudyId);
-            setSelectedStudyId(newStudyId);
+            updateCompany(newStudyName, newStudyId);
+            localStorage.setItem('simulator_selectedStudyId', newStudyId);
             setIsLoadingData(false);
             setFetchingStudyId('');
             setLastFetchedStudy(''); // Clear to allow new study fetch
@@ -1360,7 +1455,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             studySelectionEmitter.emit('newStudyAdded', {
               studyId: newStudyId,
               studyName: newStudyName,
-              association: selectedAssociation
+              association: simulatorState.selectedAssociation
             });
             
             // Step 5: Refresh dropdown to show new study at top
@@ -1368,14 +1463,14 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             
             // Step 6: Force calculator load after state updates
             setTimeout(() => {
-              if (onShowCalculator && selectedAssociation) {
+              if (onShowCalculator && simulatorState.selectedAssociation) {
                 console.log('[SimulatorSubheader] Force triggering calculator...');
-                onShowCalculator(selectedAssociation, newStudyName);
+                onShowCalculator(simulatorState.selectedAssociation, newStudyName);
               }
             }, 500);
           }
         }}
-        selectedAssociation={selectedAssociation}
+        selectedAssociation={simulatorState.selectedAssociation}
       />
     </div>
   );

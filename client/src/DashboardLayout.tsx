@@ -6,6 +6,8 @@ import SimulatorSubheader from './components/SimulatorSubheader';
 import DashboardHeader from './components/DashboardHeader';
 import CalculatorPage from './components/CalculatorPage';
 import { studySelectionEmitter } from './utils/eventEmitter';
+import SimulatorStateManager from './utils/simulatorStateManager';
+import type { SimulatorState } from './utils/simulatorStateManager';
 
 interface DashboardLayoutProps {
   user: any;
@@ -16,36 +18,55 @@ interface DashboardLayoutProps {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUserUpdate }) => {
   const [menu, setMenu] = useState<any[]>([]);
   const [currentUser, setCurrentUser] = useState(user);
-  const [showCalculator, setShowCalculator] = useState(false);
-  const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '', excelData: null as any });
-  const [selectedAssociation, setSelectedAssociation] = useState('');
-  const [selectedCompany, setSelectedCompany] = useState('');
-  const [viewMode, setViewMode] = useState<'graph' | 'list'>('graph');
+  
+  // Use centralized state manager for all simulator state
+  const stateManager = SimulatorStateManager.getInstance();
+  const [simulatorState, setSimulatorState] = useState<SimulatorState>(stateManager.getState());
+  
   const [isResetting, setIsResetting] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Subscribe to state manager changes
+  useEffect(() => {
+    const unsubscribe = stateManager.subscribe('stateChange', (newState: SimulatorState) => {
+      console.log('[DashboardLayout] State manager update received:', newState);
+      setSimulatorState(newState);
+    });
+
+    const unsubscribeReset = stateManager.subscribe('stateReset', (newState: SimulatorState) => {
+      console.log('[DashboardLayout] State manager reset received:', newState);
+      setSimulatorState(newState);
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeReset();
+    };
+  }, [stateManager]);
+
   // Debug viewMode changes
   useEffect(() => {
-    console.log('[DashboardLayout] ViewMode state changed to:', viewMode);
-  }, [viewMode]);
+    console.log('[DashboardLayout] ViewMode state changed to:', simulatorState.viewMode);
+  }, [simulatorState.viewMode]);
 
   // Listen for new study selection events with enhanced handling
   useEffect(() => {
     const handleNewStudyAdded = (data: { studyId: string; studyName: string; association: string }) => {
       console.log('[DashboardLayout] New study added event received:', data);
       
-      // Update local state to match the new study
-      setSelectedAssociation(data.association);
-      setSelectedCompany(data.studyName);
-      setViewMode('graph');
-      
-      // Force calculator to show immediately
-      setShowCalculator(true);
-      setCalculatorData({
-        association: data.association,
-        reserveStudy: data.studyName,
-        excelData: null
+      // Update state through state manager
+      stateManager.updateState({
+        selectedAssociation: data.association,
+        selectedCompany: data.studyName,
+        selectedStudyId: data.studyId,
+        viewMode: 'graph',
+        showCalculator: true,
+        calculatorData: {
+          association: data.association,
+          reserveStudy: data.studyName,
+          excelData: null
+        }
       });
       
       console.log('[DashboardLayout] Calculator forced to show for new study');
@@ -56,56 +77,51 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
     return () => {
       studySelectionEmitter.off('newStudyAdded', handleNewStudyAdded);
     };
-  }, []);
+  }, [stateManager]);
 
   // Check if current route is simulator page
   const isSimulatorPage = location.pathname === '/dashboard/simulator' || location.pathname === '/dashboard/simulator-management';
 
-  // Reset state when navigating to simulator-management
-  useEffect(() => {
-    if (location.pathname === '/dashboard/simulator-management') {
-      console.log('[DashboardLayout] Navigated to simulator-management, resetting state');
-      handleReset();
-    }
-  }, [location.pathname]);
-
-  console.log('[DashboardLayout] Render - Current viewMode:', viewMode, 'showCalculator:', showCalculator, 'isSimulatorPage:', isSimulatorPage);
+  console.log('[DashboardLayout] Render - Current state:', {
+    viewMode: simulatorState.viewMode,
+    showCalculator: simulatorState.showCalculator,
+    isSimulatorPage,
+    selectedAssociation: simulatorState.selectedAssociation,
+    selectedCompany: simulatorState.selectedCompany
+  });
 
   const handleReset = () => {
     setIsResetting(true);
-    setShowCalculator(false);
-    setSelectedAssociation('');
-    setSelectedCompany('');
-    setCalculatorData({ association: '', reserveStudy: '', excelData: null });
+    stateManager.resetState();
+    
     // Reset the flag after a brief delay
     setTimeout(() => setIsResetting(false), 200);
   };
 
-  const handleAssociationChange = (value: string) => {
-    console.log('Association changed to:', value);
-    setSelectedAssociation(value);
+  const handleAssociationChange = (value: string, associationData?: any) => {
+    console.log('[DashboardLayout] Association changed to:', value, associationData);
+    stateManager.setAssociation(value, associationData);
   };
 
   const handleCompanyChange = (value: string, studyId?: string) => {
     console.log('[DashboardLayout] Company change:', { value, studyId });
-    setSelectedCompany(value);
+    stateManager.setCompany(value, studyId);
     
     if (studyId) {
       // When a study is selected, immediately show calculator
       console.log('[DashboardLayout] Study selected, showing calculator');
-      handleShowCalculator(selectedAssociation, value);
+      handleShowCalculator(simulatorState.selectedAssociation, value);
     }
   };
 
   const handleViewModeChange = (mode: 'graph' | 'list') => {
     console.log('[DashboardLayout] ViewMode change requested:', mode);
-    console.log('[DashboardLayout] Current viewMode before change:', viewMode);
-    setViewMode(mode);
+    stateManager.updateState({ viewMode: mode });
   };
 
   const handleShowCalculator = (association: string, reserveStudy: string, excelData?: any) => {
-    setCalculatorData({ association, reserveStudy, excelData });
-    setShowCalculator(true);
+    const newCalculatorData = { association, reserveStudy, excelData };
+    stateManager.setCalculatorData(newCalculatorData);
   };
 
   const handleUserUpdate = (updatedUser: any) => {
@@ -143,6 +159,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
     fetchPermissions();
   }, [navigate, location.pathname]);
 
+  // Cleanup dashboard state on component unmount (user logout)
+  useEffect(() => {
+    return () => {
+      // Clear simulator state from storage on logout
+      stateManager.clearStorage();
+    };
+  }, [stateManager]);
+
   return (
     <div className="dashboard-container-no-sidebar">
       <div className="dashboard-main">
@@ -154,24 +178,26 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
         />
         
         <div className="dashboard-content"> 
-          {(isSimulatorPage || showCalculator) && (
+          {isSimulatorPage && (
             <SimulatorSubheader 
               onShowCalculator={handleShowCalculator} 
               onReset={handleReset}
               onChangeView={handleViewModeChange}
-              selectedAssociation={selectedAssociation}
-              selectedCompany={selectedCompany}
+              selectedAssociation={simulatorState.selectedAssociation}
+              selectedCompany={simulatorState.selectedCompany}
               onAssociationChange={handleAssociationChange}
               onCompanyChange={handleCompanyChange}
+              selectedAssociationData={simulatorState.selectedAssociationData}
+              selectedStudyId={simulatorState.selectedStudyId}
             />
           )}   
          
-          {showCalculator ? (
+          {simulatorState.showCalculator && isSimulatorPage ? (
             <CalculatorPage 
-              association={calculatorData.association} 
-              reserveStudy={calculatorData.reserveStudy}
-              excelData={calculatorData.excelData}
-              viewMode={viewMode}
+              association={simulatorState.calculatorData.association} 
+              reserveStudy={simulatorState.calculatorData.reserveStudy}
+              excelData={simulatorState.calculatorData.excelData}
+              viewMode={simulatorState.viewMode}
               onViewModeChange={handleViewModeChange}
             />
           ) : (
