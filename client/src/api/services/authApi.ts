@@ -23,7 +23,7 @@ interface InviteData {
   selectedRole: string;
   firstName: string;
   lastName: string;
-  adminEmail: string;
+  email: string;
   designation: string;
 }
 
@@ -116,6 +116,12 @@ export const authApi = {
   uploadFile: async (formData: FormData) => {
     const formDataClient = createFormDataClient();
     const response = await formDataClient.post(API_ENDPOINTS.AUTH.FILE, formData);
+    return response.data;
+  },
+
+  // Add member
+  addMember: async (inviteData: InviteData) => {
+    const response = await apiClient.post('/auth/addmember', inviteData);
     return response.data;
   },
 };

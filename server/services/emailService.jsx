@@ -78,4 +78,29 @@ const sendPasswordResetEmail = async (email, resetUrl, firstName) => {
   await transporter.sendMail(mailOptions);
 };
 
-module.exports = { sendOTPEmail, sendVerificationEmail, sendPasswordResetEmail };
+const sendMemberInvitationEmail = async (email, verificationLink, memberName, companyName, invitedBy) => {
+  const mailOptions = {
+    from: `${process.env.MAIL_FROM_NAME} <${process.env.MAIL_FROM_ADDRESS}>`,
+    to: email,
+    subject: `You've been invited to join ${companyName} - Reserve Fund Advisory`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #1f2937;">Welcome ${memberName}!</h2>
+        <p>You have been invited to join the company: <strong>${companyName}</strong></p>
+        <p>Invited by: <strong>${invitedBy}</strong></p>
+        <p>Please verify your email to activate your account and complete your profile setup:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationLink}" style="background: #3b82f6; color: white; padding: 12px 32px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600;">Verify Email & Complete Profile</a>
+        </div>
+        <p style="color: #6b7280; font-size: 14px;">Or copy and paste this link in your browser:</p>
+        <p style="color: #3b82f6; word-break: break-all; font-size: 12px;">${verificationLink}</p>
+        <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">This link will expire in 7 days.</p>
+        <p style="color: #6b7280; font-size: 14px;">If you didn't expect this invitation, please ignore this email.</p>
+      </div>
+    `
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+module.exports = { sendOTPEmail, sendVerificationEmail, sendPasswordResetEmail, sendMemberInvitationEmail };

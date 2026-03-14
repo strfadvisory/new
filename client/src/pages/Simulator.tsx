@@ -17,7 +17,7 @@ const Simulator: React.FC = () => {
     selectedRole: '',
     firstName: '',
     lastName: '',
-    adminEmail: '',
+    email: '',
     designation: ''
   });
   const [user, setUser] = useState<any>(null);
@@ -55,7 +55,7 @@ const Simulator: React.FC = () => {
         selectedRole: '',
         firstName: '',
         lastName: '',
-        adminEmail: '',
+        email: '',
         designation: ''
       });
       setInviteLoading(false);
@@ -69,7 +69,7 @@ const Simulator: React.FC = () => {
       await inviteMutation.mutateAsync(inviteData);
       toast.success('Invitation sent successfully!');
       setShowInviteModal(false);
-      setInviteData({ selectedRole: '', firstName: '', lastName: '', adminEmail: '', designation: '' });
+      setInviteData({ selectedRole: '', firstName: '', lastName: '', email: '', designation: '' });
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to send invitation');
     } finally {
@@ -100,7 +100,7 @@ const Simulator: React.FC = () => {
                 <input type="text" placeholder="First Name" value={inviteData.firstName} onChange={(e) => setInviteData({...inviteData, firstName: e.target.value})} required style={{ padding: '10px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
                 <input type="text" placeholder="Last Name" value={inviteData.lastName} onChange={(e) => setInviteData({...inviteData, lastName: e.target.value})} required style={{ padding: '10px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               </div>
-              <input type="email" placeholder="Email Address" value={inviteData.adminEmail} onChange={(e) => setInviteData({...inviteData, adminEmail: e.target.value})} required style={{ width: '100%', padding: '10px', marginBottom: '12px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
+              <input type="email" placeholder="Email Address" value={inviteData.email} onChange={(e) => setInviteData({...inviteData, email: e.target.value})} required style={{ width: '100%', padding: '10px', marginBottom: '12px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               <input type="text" placeholder="Designation" value={inviteData.designation} onChange={(e) => setInviteData({...inviteData, designation: e.target.value})} required style={{ width: '100%', padding: '10px', marginBottom: '20px', border: '1px solid #e5e7eb', borderRadius: '6px' }} />
               <button type="submit" disabled={inviteLoading} style={{ width: '100%', padding: '12px', background: inviteLoading ? '#9ca3af' : '#3b82f6', color: 'white', border: 'none', borderRadius: '6px', fontSize: '16px', fontWeight: '600', cursor: inviteLoading ? 'not-allowed' : 'pointer' }}>
                 {inviteLoading ? <><i className="fas fa-spinner fa-spin"></i> Sending...</> : 'Invite'}

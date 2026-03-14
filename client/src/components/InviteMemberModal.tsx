@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { rolesApi } from '../api/services/rolesApi';
+import { authApi } from '../api/services/authApi';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -11,7 +12,7 @@ interface InviteData {
   selectedRole: string;
   firstName: string;
   lastName: string;
-  adminEmail: string;
+  email: string;
   designation: string;
 }
 
@@ -30,7 +31,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     selectedRole: '',
     firstName: '',
     lastName: '',
-    adminEmail: '',
+    email: '',
     designation: ''
   });
   const [subRoles, setSubRoles] = useState<SubRole[]>([]);
@@ -66,29 +67,9 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
     e.preventDefault();
     setInviteLoading(true);
     try {
-      // Use the rolesApi or create a proper API service for invitations
-      const response = await fetch('/api/auth/invite-advisory', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(inviteData)
-      });
-      
-      if (response.ok) {
-        console.log('Invitation sent successfully');
-        setInviteData({
-          selectedRole: '',
-          firstName: '',
-          lastName: '',
-          adminEmail: '',
-          designation: ''
-        });
-        onClose();
-      } else {
-        throw new Error('Failed to send invitation');
-      }
+      await authApi.addMember(inviteData);
+      setInviteData({ selectedRole: '', firstName: '', lastName: '', email: '', designation: '' });
+      onClose();
     } catch (error) {
       console.error('Error sending invitation:', error);
     } finally {
@@ -272,8 +253,8 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
             <input 
               type="email" 
               placeholder="Enter email address"
-              value={inviteData.adminEmail} 
-              onChange={(e) => setInviteData({...inviteData, adminEmail: e.target.value})} 
+              value={inviteData.email} 
+              onChange={(e) => setInviteData({...inviteData, email: e.target.value})} 
               required
               style={{
                 width: '100%',

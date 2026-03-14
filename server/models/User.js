@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema({
   roleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Role' },
   role: { type: String, default: 'USER' },
   roleType: { type: String },
-  status: { type: String, enum: ['Active', 'Inactive', 'Suspended'], default: 'Active' },
+  status: { type: String, enum: ['Active', 'Inactive', 'Suspended', 'pending'], default: 'Active' },
   isSuperAdmin: { type: Boolean, default: false },
   orgId: { type: String },
   level: { type: String },
@@ -32,6 +32,30 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: String,
   resetPasswordExpire: Date,
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  parentcompany: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  memberfor: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  reqorg: [{
+    orgId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    role: String,
+    requestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    status: {
+      type: String,
+      default: 'pending'
+    }
+  }],
   companyProfile: {
     companyName: String,
     description: String,

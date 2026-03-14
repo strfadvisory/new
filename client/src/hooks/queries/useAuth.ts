@@ -11,7 +11,7 @@ interface InviteData {
   selectedRole: string;
   firstName: string;
   lastName: string;
-  adminEmail: string;
+  email: string;
   designation: string;
 }
 

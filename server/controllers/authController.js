@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const configService = require('../services/configService');
-const { sendOTPEmail, sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService.jsx');
+const { sendOTPEmail, sendVerificationEmail, sendPasswordResetEmail, sendMemberInvitationEmail } = require('../services/emailService.jsx');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
@@ -255,6 +255,103 @@ const createCompanyProfile = async (req, res) => {
   }
 };
 
+const addMember = async (req, res) => {
+  try {
+    const { name, firstName: fName, lastName: lName, email, role, selectedRole, designation } = req.body;
+    const loggedInUser = req.user;
+
+    const resolvedFirstName = fName || (name ? name.split(' ')[0] : '');
+    const resolvedLastName = lName || (name ? name.split(' ').slice(1).join(' ') : '');
+    const resolvedEmail = email;
+    const resolvedRole = role || selectedRole;
+
+    // Validation
+    if (!resolvedFirstName || !resolvedEmail || !resolvedRole) {
+      return res.status(400).json({ message: 'Name, email, and role are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Prevent self-invite
+    if (email === loggedInUser.email) {
+      return res.status(400).json({ message: 'Cannot invite yourself' });
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      // Case A: Email does not exist - create new user
+      const tempPassword = Math.random().toString(36).slice(-8);
+      const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+      const verificationTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      const newUser = await User.create({
+        firstName: resolvedFirstName,
+        lastName: resolvedLastName,
+        email: resolvedEmail,
+        designation: designation || resolvedRole,
+        phone: '',
+        password: tempPassword,
+        status: 'pending',
+        parentcompany: loggedInUser._id,
+        memberfor: [loggedInUser._id],
+        verificationToken,
+        verificationTokenExpiry,
+        isVerified: false,
+        createdBy: loggedInUser._id
+      });
+
+      const verificationLink = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-member/${verificationToken}`;
+      
+      try {
+        await sendMemberInvitationEmail(
+          resolvedEmail, 
+          verificationLink, 
+          `${resolvedFirstName} ${resolvedLastName}`.trim(),
+          loggedInUser.companyProfile?.companyName || `${loggedInUser.firstName} ${loggedInUser.lastName}`,
+          `${loggedInUser.firstName} ${loggedInUser.lastName}`
+        );
+      } catch (emailError) {
+        console.log('Email send failed. Link:', verificationLink);
+      }
+
+      res.status(201).json({ 
+        message: 'Member invitation sent successfully', 
+        userId: newUser._id 
+      });
+    } else {
+      // Case B: Email already exists - add organization request
+      
+      // Check if request already exists
+      const existingRequest = existingUser.reqorg.find(
+        req => req.orgId.toString() === loggedInUser._id.toString()
+      );
+      
+      if (existingRequest) {
+        return res.status(400).json({ message: 'Organization request already exists' });
+      }
+
+      existingUser.reqorg.push({
+        orgId: loggedInUser._id,
+        role: resolvedRole,
+        requestedBy: loggedInUser._id,
+        status: 'pending'
+      });
+
+      await existingUser.save();
+
+      res.json({ message: 'User already exists. Organization request sent.' });
+    }
+  } catch (error) {
+    console.error('Add member error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
 const inviteAdvisory = async (req, res) => {
   try {
     const currentUser = await User.findById(req.user._id);
@@ -460,4 +557,4 @@ const verifyResetToken = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken };
+module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile, addMember, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken };
