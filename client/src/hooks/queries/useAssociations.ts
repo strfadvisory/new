@@ -1,16 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { associationsApi } from '../../api/services';
 import { QUERY_KEYS } from '../../api/config';
-
-interface Association {
-  _id: string;
-  name: string;
-  description: string;
-}
+import type { Association } from '../../utils/simulatorStateManager';
 
 interface CreateAssociationData {
   name: string;
-  description: string;
+  description?: string;
 }
 
 interface UpdateAssociationParams {

@@ -5,12 +5,7 @@ import {
   useUpdateAssociation,
   useDeleteAssociation,
 } from '../hooks/queries';
-
-interface Association {
-  _id: string;
-  name: string;
-  description: string;
-}
+import type { Association } from '../utils/simulatorStateManager';
 
 interface FormData {
   name: string;
@@ -79,7 +74,7 @@ const AssociationsExample: React.FC = () => {
   const handleEdit = (association: Association) => {
     setFormData({
       name: association.name,
-      description: association.description,
+      description: association.description || '',
     });
     setEditingId(association._id);
     setIsCreating(true);
@@ -204,7 +199,7 @@ const AssociationsExample: React.FC = () => {
               <div className="card h-100">
                 <div className="card-body">
                   <h5 className="card-title">{association.name}</h5>
-                  <p className="card-text">{association.description}</p>
+                  <p className="card-text">{association.description || 'No description'}</p>
                 </div>
                 <div className="card-footer d-flex gap-2">
                   <button

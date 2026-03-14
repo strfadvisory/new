@@ -6,6 +6,7 @@ import AddAssociationPopup from './AddAssociationPopup';
 import AddReserveStudyPopup from './AddReserveStudyPopup';
 import { viewModeEmitter, studySelectionEmitter, refreshReserveStudiesDropdown } from '../utils/eventEmitter';
 import { useSimulatorState } from '../hooks/useSimulatorState';
+import { useAssociations } from '../hooks/queries/useAssociations';
 import type { Association } from '../utils/simulatorStateManager';
 import './SimulatorSubheader.css';
 
@@ -79,6 +80,9 @@ const Dropdown: React.FC<DropdownProps> = ({
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{show: boolean; studyId: string; studyName: string}>({show: false, studyId: '', studyName: ''});
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Use React Query for associations
+  const { data: associationsFromQuery = [] } = useAssociations();
 
   console.log('[Dropdown] Render with props:', {
     label,
@@ -249,19 +253,15 @@ const Dropdown: React.FC<DropdownProps> = ({
   const fetchAssociations = async () => {
     setLoading(true);
     try {
-      const data = await apiService.get<Association[]>('/associations');
-      const associationsData = Array.isArray(data) ? data : [
-        { _id: '1', name: 'Homeowners Association A', type: 'HOA' },
-        { _id: '2', name: 'Community Board B', type: 'Community' },
-        { _id: '3', name: 'Property Management Group', type: 'Management' },
-        { _id: '4', name: 'Residents Council', type: 'Council' },
-        { _id: '5', name: 'Building Committee', type: 'Committee' }
+      // Use React Query data instead of direct API call
+      const associationsData: Association[] = associationsFromQuery.length > 0 ? associationsFromQuery : [
+ 
       ];
       setAssociations(associationsData);
       
       // Update selected association data if there's a match
       if (selectedValue && selectedAssociationData) {
-        const selected = associationsData.find(assoc => assoc.name === selectedValue);
+        const selected = associationsData.find((assoc: Association) => assoc.name === selectedValue);
         if (selected && selectedAssociationData) {
           // This will be handled by the parent component
         }
@@ -269,11 +269,7 @@ const Dropdown: React.FC<DropdownProps> = ({
     } catch (error) {
       console.error('Error fetching associations:', error);
       setAssociations([
-        { _id: '1', name: 'Homeowners Association A', type: 'HOA' },
-        { _id: '2', name: 'Community Board B', type: 'Community' },
-        { _id: '3', name: 'Property Management Group', type: 'Management' },
-        { _id: '4', name: 'Residents Council', type: 'Council' },
-        { _id: '5', name: 'Building Committee', type: 'Committee' }
+ 
       ]);
     } finally {
       setLoading(false);
@@ -908,6 +904,9 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [associations, setAssociations] = useState<Association[]>([]);
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Use React Query for associations
+  const { data: associationsFromQuery = [], refetch: refetchAssociations } = useAssociations();
 
   console.log('[SimulatorSubheader] Current simulator state:', {
     selectedAssociation: simulatorState.selectedAssociation,
@@ -1015,31 +1014,24 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
 
   // Fetch associations on mount to get association data and restore persisted state
   useEffect(() => {
-    const fetchAssociationsData = async () => {
-      try {
-        const data = await apiService.get<Association[]>('/associations');
-        const associationsData = Array.isArray(data) ? data : [];
-        setAssociations(associationsData);
-        
-        // Update selected association data if there's a match with persisted state
-        if (simulatorState.selectedAssociation && !simulatorState.selectedAssociationData) {
-          const selected = associationsData.find(assoc => assoc.name === simulatorState.selectedAssociation);
-          if (selected) {
-            console.log('[SimulatorSubheader] Restoring association data from API:', selected);
-            updateAssociation(selected.name, selected);
-            // Notify parent to update persisted state
-            if (onAssociationChange) {
-              onAssociationChange(selected.name, selected);
-            }
+    // Use React Query data instead of making API call
+    if (associationsFromQuery && associationsFromQuery.length > 0) {
+      setAssociations(associationsFromQuery);
+      
+      // Update selected association data if there's a match with persisted state
+      if (simulatorState.selectedAssociation && !simulatorState.selectedAssociationData) {
+        const selected = associationsFromQuery.find(assoc => assoc.name === simulatorState.selectedAssociation);
+        if (selected) {
+          console.log('[SimulatorSubheader] Restoring association data from React Query:', selected);
+          updateAssociation(selected.name, selected);
+          // Notify parent to update persisted state
+          if (onAssociationChange) {
+            onAssociationChange(selected.name, selected);
           }
         }
-      } catch (error) {
-        console.error('Error fetching associations:', error);
       }
-    };
-    
-    fetchAssociationsData();
-  }, [simulatorState.selectedAssociation, simulatorState.selectedAssociationData, onAssociationChange, updateAssociation]);
+    }
+  }, [associationsFromQuery, simulatorState.selectedAssociation, simulatorState.selectedAssociationData, onAssociationChange, updateAssociation]);
 
   useEffect(() => {
     fetchUsers();
@@ -1422,7 +1414,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
         onClose={() => setShowCreateAssociationPopup(false)}
         onSuccess={() => {
           setShowCreateAssociationPopup(false);
-          setRefreshAssociations(prev => prev + 1);
+          refetchAssociations(); // Use React Query refetch
         }}
       />
       

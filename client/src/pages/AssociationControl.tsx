@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { API_BASE_URL } from '../config';
 import '../Dashboard.css';
 import './superadmin/AllCompanies.css';
 import AddAssociationPopup from '../components/AddAssociationPopup';
+import { useAssociations, useAssociation, useDeleteAssociation } from '../hooks/queries/useAssociations';
+import apiClient from '../api/client';
+import { API_ENDPOINTS } from '../api/config';
+import type { Association } from '../utils/simulatorStateManager';
 
 interface AssociationControlProps {
   user: any;
@@ -14,8 +17,12 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
   const [editMode, setEditMode] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [associationToDelete, setAssociationToDelete] = useState<string | null>(null);
-  const [associations, setAssociations] = useState<any[]>([]);
-  const [selectedAssociation, setSelectedAssociation] = useState<any>(null);
+  const [selectedAssociationId, setSelectedAssociationId] = useState<string | null>(null);
+  
+  // Use React Query hooks
+  const { data: associations = [], refetch: refetchAssociations } = useAssociations();
+  const { data: selectedAssociation } = useAssociation(selectedAssociationId || '', !!selectedAssociationId);
+  const deleteAssociationMutation = useDeleteAssociation();
   const [editData, setEditData] = useState<any>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
@@ -37,58 +44,22 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
   }, [showDropdown]);
 
   React.useEffect(() => {
-    fetchAssociations();
-  }, []);
-
-  const refreshSelectedAssociation = async () => {
-    if (selectedAssociation?._id) {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/associations/${selectedAssociation._id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (response.ok) {
-          const freshAssociation = await response.json();
-          setSelectedAssociation({ ...freshAssociation, hierarchy: selectedAssociation.hierarchy });
-        }
-      } catch (error) {
-        console.error('Error refreshing selected association:', error);
+    if (associations.length > 0 && !selectedAssociationId) {
+      const firstAssociation = associations[0];
+      const isValidId = firstAssociation._id && firstAssociation._id.match(/^[0-9a-fA-F]{24}$/);
+      if (isValidId) {
+        setSelectedAssociationId(firstAssociation._id);
       }
     }
-  };
+  }, [associations, selectedAssociationId]);
+
+
 
   const handleAssociationUpdate = () => {
-    fetchAssociations();
-    refreshSelectedAssociation();
+    refetchAssociations();
   };
 
-  const fetchAssociations = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/associations`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setAssociations(data);
-        if (data.length > 0) {
-          const firstAssociation = data[0];
-          const isValidId = firstAssociation._id && firstAssociation._id.match(/^[0-9a-fA-F]{24}$/);
-          if (isValidId) {
-            const associationResponse = await fetch(`${API_BASE_URL}/associations/${firstAssociation._id}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const freshAssociation = associationResponse.ok ? await associationResponse.json() : firstAssociation;
-            setSelectedAssociation(freshAssociation);
-          } else {
-            setSelectedAssociation(firstAssociation);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching associations:', error);
-    }
-  };
+
 
   const handleEditAssociation = (association: any) => {
     setEditData(association);
@@ -103,8 +74,7 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
   };
 
   const handlePopupSuccess = () => {
-    fetchAssociations();
-    refreshSelectedAssociation();
+    refetchAssociations();
   };
 
   const handleDeleteAssociation = async (associationId: string) => {
@@ -115,23 +85,11 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
   const confirmDelete = async () => {
     if (associationToDelete) {
       try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/associations/${associationToDelete}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (response.ok) {
-          setSelectedAssociation(null);
-          fetchAssociations();
-        } else {
-          const errorData = await response.json();
-          alert(`Error: ${errorData.message || 'Failed to delete association'}`);
-        }
+        await deleteAssociationMutation.mutateAsync(associationToDelete);
+        setSelectedAssociationId(null);
       } catch (error) {
         console.error('Error deleting association:', error);
+        alert('Failed to delete association');
       }
     }
     setShowDeleteConfirm(false);
@@ -161,32 +119,13 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
             return (
               <div 
                 key={association._id}
-                className={`company-item ${selectedAssociation?._id === association._id ? 'active' : ''}`}
-                onClick={async () => {
+                className={`company-item ${selectedAssociationId === association._id ? 'active' : ''}`}
+                onClick={() => {
                   if (!isValidId) {
                     console.error('Invalid association ID:', association._id);
-                    setSelectedAssociation(association);
                     return;
                   }
-                  
-                  try {
-                    const token = localStorage.getItem('token');
-                    const response = await fetch(`${API_BASE_URL}/associations/${association._id}`, {
-                      headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (response.ok) {
-                      const freshAssociation = await response.json();
-                      setSelectedAssociation(freshAssociation);
-                    } else if (response.status === 404) {
-                      console.error('Association not found or access denied');
-                      setSelectedAssociation(null);
-                    } else {
-                      setSelectedAssociation(association);
-                    }
-                  } catch (error) {
-                    console.error('Error fetching association:', error);
-                    setSelectedAssociation(association);
-                  }
+                  setSelectedAssociationId(association._id);
                 }}
               >
                 <div className="company-logo">

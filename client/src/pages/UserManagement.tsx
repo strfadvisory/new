@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import './superadmin/AllCompanies.css';
 import { useAuthUsers, useRemoveLogo, useDeleteUser } from '../hooks/queries/useAuth';
 import { authApi } from '../api/services/authApi';
@@ -85,9 +86,9 @@ const UserManagement: React.FC = () => {
       console.log('To:', selectedUser.email);
       console.log('Verification URL:', res.verificationLink);
       console.log('=======================================\n');
-      alert('Invitation resent successfully!');
+      toast.success('Invitation resent successfully!');
     } catch (error: any) {
-      alert(error?.response?.data?.message || 'Failed to resend invitation');
+      toast.error(error?.response?.data?.message || 'Failed to resend invitation');
     } finally {
       setResendLoading(false);
     }

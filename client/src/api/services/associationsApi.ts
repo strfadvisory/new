@@ -1,15 +1,10 @@
 import apiClient from '../client';
 import { API_ENDPOINTS } from '../config';
-
-interface Association {
-  _id: string;
-  name: string;
-  description: string;
-}
+import type { Association } from '../../utils/simulatorStateManager';
 
 interface CreateAssociationData {
   name: string;
-  description: string;
+  description?: string;
 }
 
 // Associations API functions

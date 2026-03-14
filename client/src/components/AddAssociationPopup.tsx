@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { API_BASE_URL } from '../config';
+import { API_ENDPOINTS } from '../api/config';
+import apiClient from '../api/client';
 import '../pages/AssociationControl.css';
 
 interface AddAssociationPopupProps {
@@ -160,10 +161,7 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      
-      let url = `${API_BASE_URL}/associations`;
-      let method = 'POST';
+      let url = API_ENDPOINTS.ASSOCIATIONS.BASE;
       const submitData: any = { 
         name: formData.name,
         description: formData.description,
@@ -178,26 +176,18 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
         websiteUrl: formData.websiteUrl
       };
       
+      let response;
       if (isEditMode && formData._id) {
-        url = `${API_BASE_URL}/associations/${formData._id}`;
-        method = 'PUT';
+        response = await apiClient.put(`${API_ENDPOINTS.ASSOCIATIONS.BASE}/${formData._id}`, submitData);
+      } else {
+        response = await apiClient.post(API_ENDPOINTS.ASSOCIATIONS.BASE, submitData);
       }
       
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(submitData)
-      });
-      
-      if (response.ok) {
+      if (response.status >= 200 && response.status < 300) {
         onSuccess();
         onClose();
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message || 'Failed to save association'}`);
+        alert(`Error: Failed to save association`);
       }
     } catch (error) {
       console.error('Error saving:', error);
