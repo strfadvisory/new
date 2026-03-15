@@ -215,14 +215,11 @@ const getUserCompanies = async (req, res) => {
   try {
     const userId = req.user._id;
     
-    // Get companies where user is a member
+    // Get user with populated memberfor companies
     const user = await User.findById(userId)
       .populate({
-        path: 'memberfor',
-        select: 'companyProfile firstName lastName _id',
-        populate: {
-          path: 'companyProfile'
-        }
+        path: 'memberfor.company',
+        select: 'companyProfile firstName lastName _id'
       })
       .select('memberfor parentcompany companyProfile firstName lastName');
     
@@ -243,12 +240,20 @@ const getUserCompanies = async (req, res) => {
       });
     }
     
-    // Add companies user is member of
+    // Add companies user is member of from memberfor array
     if (user.memberfor && user.memberfor.length > 0) {
-      companies = [...companies, ...user.memberfor.map(company => ({
-        ...company.toObject(),
-        isOwn: false
-      }))];
+      const memberCompanies = user.memberfor
+        .filter(member => member.company) // Only include valid company references
+        .map(member => ({
+          _id: member.company._id,
+          companyProfile: member.company.companyProfile,
+          firstName: member.company.firstName,
+          lastName: member.company.lastName,
+          isOwn: false,
+          role: member.role
+        }));
+      
+      companies = [...companies, ...memberCompanies];
     }
     
     res.json(companies);
@@ -313,22 +318,41 @@ const handleOrgRequest = async (req, res) => {
       return res.status(400).json({ message: 'Request is not pending' });
     }
     
-    // Update request status
-    user.reqorg[requestIndex].status = action === 'accept' ? 'accepted' : 'rejected';
-    user.reqorg[requestIndex].respondedAt = new Date();
-    
-    // If accepted, add to memberfor array
     if (action === 'accept') {
-      if (!user.memberfor.includes(request.orgId)) {
-        user.memberfor.push(request.orgId);
+      // Find the role and get Administrator subrole
+      const role = await Role.findById(request.role);
+      let administratorRoleId = 'Administrator'; // Default
+      
+      if (role && role.subRoles && role.subRoles.length > 0) {
+        const adminSubRole = role.subRoles.find(subRole => 
+          subRole.role && subRole.role.toLowerCase().includes('administrator')
+        );
+        if (adminSubRole) {
+          administratorRoleId = adminSubRole.id;
+        }
+      }
+      
+      // Add to memberfor array with proper structure
+      const existingMember = user.memberfor.find(member => 
+        member.company && member.company.toString() === request.orgId.toString()
+      );
+      
+      if (!existingMember) {
+        user.memberfor.push({
+          company: request.orgId,
+          role: administratorRoleId
+        });
       }
     }
+    
+    // Remove from reqorg array
+    user.reqorg.splice(requestIndex, 1);
     
     await user.save();
     
     res.json({ 
       message: `Request ${action}ed successfully`,
-      request: user.reqorg[requestIndex]
+      action: action
     });
   } catch (error) {
     console.error('Error handling organization request:', error);
@@ -342,26 +366,103 @@ const switchCompany = async (req, res) => {
     const { companyId } = req.body;
     
     // Verify user has access to this company
-    const user = await User.findById(userId);
+    const user = await User.findById(userId)
+      .populate({
+        path: 'memberfor.company',
+        select: 'companyProfile firstName lastName _id'
+      })
+      .populate('roleId', 'name type subRoles permissions');
+      
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    // Check if it's user's own company or they're a member
-    const hasAccess = user._id.toString() === companyId || 
-                     user.memberfor.some(id => id.toString() === companyId);
+    let permissionLevel = 'ADMIN'; // Default for own company
+    let isOwnCompany = false;
     
-    if (!hasAccess) {
-      return res.status(403).json({ message: 'Access denied to this company' });
+    // Check if it's user's own company
+    if (user._id.toString() === companyId) {
+      isOwnCompany = true;
+      permissionLevel = 'ADMIN';
+    } else {
+      // Check if user is a member of this company
+      const memberEntry = user.memberfor.find(member => 
+        member.company && member.company._id.toString() === companyId
+      );
+      
+      if (!memberEntry) {
+        return res.status(403).json({ message: 'Access denied to this company' });
+      }
+      
+      // Set permission level based on role
+      permissionLevel = memberEntry.role || 'VIEWER';
     }
     
-    // Update current company context (you can store this in session or token)
+    // Get company information
+    const company = await User.findById(companyId)
+      .select('companyProfile firstName lastName')
+      .lean();
+    
     res.json({ 
       message: 'Company switched successfully',
-      currentCompany: companyId
+      currentCompany: companyId,
+      permissionLevel,
+      isOwnCompany,
+      companyInfo: {
+        name: company?.companyProfile?.companyName || `${company?.firstName} ${company?.lastName}`,
+        _id: companyId
+      }
     });
   } catch (error) {
     console.error('Error switching company:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Get current user permission level for a company
+const getUserPermissionLevel = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const { companyId } = req.params;
+    
+    const user = await User.findById(userId)
+      .populate('roleId', 'name type subRoles permissions');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    let permissionLevel = 'VIEWER'; // Default
+    let isOwnCompany = false;
+    
+    // Check if it's user's own company
+    if (user._id.toString() === companyId) {
+      isOwnCompany = true;
+      permissionLevel = 'ADMIN';
+    } else {
+      // Find permission level from reqorg
+      const orgRequest = user.reqorg.find(req => 
+        req.orgId.toString() === companyId && req.status === 'accepted'
+      );
+      
+      if (orgRequest && orgRequest.role) {
+        const role = await Role.findById(orgRequest.role);
+        if (role && role.subRoles && role.subRoles.length > 0) {
+          const subRole = role.subRoles.find(sr => sr.id === userId.toString());
+          if (subRole && subRole.permissionLevel) {
+            permissionLevel = subRole.permissionLevel;
+          }
+        }
+      }
+    }
+    
+    res.json({
+      permissionLevel,
+      isOwnCompany,
+      companyId
+    });
+  } catch (error) {
+    console.error('Error getting user permission level:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -378,5 +479,6 @@ module.exports = {
   getUserCompanies,
   getPendingRequests,
   handleOrgRequest,
-  switchCompany
+  switchCompany,
+  getUserPermissionLevel
 };

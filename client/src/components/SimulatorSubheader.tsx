@@ -127,8 +127,8 @@ const Dropdown: React.FC<DropdownProps> = ({
       fetchReserveStudies();
     }
     
-    if (showAssociationsList && selectedValue && associations.length === 0) {
-      console.log('[Dropdown] FORCE LOADING associations for persisted state');
+    if (showAssociationsList) {
+      console.log('[Dropdown] FORCE LOADING fresh associations');
       fetchAssociations();
     }
   }, [showReserveStudyList, showAssociationsList, selectedValue, selectedAssociationData?._id]);
@@ -162,7 +162,9 @@ const Dropdown: React.FC<DropdownProps> = ({
       if (showUserList && users.length === 0) {
         fetchUsers();
       }
-      if (showAssociationsList && associations.length === 0) {
+      if (showAssociationsList) {
+        // Always fetch fresh associations when dropdown opens
+        console.log('[Dropdown] Fetching fresh associations on dropdown open');
         fetchAssociations();
       }
       if (showReserveStudyList && reserveStudies.length === 0) {
@@ -253,24 +255,14 @@ const Dropdown: React.FC<DropdownProps> = ({
   const fetchAssociations = async () => {
     setLoading(true);
     try {
-      // Use React Query data instead of direct API call
-      const associationsData: Association[] = associationsFromQuery.length > 0 ? associationsFromQuery : [
- 
-      ];
+      // Always use fresh React Query data, no fallbacks
+      const associationsData: Association[] = associationsFromQuery || [];
       setAssociations(associationsData);
       
-      // Update selected association data if there's a match
-      if (selectedValue && selectedAssociationData) {
-        const selected = associationsData.find((assoc: Association) => assoc.name === selectedValue);
-        if (selected && selectedAssociationData) {
-          // This will be handled by the parent component
-        }
-      }
+      console.log('[Dropdown] Fresh associations loaded from API:', associationsData.length);
     } catch (error) {
       console.error('Error fetching associations:', error);
-      setAssociations([
- 
-      ]);
+      setAssociations([]);
     } finally {
       setLoading(false);
     }
@@ -931,6 +923,18 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
     const fetchExcelData = async () => {
       // Multiple layers of protection against duplicate calls
       if (!simulatorState.selectedAssociation || !simulatorState.selectedCompany || !simulatorState.selectedStudyId || !onShowCalculator) {
+        console.log('[SimulatorSubheader] Missing required data for calculator:', {
+          association: simulatorState.selectedAssociation,
+          company: simulatorState.selectedCompany,
+          studyId: simulatorState.selectedStudyId,
+          hasCallback: !!onShowCalculator
+        });
+        return;
+      }
+      
+      // Ensure association data is also valid
+      if (!simulatorState.selectedAssociationData?._id) {
+        console.log('[SimulatorSubheader] Missing association data for calculator');
         return;
       }
       
@@ -1003,7 +1007,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
     }, 200);
     
     return () => clearTimeout(timeoutId);
-  }, [simulatorState.selectedAssociation, simulatorState.selectedCompany, simulatorState.selectedStudyId]);
+  }, [simulatorState.selectedAssociation, simulatorState.selectedCompany, simulatorState.selectedStudyId, simulatorState.selectedAssociationData]);
 
   useEffect(() => {
     if (simulatorState.selectedAssociation && onCompanyChange) {
@@ -1014,15 +1018,16 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
 
   // Fetch associations on mount to get association data and restore persisted state
   useEffect(() => {
-    // Use React Query data instead of making API call
+    // Always use fresh React Query data
     if (associationsFromQuery && associationsFromQuery.length > 0) {
       setAssociations(associationsFromQuery);
+      console.log('[SimulatorSubheader] Using fresh associations from API:', associationsFromQuery.length);
       
       // Update selected association data if there's a match with persisted state
       if (simulatorState.selectedAssociation && !simulatorState.selectedAssociationData) {
-        const selected = associationsFromQuery.find(assoc => assoc.name === simulatorState.selectedAssociation);
+        const selected = associationsFromQuery.find((assoc: Association) => assoc.name === simulatorState.selectedAssociation);
         if (selected) {
-          console.log('[SimulatorSubheader] Restoring association data from React Query:', selected);
+          console.log('[SimulatorSubheader] Restoring association data from fresh API data:', selected);
           updateAssociation(selected.name, selected);
           // Notify parent to update persisted state
           if (onAssociationChange) {
@@ -1030,6 +1035,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           }
         }
       }
+    } else {
+      console.log('[SimulatorSubheader] No associations available from API');
     }
   }, [associationsFromQuery, simulatorState.selectedAssociation, simulatorState.selectedAssociationData, onAssociationChange, updateAssociation]);
 
@@ -1163,7 +1170,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           icon={<div />} 
           showReserveStudyList={true} 
           bottomButtonText="+ Add New Reserve Study"
-          onBottomButtonClick={() => setShowAddReserveStudyPopup(true)}
+          onBottomButtonClick={() => simulatorState.selectedAssociationData && setShowAddReserveStudyPopup(true)}
           selectedValue={simulatorState.selectedCompany}
           onSelectionChange={handleCompanyChange}
           refreshTrigger={refreshReserveStudies}
@@ -1172,14 +1179,14 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       
         <div ref={viewMenuRef} className="view-menu-container">
           <button 
-            className={`view-menu-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`} 
-            onClick={() => simulatorState.selectedCompany && setShowViewMenu(!showViewMenu)}
-            disabled={!simulatorState.selectedCompany}
+            className={`view-menu-button ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`} 
+            onClick={() => (simulatorState.selectedAssociation && simulatorState.selectedCompany) && setShowViewMenu(!showViewMenu)}
+            disabled={!simulatorState.selectedAssociation || !simulatorState.selectedCompany}
           >
             {selectedView} <i className={selectedView === 'Graph View' ? 'fas fa-chart-bar' : 'fas fa-list'}></i>
           </button>
           
-          {showViewMenu && simulatorState.selectedCompany && (
+          {showViewMenu && simulatorState.selectedAssociation && simulatorState.selectedCompany && (
             <div className="view-menu">
               <div className="view-menu-item" onClick={() => { 
                 console.log('[SimulatorSubheader] Graph View clicked');
@@ -1205,14 +1212,14 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       </div>
       
       <div className="right-section">
-        <div ref={userDropdownRef} className={`users-container ${!simulatorState.selectedCompany ? 'disabled' : ''}`} style={{ position: 'relative' }}>
+        <div ref={userDropdownRef} className={`users-container ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`} style={{ position: 'relative' }}>
           {users.map((user, index) => (
             <div 
               key={user._id} 
-              className={`user-avatar ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
-              style={{ zIndex: 30 - (index * 10), cursor: simulatorState.selectedCompany ? 'pointer' : 'not-allowed' }}
+              className={`user-avatar ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`}
+              style={{ zIndex: 30 - (index * 10), cursor: (simulatorState.selectedAssociation && simulatorState.selectedCompany) ? 'pointer' : 'not-allowed' }}
               onClick={() => {
-                if (!simulatorState.selectedCompany) return;
+                if (!simulatorState.selectedAssociation || !simulatorState.selectedCompany) return;
                 setShowUserDropdown(!showUserDropdown);
                 if (!showUserDropdown) fetchDropdownUsers();
               }}
@@ -1221,13 +1228,13 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             </div>
           ))}
           <button 
-            className={`add-user-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
-            onClick={() => simulatorState.selectedCompany && setShowInvitePopup(true)}
-            disabled={!simulatorState.selectedCompany}
+            className={`add-user-button ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`}
+            onClick={() => (simulatorState.selectedAssociation && simulatorState.selectedCompany) && setShowInvitePopup(true)}
+            disabled={!simulatorState.selectedAssociation || !simulatorState.selectedCompany}
           >
             <i className="fas fa-user"></i>
           </button>
-          {showUserDropdown && simulatorState.selectedCompany && (
+          {showUserDropdown && simulatorState.selectedAssociation && simulatorState.selectedCompany && (
             <div style={{
               position: 'absolute',
               top: '45px',
@@ -1374,37 +1381,37 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           )}
         </div>
         <button 
-          className={`action-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
-          onClick={() => simulatorState.selectedCompany && handleReset()}
-          disabled={!simulatorState.selectedCompany}
+          className={`action-button ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`}
+          onClick={() => (simulatorState.selectedAssociation && simulatorState.selectedCompany) && handleReset()}
+          disabled={!simulatorState.selectedAssociation || !simulatorState.selectedCompany}
         >
           <i className="fas fa-undo"></i> Reset All
         </button>
         <button 
-          className={`icon-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
-          onClick={() => simulatorState.selectedCompany && onUndo && onUndo()}
-          disabled={!simulatorState.selectedCompany}
+          className={`icon-button ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`}
+          onClick={() => (simulatorState.selectedAssociation && simulatorState.selectedCompany) && onUndo && onUndo()}
+          disabled={!simulatorState.selectedAssociation || !simulatorState.selectedCompany}
         >
           <i className="fas fa-undo"></i>
         </button>
         <button 
-          className={`icon-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
-          onClick={() => simulatorState.selectedCompany && onRedo && onRedo()}
-          disabled={!simulatorState.selectedCompany}
+          className={`icon-button ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`}
+          onClick={() => (simulatorState.selectedAssociation && simulatorState.selectedCompany) && onRedo && onRedo()}
+          disabled={!simulatorState.selectedAssociation || !simulatorState.selectedCompany}
         >
           <i className="fas fa-redo"></i>
         </button>
         <button 
-          className={`save-button ${!simulatorState.selectedCompany ? 'disabled' : ''}`}
-          onClick={() => simulatorState.selectedCompany && onSave && onSave()}
-          disabled={!simulatorState.selectedCompany}
+          className={`save-button ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`}
+          onClick={() => (simulatorState.selectedAssociation && simulatorState.selectedCompany) && onSave && onSave()}
+          disabled={!simulatorState.selectedAssociation || !simulatorState.selectedCompany}
         >
           Save Changes <i className="fas fa-save"></i>
         </button>
       </div>
       
       <InviteMemberModal 
-        isOpen={showInvitePopup && !!simulatorState.selectedCompany} 
+        isOpen={showInvitePopup && !!simulatorState.selectedAssociation && !!simulatorState.selectedCompany} 
         onClose={() => setShowInvitePopup(false)} 
         title="Invite Member"
       />
@@ -1419,7 +1426,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       />
       
       <AddReserveStudyPopup
-        isOpen={showAddReserveStudyPopup}
+        isOpen={showAddReserveStudyPopup && !!simulatorState.selectedAssociationData}
         onClose={() => setShowAddReserveStudyPopup(false)}
         onSuccess={(newStudyId, newStudyName) => {
           console.log('[SimulatorSubheader] New study created:', { newStudyId, newStudyName });

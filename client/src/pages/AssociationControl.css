@@ -623,7 +623,7 @@ select.form-input {
   background: #fef2f2;
 }
 /* Add New Button */
-.add-new-btn {
+.add-new-link {
   background: none;
   color: #312C57;
   border: none;
@@ -635,31 +635,50 @@ select.form-input {
   gap: 6px;
   font-weight: 600;
   font-size: 14px;
-  transition: none;
+  transition: all 0.2s ease;
   box-shadow: none;
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   text-decoration: none;
   outline: none;
 }
 
-.add-new-btn:hover {
-  background: none;
+.add-new-link:hover {
+  background: #f3f4f6;
   transform: none;
   box-shadow: none;
   color: #312C57;
   text-decoration: none;
 }
 
-.add-new-btn:focus {
+.add-new-link.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.add-new-link.disabled:hover {
+  background: none;
+  color: #9ca3af;
+}
+
+.add-new-link:focus {
   outline: none;
   box-shadow: none;
 }
 
-.add-new-btn:active {
+.add-new-link:active {
   transform: none;
   box-shadow: none;
 }
 
-.add-new-btn i {
+.add-new-link i {
   font-size: 12px;
+}
+
+.dropdown-option.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.dropdown-option.disabled:hover {
+  background: none;
 }

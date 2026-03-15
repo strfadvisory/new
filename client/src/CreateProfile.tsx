@@ -265,8 +265,20 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
       const data = await response.json();
       if (response.ok) {
         localStorage.setItem('token', data.token);
+        // Store user data for OTP verification
+        const userData = {
+          _id: data.user?._id || data._id,
+          firstName: data.user?.firstName || formData.firstName,
+          lastName: data.user?.lastName || formData.lastName,
+          email: data.user?.email || formData.email,
+          designation: data.user?.designation || formData.designation,
+          phone: data.user?.phone || formData.phone,
+          isSuperAdmin: data.user?.isSuperAdmin || false,
+          ...data.user
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
         toast.success('OTP sent to your email');
-        onRegister({ ...data, email: formData.email });
+        onRegister({ ...userData, email: formData.email });
       } else {
         toast.error(data.message || 'Registration failed');
       }

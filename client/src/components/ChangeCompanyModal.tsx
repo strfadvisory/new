@@ -40,6 +40,7 @@ interface ChangeCompanyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCompanyChanged?: () => void;
+  onCreateNewCompany?: () => void;
   isInitialSelection?: boolean;
 }
 
@@ -47,8 +48,10 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
   isOpen, 
   onClose, 
   onCompanyChanged,
+  onCreateNewCompany,
   isInitialSelection = false
 }) => {
+  console.log('ChangeCompanyModal render:', { isOpen, isInitialSelection, hasCreateHandler: !!onCreateNewCompany });
   const [userCompanies, setUserCompanies] = useState<Company[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -165,7 +168,13 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
     <>
       <div 
         className="modal-overlay" 
-        onClick={isInitialSelection ? undefined : onClose}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!isInitialSelection) {
+            onClose();
+          }
+        }}
         style={{
           position: 'fixed',
           top: 0,
@@ -178,22 +187,27 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
           zIndex: 1000
         }}
       />
-      <div style={{
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
-        background: 'white',
-        borderRadius: '8px',
-        width: '100%',
-        maxWidth: '500px',
-        maxHeight: '80vh',
-        margin: '20px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-        zIndex: 1001,
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        overflow: 'hidden'
-      }}>
+      <div 
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        }}
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'white',
+          borderRadius: '8px',
+          width: '100%',
+          maxWidth: '500px',
+          maxHeight: '80vh',
+          margin: '20px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+          zIndex: 1001,
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          overflow: 'hidden'
+        }}>
         {/* Modal Header */}
         <div style={{
           padding: '24px 24px 20px 24px',
@@ -239,22 +253,97 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
             <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
               Loading...
             </div>
-          ) : filteredItems.length === 0 ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
-              {isInitialSelection ? 'No companies available. Please contact your administrator.' : 'No companies found'}
-            </div>
           ) : (
-            filteredItems.map((item, index) => (
-              <div 
-                key={item.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '16px 24px',
-                  borderBottom: index === filteredItems.length - 1 ? 'none' : '1px solid #f3f4f6',
-                  gap: '16px'
-                }}
-              >
+            <>
+              {/* Create New Company Option - Only show for initial selection */}
+              {isInitialSelection && onCreateNewCompany && (
+                <div 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '16px 24px',
+                    borderBottom: '1px solid #f3f4f6',
+                    gap: '16px',
+                    cursor: 'pointer',
+                    backgroundColor: '#f8fafc',
+                    transition: 'background-color 0.2s ease'
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Create new company option clicked');
+                    onCreateNewCompany();
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f1f5f9';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f8fafc';
+                  }}
+                >
+                  {/* Plus Icon */}
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '6px',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#3b82f6',
+                    color: 'white'
+                  }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  
+                  {/* Create Company Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <h3 style={{
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#111827',
+                      margin: '0 0 4px 0',
+                      lineHeight: '1.2'
+                    }}>
+                      Create New Company
+                    </h3>
+                    <p style={{
+                      fontSize: '14px',
+                      color: '#6b7280',
+                      margin: '0',
+                      lineHeight: '1.2'
+                    }}>
+                      Set up a new organizational entity
+                    </p>
+                  </div>
+                  
+                  {/* Arrow */}
+                  <div style={{ flexShrink: 0 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M9 18L15 12L9 6" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+              )}
+              
+              {filteredItems.length === 0 ? (
+                <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
+                  {isInitialSelection ? 'No companies available. Create a new company to get started.' : 'No companies found'}
+                </div>
+              ) : (
+                filteredItems.map((item, index) => (
+                  <div 
+                    key={item.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '16px 24px',
+                      borderBottom: index === filteredItems.length - 1 ? 'none' : '1px solid #f3f4f6',
+                      gap: '16px'
+                    }}
+                  >
                 {/* Company Avatar */}
                 <div style={{
                   width: '48px',
@@ -436,6 +525,8 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
                 </div>
               </div>
             ))
+              )}
+            </>
           )}
         </div>
 

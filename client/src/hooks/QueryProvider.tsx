@@ -6,8 +6,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       // Global query options
-      staleTime: 1 * 60 * 1000, // 1 minute default
-      cacheTime: 5 * 60 * 1000, // 5 minutes default
+      staleTime: 0, // Always consider data stale for fresh fetches
+      cacheTime: 0, // Don't cache data to prevent stale data issues
       retry: (failureCount, error: any) => {
         // Don't retry on 4xx errors except 408, 429
         if (error?.response?.status >= 400 && error?.response?.status < 500) {
@@ -20,8 +20,9 @@ const queryClient = new QueryClient({
         return failureCount < 3;
       },
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true, // Always refetch on focus
       refetchOnReconnect: true,
+      refetchOnMount: 'always', // Always refetch on mount
     },
     mutations: {
       // Global mutation options
@@ -36,6 +37,16 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Clear all queries when user logs out or logs in
+export const clearAllQueries = () => {
+  queryClient.clear();
+};
+
+// Invalidate all queries to force fresh data
+export const invalidateAllQueries = () => {
+  queryClient.invalidateQueries();
+};
 
 interface QueryProviderProps {
   children: ReactNode;

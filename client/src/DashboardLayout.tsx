@@ -192,7 +192,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
             />
           )}   
          
-          {simulatorState.showCalculator && isSimulatorPage ? (
+          {stateManager.shouldShowCalculator() && isSimulatorPage ? (
             <CalculatorPage 
               association={simulatorState.calculatorData.association} 
               reserveStudy={simulatorState.calculatorData.reserveStudy}

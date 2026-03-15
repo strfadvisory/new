@@ -47,12 +47,26 @@ class SimulatorStateManager {
       if (savedState) {
         const parsed = JSON.parse(savedState);
         console.log('[StateManager] Loaded state from storage:', parsed);
+        
+        // Validate that the state is not stale by checking if user token exists
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('[StateManager] No token found, clearing stale state');
+          sessionStorage.removeItem('simulator_complete_state');
+          return this.getDefaultState();
+        }
+        
         return parsed;
       }
     } catch (error) {
       console.error('[StateManager] Error loading state:', error);
+      sessionStorage.removeItem('simulator_complete_state');
     }
 
+    return this.getDefaultState();
+  }
+
+  private getDefaultState(): SimulatorState {
     return {
       selectedAssociation: '',
       selectedCompany: '',
@@ -103,10 +117,11 @@ class SimulatorStateManager {
       selectedAssociationData: data
     };
 
-    // Clear company and study when association changes
+    // Clear company, study, and hide calculator when association changes
     if (name !== this.state.selectedAssociation) {
       updates.selectedCompany = '';
       updates.selectedStudyId = '';
+      updates.showCalculator = false;
     }
 
     this.updateState(updates);
@@ -121,34 +136,33 @@ class SimulatorStateManager {
 
     if (studyId) {
       updates.selectedStudyId = studyId;
+      // Show calculator when both association and company/study are selected
+      if (this.state.selectedAssociation && name) {
+        updates.showCalculator = true;
+      }
+    } else {
+      // Clear study ID and hide calculator if no study selected
+      updates.selectedStudyId = '';
+      updates.showCalculator = false;
     }
 
     this.updateState(updates);
   }
 
   public setCalculatorData(data: any): void {
+    // Only show calculator if both association and reserve study are valid
+    const shouldShow = !!(this.state.selectedAssociation && this.state.selectedCompany && this.state.selectedStudyId);
+    
     this.updateState({
       calculatorData: data,
-      showCalculator: true
+      showCalculator: shouldShow
     });
   }
 
   public resetState(): void {
     console.log('[StateManager] Resetting all state');
     
-    this.state = {
-      selectedAssociation: '',
-      selectedCompany: '',
-      selectedAssociationData: null,
-      selectedStudyId: '',
-      showCalculator: false,
-      viewMode: 'graph',
-      calculatorData: {
-        association: '',
-        reserveStudy: '',
-        excelData: null
-      }
-    };
+    this.state = this.getDefaultState();
 
     this.saveStateToStorage();
     this.notifyListeners('stateReset', this.state);
@@ -157,6 +171,13 @@ class SimulatorStateManager {
   public clearStorage(): void {
     sessionStorage.removeItem('simulator_complete_state');
     console.log('[StateManager] Storage cleared');
+  }
+
+  public forceReset(): void {
+    console.log('[StateManager] Force resetting for new user session');
+    this.clearStorage();
+    this.state = this.getDefaultState();
+    this.notifyListeners('stateReset', this.state);
   }
 
   // Event system for components to listen to state changes
@@ -203,6 +224,10 @@ class SimulatorStateManager {
 
   public isReady(): boolean {
     return !!(this.state.selectedAssociation && this.state.selectedCompany && this.state.selectedStudyId);
+  }
+
+  public shouldShowCalculator(): boolean {
+    return this.isReady() && this.state.showCalculator;
   }
 }
 

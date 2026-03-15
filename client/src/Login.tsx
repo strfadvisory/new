@@ -5,6 +5,8 @@ import { API_ENDPOINTS } from './config';
 import AuthSidebar from './components/AuthSidebar';
 import FormInput from './components/FormInput';
 import PrimaryButton from './components/PrimaryButton';
+import SimulatorStateManager from './utils/simulatorStateManager';
+import { transform } from 'typescript';
 
 interface LoginProps {
   onNewUser: () => void;
@@ -28,6 +30,10 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
       });
       const data = await response.json();
       if (response.ok) {
+        // Clear any existing simulator state for fresh login
+        const stateManager = SimulatorStateManager.getInstance();
+        stateManager.forceReset();
+        
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data));
         onLogin(data);
@@ -45,7 +51,7 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
     <div className="login-container">
       <AuthSidebar /> 
       <div className="login-form-container">
-        <div className="form-card">
+        <div className="form-card" style={{ position:'relative' ,  transform :'none' , left:'0', top:'0' }}>
           <h2 className="form-title">Access your Account</h2> 
           <p className="form-description">Enter your credentials to access your account and manage your organization.</p>
           

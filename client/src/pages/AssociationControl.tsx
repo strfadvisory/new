@@ -6,6 +6,7 @@ import { useAssociations, useAssociation, useDeleteAssociation } from '../hooks/
 import apiClient from '../api/client';
 import { API_ENDPOINTS } from '../api/config';
 import type { Association } from '../utils/simulatorStateManager';
+import { usePermissions } from '../hooks/usePermissions';
 
 interface AssociationControlProps {
   user: any;
@@ -26,6 +27,9 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
   const [editData, setEditData] = useState<any>(null);
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
+  
+  // Get current user permissions
+  const { canCreateAssociations, permissionLevel, loading: permissionsLoading } = usePermissions();
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -44,7 +48,7 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
   }, [showDropdown]);
 
   React.useEffect(() => {
-    if (associations.length > 0 && !selectedAssociationId) {
+    if (associations && associations.length > 0 && !selectedAssociationId) {
       const firstAssociation = associations[0];
       const isValidId = firstAssociation._id && firstAssociation._id.match(/^[0-9a-fA-F]{24}$/);
       if (isValidId) {
@@ -53,21 +57,23 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
     }
   }, [associations, selectedAssociationId]);
 
-
-
   const handleAssociationUpdate = () => {
     refetchAssociations();
   };
 
-
-
   const handleEditAssociation = (association: any) => {
+    if (!canCreateAssociations()) {
+      return; // Prevent editing for VIEWER users
+    }
     setEditData(association);
     setEditMode(true);
     setIsSlidebarOpen(true);
   };
 
   const handleAddNew = async () => {
+    if (!canCreateAssociations()) {
+      return; // Prevent adding for VIEWER users
+    }
     setEditData(null);
     setEditMode(false);
     setIsSlidebarOpen(true);
@@ -78,6 +84,9 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
   };
 
   const handleDeleteAssociation = async (associationId: string) => {
+    if (!canCreateAssociations()) {
+      return; // Prevent deleting for VIEWER users
+    }
     setAssociationToDelete(associationId);
     setShowDeleteConfirm(true);
   };
@@ -101,19 +110,45 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
     setAssociationToDelete(null);
   };
 
+  if (permissionsLoading) {
+    return (
+      <div className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <div>Loading permissions...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="main-content">
       <div className="companies-left-panel">
         <div className="companies-header">
           <div className="header-top">
-            <h2 className="results-title">{associations.length} Results founded</h2>
-            <a href="#" className="add-new-link" onClick={handleAddNew}>+ Add New</a>
+            <h2 className="results-title">{associations ? associations.length : 0} Results founded</h2>
+            <div style={{ position: 'relative' }}>
+              <a 
+                href="#" 
+                className={`add-new-link ${!canCreateAssociations() ? 'disabled' : ''}`}
+                onClick={canCreateAssociations() ? handleAddNew : undefined}
+                style={{
+                  color: canCreateAssociations() ? '#1f4f8f' : '#9ca3af',
+                  cursor: canCreateAssociations() ? 'pointer' : 'not-allowed',
+                  textDecoration: 'none',
+                  opacity: canCreateAssociations() ? 1 : 0.6
+                }}
+                title={!canCreateAssociations() ? `${permissionLevel} access - Contact admin for permissions` : 'Add New Association'}
+              >
+                + Add New
+                {!canCreateAssociations() && (
+                  <i className="fas fa-lock" style={{ marginLeft: '4px', fontSize: '12px' }}></i>
+                )}
+              </a>
+            </div>
           </div>
           <input type="text" placeholder="Search by name" className="companies-search" />
         </div>
         
         <div className="companies-list">
-          {associations.map((association) => {
+          {associations && associations.map((association: Association) => {
             const isValidId = association._id && association._id.match(/^[0-9a-fA-F]{24}$/);
             
             return (
@@ -187,21 +222,43 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
                     <div className="dropdown-content">
                       <button 
                         onClick={() => {
-                          handleEditAssociation(selectedAssociation);
+                          if (canCreateAssociations()) {
+                            handleEditAssociation(selectedAssociation);
+                          }
                           setShowDropdown(false);
                         }} 
-                        className="dropdown-option"
+                        className={`dropdown-option ${!canCreateAssociations() ? 'disabled' : ''}`}
+                        style={{
+                          color: canCreateAssociations() ? '#374151' : '#9ca3af',
+                          cursor: canCreateAssociations() ? 'pointer' : 'not-allowed',
+                          opacity: canCreateAssociations() ? 1 : 0.6
+                        }}
+                        title={!canCreateAssociations() ? `${permissionLevel} access - Contact admin for permissions` : 'Edit Association'}
                       >
                         Edit
+                        {!canCreateAssociations() && (
+                          <i className="fas fa-lock" style={{ marginLeft: '4px', fontSize: '10px' }}></i>
+                        )}
                       </button>
                       <button 
                         onClick={() => {
-                          handleDeleteAssociation(selectedAssociation._id);
+                          if (canCreateAssociations()) {
+                            handleDeleteAssociation(selectedAssociation._id);
+                          }
                           setShowDropdown(false);
                         }} 
-                        className="dropdown-option danger"
+                        className={`dropdown-option danger ${!canCreateAssociations() ? 'disabled' : ''}`}
+                        style={{
+                          color: canCreateAssociations() ? '#dc2626' : '#9ca3af',
+                          cursor: canCreateAssociations() ? 'pointer' : 'not-allowed',
+                          opacity: canCreateAssociations() ? 1 : 0.6
+                        }}
+                        title={!canCreateAssociations() ? `${permissionLevel} access - Contact admin for permissions` : 'Delete Association'}
                       >
                         Delete Association
+                        {!canCreateAssociations() && (
+                          <i className="fas fa-lock" style={{ marginLeft: '4px', fontSize: '10px' }}></i>
+                        )}
                       </button>
                     </div>
                   )}

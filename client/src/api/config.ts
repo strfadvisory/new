@@ -106,10 +106,10 @@ export const QUERY_KEYS = {
     BY_ID: (id: string) => ['library', 'detail', id] as const,
   },
   
-  // Association queries
+  // Association queries - user-aware
   ASSOCIATIONS: {
-    ALL: ['associations', 'all'] as const,
-    BY_ID: (id: string) => ['associations', 'detail', id] as const,
+    ALL: (userId?: string) => ['associations', 'all', userId || 'anonymous'] as const,
+    BY_ID: (id: string, userId?: string) => ['associations', 'detail', id, userId || 'anonymous'] as const,
   },
   
   // Reserve Studies queries

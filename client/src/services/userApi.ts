@@ -72,8 +72,27 @@ export const handleOrgRequest = async (requestId: string, action: 'accept' | 're
 export const switchCompany = async (companyId: string) => {
   try {
     const response = await axiosInstance.post('/users/switch-company', { companyId });
+    
+    // Store permission information in localStorage
+    if (response.data.permissionLevel) {
+      localStorage.setItem('userPermissions', JSON.stringify({
+        permissionLevel: response.data.permissionLevel,
+        isOwnCompany: response.data.isOwnCompany,
+        companyId: response.data.currentCompany
+      }));
+    }
+    
     return response.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || 'Failed to switch company');
+  }
+};
+
+export const getUserPermissionLevel = async (companyId: string) => {
+  try {
+    const response = await axiosInstance.get(`/users/permission-level/${companyId}`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch permission level');
   }
 };

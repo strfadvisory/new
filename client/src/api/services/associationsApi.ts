@@ -11,13 +11,27 @@ interface CreateAssociationData {
 export const associationsApi = {
   // Get all associations
   getAssociations: async (): Promise<Association[]> => {
-    const response = await apiClient.get(API_ENDPOINTS.ASSOCIATIONS.BASE);
+    console.log('[AssociationsAPI] Fetching associations for user...');
+    const response = await apiClient.get(API_ENDPOINTS.ASSOCIATIONS.BASE, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
+    console.log('[AssociationsAPI] Received associations:', response.data);
     return response.data;
   },
 
   // Get association by ID
   getAssociationById: async (associationId: string): Promise<Association> => {
-    const response = await apiClient.get(`${API_ENDPOINTS.ASSOCIATIONS.BASE}/${associationId}`);
+    const response = await apiClient.get(`${API_ENDPOINTS.ASSOCIATIONS.BASE}/${associationId}`, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    });
     return response.data;
   },
 

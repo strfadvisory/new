@@ -168,6 +168,12 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
         localStorage.setItem('user', JSON.stringify(data));
         toast.success('Company profile created successfully');
         clearSignupState();
+        
+        // Use redirectTo from backend response if available, otherwise use default
+        if (data.redirectTo) {
+          console.log('Backend suggested redirect:', data.redirectTo);
+        }
+        
         onComplete();
       } else {
         console.error('Error response:', data);

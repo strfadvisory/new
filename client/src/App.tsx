@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { ToastContainer } from 'react-toastify';
-import { QueryProvider } from './hooks/QueryProvider';
+import { ToastContainer, toast } from 'react-toastify';
+import { QueryProvider, clearAllQueries, invalidateAllQueries } from './hooks/QueryProvider';
 import { updateSignupState, getSignupState, clearSignupState, getFormData } from './utils/signupState';
 import { API_ENDPOINTS } from './config';
 import SignupStateDebug from './components/SignupStateDebug';
@@ -37,6 +37,7 @@ function App() {
   const [userEmail, setUserEmail] = useState<string>('');
   const [showCompanySelectionModal, setShowCompanySelectionModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string>('');
+  const [isCreatingNewCompany, setIsCreatingNewCompany] = useState(false);
   const navigate = useNavigate();
 
   // Load persisted state on app start
@@ -58,15 +59,13 @@ function App() {
       const user = JSON.parse(userData);
       setUser(user);
       
-      // Check if non-super admin user needs company selection
-      if (!user.isSuperAdmin) {
-        const hasSelectedCompany = localStorage.getItem('selectedCompany');
-        if (!hasSelectedCompany) {
-          // Show company selection modal for non-super admin users without selected company
-          setShowCompanySelectionModal(true);
-          setPendingNavigation('/dashboard/simulator'); // Default navigation
-        }
-      }
+      // Clear any stale simulator state on app load
+      sessionStorage.removeItem('simulator_complete_state');
+      
+      // Force fresh data fetch
+      setTimeout(() => {
+        invalidateAllQueries();
+      }, 100);
     }
     setLoading(false);
   }, []);
@@ -89,17 +88,23 @@ function App() {
   };
 
   const handleLogin = async (userData: any) => {
+    setLoading(true);
+    
+    // Clear all React Query cache to ensure fresh data for new user
+    clearAllQueries();
+    
     setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     
     if (userData.isSuperAdmin) {
       navigate('/admin/simulators');
+      setLoading(false);
     } else {
       // Check if user has already selected a company
       const hasSelectedCompany = localStorage.getItem('selectedCompany');
       
       if (!hasSelectedCompany) {
-        // Show company selection modal first
+        // Show company selection modal after successful login
         try {
           const token = localStorage.getItem('token');
           const response = await fetch(API_ENDPOINTS.userPermissions, {
@@ -110,15 +115,16 @@ function App() {
           const data = await response.json();
           const targetPath = (response.ok && data.menu && data.menu.length > 0) 
             ? data.menu[0].path 
-            : '/dashboard/simulator';
+            : '/dashboard/simulator-management';
           
           setPendingNavigation(targetPath);
           setShowCompanySelectionModal(true);
         } catch (error) {
           console.error('Error fetching permissions:', error);
-          setPendingNavigation('/dashboard/simulator');
+          setPendingNavigation('/dashboard/simulator-management');
           setShowCompanySelectionModal(true);
         }
+        setLoading(false);
       } else {
         // Navigate directly if company already selected
         try {
@@ -132,14 +138,20 @@ function App() {
           if (response.ok && data.menu && data.menu.length > 0) {
             navigate(data.menu[0].path);
           } else {
-            navigate('/dashboard/simulator');
+            navigate('/dashboard/simulator-management');
           }
         } catch (error) {
           console.error('Error fetching permissions:', error);
-          navigate('/dashboard/simulator');
+          navigate('/dashboard/simulator-management');
         }
+        setLoading(false);
       }
     }
+    
+    // Force fresh data fetch after login
+    setTimeout(() => {
+      invalidateAllQueries();
+    }, 100);
   };
 
   const handleRegister = (userData: any) => {
@@ -148,8 +160,23 @@ function App() {
     navigate('/verify-otp');
   };
 
-  const handleOTPVerified = () => {
-    navigate('/company-profile');
+  const handleOTPVerified = async () => {
+    // Get user data from localStorage (set during registration)
+    const userData = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
+    if (userData && token) {
+      const user = JSON.parse(userData);
+      setUser(user);
+      
+      // For new users after OTP verification, always go to company-profile first
+      // The company-profile completion will handle the final navigation
+      navigate('/company-profile');
+    } else {
+      // If no user data, redirect to login
+      toast.error('Session expired. Please login again.');
+      navigate('/login');
+    }
   };
 
   const handleBackToProfile = () => {
@@ -158,28 +185,46 @@ function App() {
 
   const handleCompanyProfileComplete = async () => {
     const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-    clearSignupState();
+    const token = localStorage.getItem('token');
     
-    // Fetch user permissions to get first navigation item
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(API_ENDPOINTS.userPermissions, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+    if (userData && token) {
+      const user = JSON.parse(userData);
+      setUser(user);
+      
+      // Clear signup state after setting user
+      clearSignupState();
+      // Reset creating new company flag
+      setIsCreatingNewCompany(false);
+      
+      // After successful company profile creation, set the user's own company as selected
+      // The user becomes the owner of their newly created company
+      localStorage.setItem('selectedCompany', user._id);
+      
+      // Navigate to the appropriate dashboard based on user permissions
+      if (!user.isSuperAdmin) {
+        try {
+          const response = await fetch(API_ENDPOINTS.userPermissions, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          const data = await response.json();
+          if (response.ok && data.menu && data.menu.length > 0) {
+            navigate(data.menu[0].path);
+          } else {
+            navigate('/dashboard/simulator-management');
+          }
+        } catch (error) {
+          console.error('Error fetching permissions:', error);
+          navigate('/dashboard/simulator-management');
         }
-      });
-      const data = await response.json();
-      if (response.ok && data.menu && data.menu.length > 0) {
-        navigate(data.menu[0].path);
       } else {
-        navigate('/dashboard/simulator');
+        navigate('/admin/simulators');
       }
-    } catch (error) {
-      console.error('Error fetching permissions:', error);
-      navigate('/dashboard/simulator');
+    } else {
+      // If no user data, redirect to login
+      toast.error('Session expired. Please login again.');
+      navigate('/login');
     }
   };
 
@@ -189,10 +234,17 @@ function App() {
   };
 
   const handleLogout = () => {
+    // Clear all React Query cache on logout
+    clearAllQueries();
+    
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('tempEmail');
     localStorage.removeItem('selectedCompany');
+    
+    // Clear simulator state
+    sessionStorage.removeItem('simulator_complete_state');
+    
     setUser(null);
     navigate('/login');
   };
@@ -204,22 +256,66 @@ function App() {
       setPendingNavigation('');
     } else {
       // Fallback navigation
-      navigate('/dashboard/simulator');
+      navigate('/dashboard/simulator-management');
     }
+  };
+
+  const handleCreateNewCompany = () => {
+    console.log('Create new company clicked - closing modal');
+    // Force close modal immediately
+    setShowCompanySelectionModal(false);
+    setPendingNavigation('');
+    setIsCreatingNewCompany(true);
+    
+    // Clear any existing signup state
+    clearSignupState();
+    
+    // Force re-render to ensure modal is closed
+    setLoading(prev => !prev && prev);
+    
+    // Navigate after ensuring state is updated
+    setTimeout(() => {
+      navigate('/signup');
+    }, 50);
   };
 
   // Add effect to handle company selection requirement on route changes
   useEffect(() => {
-    if (user && !user.isSuperAdmin && !localStorage.getItem('selectedCompany')) {
+    if (user && !user.isSuperAdmin && !localStorage.getItem('selectedCompany') && !isCreatingNewCompany) {
       const currentPath = window.location.pathname;
-      if (currentPath.startsWith('/dashboard') || currentPath === '/profile') {
+      // Don't show modal if user is in signup flow or on login page
+      const isInSignupFlow = currentPath.includes('/signup') || 
+                            currentPath.includes('/create-profile') || 
+                            currentPath.includes('/verify-otp') || 
+                            currentPath.includes('/company-profile') ||
+                            currentPath === '/login' ||
+                            currentPath === '/forgot-password' ||
+                            currentPath.includes('/reset-password');
+      
+      // Only show modal if user is trying to access protected routes
+      if ((currentPath.startsWith('/dashboard') || currentPath === '/profile') && !isInSignupFlow && !showCompanySelectionModal) {
         setShowCompanySelectionModal(true);
         setPendingNavigation(currentPath);
       }
     }
-  }, [user]);
+  }, [user, isCreatingNewCompany, showCompanySelectionModal]);
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <i className="fas fa-spinner fa-spin" style={{ fontSize: '24px', color: '#1f4f8f', marginBottom: '16px' }}></i>
+          <p style={{ color: '#6b7280', fontSize: '14px' }}>Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <QueryProvider>
@@ -227,19 +323,21 @@ function App() {
         {/* {  <SignupStateDebug />  } */}
         
         {/* Company Selection Modal for non-super admin users */}
-        {showCompanySelectionModal && (
+        {showCompanySelectionModal && !isCreatingNewCompany && (
           <ChangeCompanyModal 
-            isOpen={showCompanySelectionModal}
+            key={`modal-${showCompanySelectionModal}-${isCreatingNewCompany}`}
+            isOpen={showCompanySelectionModal && !isCreatingNewCompany}
             onClose={() => {}} // Prevent closing without selection
             onCompanyChanged={handleCompanySelectionComplete}
+            onCreateNewCompany={handleCreateNewCompany}
             isInitialSelection={true}
           />
         )}
         
         <Routes>
-          <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator'} replace />} />
-          <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator'} replace />} />
-          <Route path="/reset-password/:token" element={!user ? <ResetPassword /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator'} replace />} />
+          <Route path="/login" element={!user ? <Login onNewUser={handleNewUser} onLogin={handleLogin} /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator-management'} replace />} />
+          <Route path="/forgot-password" element={!user ? <ForgotPassword /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator-management'} replace />} />
+          <Route path="/reset-password/:token" element={!user ? <ResetPassword /> : <Navigate to={user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator-management'} replace />} />
           <Route path="/signup" element={<CompanySelection onBack={handleBackToLogin} onSelect={handleCompanySelect} />} />
           <Route path="/create-profile" element={<CreateProfile onBack={handleBackToCompany} onRegister={handleRegister} onNavigate={(step) => navigate(step)} />} />
           <Route path="/verify-otp" element={<OTPVerification onVerify={handleOTPVerified} onBack={handleBackToProfile} onNavigate={(step) => navigate(step)} />} />
@@ -269,7 +367,7 @@ function App() {
           ) : <Navigate to="/login" replace />}>
             <Route index element={<Profile />} />
           </Route>
-          <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator') : '/login'} replace />} />
+          <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator-management') : '/login'} replace />} />
         </Routes>
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       </div>

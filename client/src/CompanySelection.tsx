@@ -105,9 +105,19 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect, i
 
   const handleCompanySwitch = async (companyId: string) => {
     try {
-      await switchCompany(companyId);
-      // Handle successful company switch (e.g., redirect or update context)
-      window.location.reload(); // Simple approach - you might want to use context instead
+      const response = await switchCompany(companyId);
+      
+      // Update user data in localStorage
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const user = JSON.parse(userData);
+        user.currentCompany = companyId;
+        user.selectedCompany = response.companyInfo.name;
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      
+      // Reload to apply company switch
+      window.location.reload();
     } catch (error) {
       console.error('Error switching company:', error);
     }

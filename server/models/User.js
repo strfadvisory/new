@@ -38,8 +38,11 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   memberfor: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    company: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    role: String
   }],
   reqorg: [{
     orgId: {

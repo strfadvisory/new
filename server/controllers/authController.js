@@ -46,6 +46,17 @@ const register = async (req, res) => {
       orgId = `ORG-${String(lastNumber + 1).padStart(4, '0')}`;
     }
 
+    // Find Administrator subrole ID from the selected role
+    let administratorRoleId = null;
+    if (selectedRole.subRoles && selectedRole.subRoles.length > 0) {
+      const adminSubRole = selectedRole.subRoles.find(subRole => 
+        subRole.role && subRole.role.toLowerCase().includes('administrator')
+      );
+      if (adminSubRole) {
+        administratorRoleId = adminSubRole.id;
+      }
+    }
+
     const user = await User.create({
       firstName,
       lastName,
@@ -61,7 +72,11 @@ const register = async (req, res) => {
       level,
       otp,
       otpExpiry,
-      isVerified: false
+      isVerified: false,
+      memberfor: [{
+        company: selectedRole._id,
+        role: administratorRoleId || 'Administrator'
+      }]
     });
 
     try {
@@ -247,7 +262,8 @@ const createCompanyProfile = async (req, res) => {
       selectedCompany: user.companyProfile?.companyName || null,
       navigation,
       permissions: role?.permissions || {},
-      companyProfile: user.companyProfile
+      companyProfile: user.companyProfile,
+      redirectTo: '/dashboard/simulator-management' // Add explicit redirect path for new signups
     });
   } catch (error) {
     console.error('Create company profile error:', error);
@@ -298,7 +314,10 @@ const addMember = async (req, res) => {
         password: tempPassword,
         status: 'pending',
         parentcompany: loggedInUser._id,
-        memberfor: [loggedInUser._id],
+        memberfor: [{
+          company: loggedInUser._id,
+          role: resolvedRole
+        }],
         verificationToken,
         verificationTokenExpiry,
         isVerified: false,

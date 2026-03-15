@@ -7,3 +7,4 @@ export * from './useReserveStudies';
 export * from './useValidation';
 export * from './useMaster';
 export * from '../useSuperAdmin';
+export * from '../usePermissions';
