@@ -1,12 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { rolesApi } from '../api/services/rolesApi';
+import { useUserSubRoles } from '../hooks/queries/useRoles';
 import { useAddMember } from '../hooks/queries/useAuth';
+import { useApiCallTracker } from '../hooks/useApiCallTracker';
 import { toast } from 'react-toastify';
+
+interface Association {
+  _id: string;
+  name: string;
+}
+
+interface ReserveStudy {
+  _id: string;
+  studyName: string;
+}
 
 interface InviteMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  selectedAssociations?: Association[];
+  selectedReserveStudies?: ReserveStudy[];
 }
 
 interface InviteData {
@@ -15,6 +28,8 @@ interface InviteData {
   lastName: string;
   email: string;
   designation: string;
+  associationIds?: string[];
+  reserveStudyIds?: string[];
 }
 
 interface SubRole {
@@ -23,46 +38,56 @@ interface SubRole {
   permissionLevel: string;
 }
 
-const InviteMemberModal: React.FC<InviteMemberModalProps> = ({ 
+const InviteMemberModal: React.FC<InviteMemberModalProps> = React.memo(({ 
   isOpen, 
   onClose, 
-  title = 'Add New Member' 
+  title = 'Add New Member',
+  selectedAssociations = [],
+  selectedReserveStudies = []
 }) => {
   const [inviteData, setInviteData] = useState<InviteData>({
     selectedRole: '',
     firstName: '',
     lastName: '',
     email: '',
-    designation: ''
+    designation: '',
+    associationIds: selectedAssociations.map(a => a._id),
+    reserveStudyIds: selectedReserveStudies.map(r => r._id)
   });
-  const [subRoles, setSubRoles] = useState<SubRole[]>([]);
-  const [loadingSubRoles, setLoadingSubRoles] = useState(false);
+  
   const addMemberMutation = useAddMember();
+  
+  // API call tracker to monitor and prevent infinite loops
+  const { callCount, getGlobalStats } = useApiCallTracker('user-subroles', isOpen);
+  
+  // Use React Query hook for fetching sub roles - only when modal is open
+  const { data: subRolesData, isLoading: loadingSubRoles, error } = useUserSubRoles(isOpen);
+  const subRoles = subRolesData?.subRoles || [];
+  
+  // Debug logging with API call tracking
+  useEffect(() => {
+    if (subRolesData?.debug) {
+      console.log('SubRoles Debug Info:', subRolesData.debug);
+    }
+    if (error) {
+      console.error('SubRoles API Error:', error);
+    }
+    if (callCount > 3) {
+      console.warn(`🚨 INFINITE LOOP DETECTED: user-subroles called ${callCount} times`);
+      console.log('Global API Stats:', getGlobalStats());
+    }
+  }, [subRolesData, error, callCount, getGlobalStats]);
 
   useEffect(() => {
     if (isOpen) {
-      fetchUserSubRoles();
+      // Update invite data with selected items when modal opens
+      setInviteData(prev => ({
+        ...prev,
+        associationIds: selectedAssociations.map(a => a._id),
+        reserveStudyIds: selectedReserveStudies.map(r => r._id)
+      }));
     }
-  }, [isOpen]);
-
-  const fetchUserSubRoles = async () => {
-    try {
-      setLoadingSubRoles(true);
-      const response = await rolesApi.getUserSubRoles();
-      console.log('SubRoles API Response:', response);
-      setSubRoles(response.subRoles || []);
-      
-      // Show debug info if available
-      if (response.debug) {
-        console.log('Debug Info:', response.debug);
-      }
-    } catch (error) {
-      console.error('Error fetching user sub roles:', error);
-      setSubRoles([]);
-    } finally {
-      setLoadingSubRoles(false);
-    }
-  };
+  }, [isOpen, selectedAssociations, selectedReserveStudies]);
 
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +101,15 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
           toast.success(`Invitation sent successfully to ${inviteData.email}`);
       }
       
-      setInviteData({ selectedRole: '', firstName: '', lastName: '', email: '', designation: '' });
+      setInviteData({ 
+        selectedRole: '', 
+        firstName: '', 
+        lastName: '', 
+        email: '', 
+        designation: '',
+        associationIds: [],
+        reserveStudyIds: []
+      });
       onClose();
     } catch (error: any) {
       console.error('Error sending invitation:', error);
@@ -136,6 +169,81 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
         
         {/* Form Body */}
         <form onSubmit={handleInviteSubmit} style={{ padding: '20px' }}>
+          
+          {/* Access Summary */}
+          {(selectedAssociations.length > 0 || selectedReserveStudies.length > 0) && (
+            <div style={{
+              marginBottom: '20px',
+              padding: '16px',
+              backgroundColor: '#f8fafc',
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <h4 style={{
+                fontSize: '14px',
+                fontWeight: '600',
+                color: '#374151',
+                margin: '0 0 12px 0'
+              }}>Member will get access to:</h4>
+              
+              {selectedAssociations.length > 0 && (
+                <div style={{ marginBottom: '8px' }}>
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>Associations ({selectedAssociations.length}):</span>
+                  <div style={{ marginTop: '4px' }}>
+                    {selectedAssociations.map((assoc, index) => (
+                      <span key={assoc._id} style={{
+                        display: 'inline-block',
+                        backgroundColor: '#dbeafe',
+                        color: '#1e40af',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        marginRight: '6px',
+                        marginBottom: '4px'
+                      }}>
+                        {assoc.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {selectedReserveStudies.length > 0 && (
+                <div>
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: '#6b7280',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px'
+                  }}>Reserve Studies ({selectedReserveStudies.length}):</span>
+                  <div style={{ marginTop: '4px' }}>
+                    {selectedReserveStudies.map((study, index) => (
+                      <span key={study._id} style={{
+                        display: 'inline-block',
+                        backgroundColor: '#dcfce7',
+                        color: '#166534',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '12px',
+                        marginRight: '6px',
+                        marginBottom: '4px'
+                      }}>
+                        {study.studyName}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
           {/* Role Selection */}
           <div style={{ marginBottom: '16px' }}>
             <label style={{
@@ -182,9 +290,6 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
                 No sub-roles found. Please contact your administrator to set up role permissions.
               </p>
             )}
-            
-           
-        
           </div>
           
           {/* Name Fields */}
@@ -374,6 +479,6 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
       </div>
     </>
   );
-};
+});
 
 export default InviteMemberModal;

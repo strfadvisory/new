@@ -16,6 +16,8 @@ const roleSchema = new mongoose.Schema({
     role: { type: String },
     permissionLevel: { type: String, enum: ['ADMIN', 'EDITOR', 'VIEWER'] }
   }],
+  nextSteps: [{ type: String }], // Array of next step IDs
+  videos: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Library' }], // Array of video IDs from Library
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 

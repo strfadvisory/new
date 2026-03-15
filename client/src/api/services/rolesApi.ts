@@ -1,5 +1,6 @@
 import apiClient from '../client';
 import { API_ENDPOINTS } from '../config';
+import { circuitBreaker } from '../../utils/circuitBreaker';
 
 interface Role {
   _id: string;
@@ -98,14 +99,34 @@ export const rolesApi = {
 
   // Get user sub roles
   getUserSubRoles: async (): Promise<UserSubRolesResponse> => {
-    const response = await apiClient.get(API_ENDPOINTS.ROLES.USER_SUBROLES);
-    return response.data;
+    const apiKey = 'user-subroles';
+    
+    // Circuit breaker check
+    if (!circuitBreaker.canExecute(apiKey)) {
+      console.warn('🚫 Circuit breaker preventing user-subroles API call');
+      return {
+        subRoles: [],
+        debug: {
+          message: 'Circuit breaker active - too many recent calls',
+          suggestion: 'Please wait before trying again'
+        }
+      };
+    }
+
+    try {
+      const response = await apiClient.get(API_ENDPOINTS.ROLES.USER_SUBROLES);
+      circuitBreaker.onSuccess(apiKey);
+      return response.data;
+    } catch (error) {
+      circuitBreaker.onFailure(apiKey);
+      throw error;
+    }
   },
 
   // Get child roles
   getChildRoles: async (): Promise<Role[]> => {
     const response = await apiClient.get(API_ENDPOINTS.ROLES.CHILD_ROLES);
-    return response.data;
+    return response.data.subRoles || [];
   },
 
   // Update user next step

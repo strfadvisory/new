@@ -54,8 +54,8 @@ export const usePermissions = (companyId?: string): PermissionHook => {
 
   // Permission check functions
   const canCreateAssociations = useCallback((): boolean => {
-    return permissionLevel === 'ADMIN' || permissionLevel === 'EDITOR';
-  }, [permissionLevel]);
+    return true; // Allow all users to create associations
+  }, []);
 
   const canAddReserveStudy = useCallback((): boolean => {
     return permissionLevel === 'ADMIN' || permissionLevel === 'EDITOR';

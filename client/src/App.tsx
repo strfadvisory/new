@@ -4,6 +4,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import { QueryProvider, clearAllQueries, invalidateAllQueries } from './hooks/QueryProvider';
 import { updateSignupState, getSignupState, clearSignupState, getFormData } from './utils/signupState';
 import { API_ENDPOINTS } from './config';
+import ApiMonitor from './components/ApiMonitor';
 import SignupStateDebug from './components/SignupStateDebug';
 import ChangeCompanyModal from './components/ChangeCompanyModal';
 import Login from './Login';
@@ -348,6 +349,9 @@ function App() {
           </Route>
           <Route path="/" element={<Navigate to={user ? (user.isSuperAdmin ? '/admin/simulators' : '/dashboard/simulator-management') : '/login'} replace />} />
         </Routes>
+        
+        {/* Development API Monitor */}
+        <ApiMonitor />
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       </div>
     </QueryProvider>

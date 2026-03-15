@@ -75,6 +75,35 @@ export const useChildRoles = () => {
   });
 };
 
+// Get user sub roles - optimized for modal usage with circuit breaker protection
+export const useUserSubRoles = (enabled = true) => {
+  return useQuery({
+    queryKey: QUERY_KEYS.ROLES.USER_SUBROLES,
+    queryFn: rolesApi.getUserSubRoles,
+    enabled: enabled,
+    staleTime: 15 * 60 * 1000, // 15 minutes - sub roles don't change frequently
+    cacheTime: 30 * 60 * 1000, // 30 minutes - keep in cache longer
+    refetchOnWindowFocus: false, // Don't refetch on focus for modal data
+    refetchOnMount: false, // Don't refetch if we have cached data
+    refetchInterval: false, // Disable automatic refetching
+    refetchIntervalInBackground: false, // Disable background refetching
+    retry: (failureCount, error: any) => {
+      // Don't retry if circuit breaker is active
+      if (error?.message?.includes('Circuit breaker')) {
+        return false;
+      }
+      // Standard retry logic for other errors
+      return failureCount < 2;
+    },
+    onError: (error) => {
+      console.error('useUserSubRoles error:', error);
+    },
+    onSuccess: (data) => {
+      console.log('✅ useUserSubRoles success:', data?.subRoles?.length || 0, 'roles loaded');
+    }
+  });
+};
+
 // Get default permissions
 export const useDefaultPermissions = () => {
   return useQuery({

@@ -25,6 +25,8 @@ interface InviteData {
   lastName: string;
   email: string;
   designation: string;
+  associationIds?: string[];
+  reserveStudyIds?: string[];
 }
 
 // Auth API functions
