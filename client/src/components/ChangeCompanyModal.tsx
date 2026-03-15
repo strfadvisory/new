@@ -99,11 +99,6 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
     try {
       await switchCompany(companyId);
       
-      // Mark company as selected for initial selection
-      if (isInitialSelection) {
-        localStorage.setItem('selectedCompany', companyId);
-      }
-      
       onCompanyChanged?.();
       if (!isInitialSelection) {
         onClose();

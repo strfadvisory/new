@@ -29,7 +29,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onCh
     formData.append('profileImage', file);
 
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/user/upload-profile-image`, {
         method: 'POST',
         headers: {
@@ -49,7 +49,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onCh
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/user/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`

@@ -27,7 +27,7 @@ const RoleForm: React.FC<RoleFormProps> = ({ onClose, onRoleCreated }) => {
     setLoading(true);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(API_ENDPOINTS.roles, {
         method: 'POST',
         headers: {

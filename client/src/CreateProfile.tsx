@@ -264,7 +264,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
       });
       const data = await response.json();
       if (response.ok) {
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('token', data.token);
         // Store user data for OTP verification
         const userData = {
           _id: data.user?._id || data._id,
@@ -276,7 +276,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
           isSuperAdmin: data.user?.isSuperAdmin || false,
           ...data.user
         };
-        localStorage.setItem('user', JSON.stringify(userData));
+        sessionStorage.setItem('user', JSON.stringify(userData));
         toast.success('OTP sent to your email');
         onRegister({ ...userData, email: formData.email });
       } else {

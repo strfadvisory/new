@@ -3,7 +3,7 @@
 ## Issue Summary
 The role dropdown in the "Add New Member" modal was not showing any data because:
 
-1. **Frontend Issue**: The component was trying to get subRoles from localStorage instead of making an API call
+1. **Frontend Issue**: The component was trying to get subRoles from sessionStorage instead of making an API call
 2. **Backend Issue**: No API endpoint existed to fetch the current user's role subRoles
 3. **Data Issue**: Super admin user had no roleId assigned, so no subRoles were available
 4. **Business Logic**: Should only show subRoles from the logged-in user's specific role, not all roles
@@ -29,7 +29,7 @@ The role dropdown in the "Add New Member" modal was not showing any data because
 ### 2. Frontend Changes
 
 #### Updated InviteMemberModal Component
-- **API Integration**: Now uses `rolesApi.getUserSubRoles()` instead of localStorage
+- **API Integration**: Now uses `rolesApi.getUserSubRoles()` instead of sessionStorage
 - **Loading States**: Added loading indicator while fetching roles
 - **Error Handling**: Better error messages and user feedback
 - **Debug Mode**: Shows debug information in development environment

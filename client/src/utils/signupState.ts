@@ -56,18 +56,18 @@ const defaultFormData: SignupFormData = {
   address2: ''
 };
 
+// In-memory state management only
+let inMemorySignupState: SignupState = {};
+
 export const updateSignupState = (updates: Partial<SignupState>) => {
-  const currentState = getSignupState();
-  const newState = { ...currentState, ...updates };
-  localStorage.setItem('signupState', JSON.stringify(newState));
+  inMemorySignupState = { ...inMemorySignupState, ...updates };
   
   // Dispatch custom event to notify components of state change
   window.dispatchEvent(new CustomEvent('signupStateChanged'));
 };
 
 export const getSignupState = (): SignupState => {
-  const savedState = localStorage.getItem('signupState');
-  return savedState ? JSON.parse(savedState) : {};
+  return inMemorySignupState;
 };
 
 export const getFormData = (): SignupFormData => {
@@ -108,6 +108,6 @@ export const updateFormData = (formData: Partial<SignupFormData>) => {
 };
 
 export const clearSignupState = () => {
-  localStorage.removeItem('signupState');
+  inMemorySignupState = {};
   window.dispatchEvent(new CustomEvent('signupStateChanged'));
 };

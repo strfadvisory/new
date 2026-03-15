@@ -14,7 +14,7 @@ class ApiService {
   }
 
   private getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
@@ -77,7 +77,7 @@ class ApiService {
 
   // File upload
   async uploadFile<T>(endpoint: string, formData: FormData): Promise<T> {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     const headers: Record<string, string> = {};
     
     if (token) {

@@ -54,7 +54,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     const createCompanyProfileIfNeeded = async () => {
       if (!isSuperAdmin && (!user?.companyProfile?.companyName)) {
         try {
-          const token = localStorage.getItem('token');
+          const token = sessionStorage.getItem('token');
           const response = await fetch(API_ENDPOINTS.createCompanyProfile, {
             method: 'POST',
             headers: {

@@ -29,7 +29,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
   useEffect(() => {
     const fetchNextSteps = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(API_ENDPOINTS.userNextsteps, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -46,7 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
     const fetchVideos = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(API_ENDPOINTS.userVideos, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -63,7 +63,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
     const fetchChildRoles = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(API_ENDPOINTS.childRoles, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -90,7 +90,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     setNextSteps(updatedSteps);
     
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await fetch(API_ENDPOINTS.userNextstep, {
         method: 'PUT',
         headers: {
@@ -118,7 +118,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     e.preventDefault();
     setInviteLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(API_ENDPOINTS.inviteAdvisory, {
         method: 'POST',
         headers: {

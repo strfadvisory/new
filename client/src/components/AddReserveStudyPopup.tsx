@@ -25,11 +25,6 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
   const { canAddReserveStudy, permissionLevel, loading: permissionsLoading } = usePermissions();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!canAddReserveStudy()) {
-      setError(`${permissionLevel} access - Contact admin for permissions`);
-      return;
-    }
-    
     const file = event.target.files?.[0];
     if (file) {
       if (file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
@@ -45,11 +40,6 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!canAddReserveStudy()) {
-      setError(`${permissionLevel} access - Contact admin for permissions`);
-      return;
-    }
     
     if (!studyName.trim()) {
       setError('Study name is required');
@@ -152,8 +142,7 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
         width: '100%',
         maxWidth: '500px',
         margin: '20px',
-        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)',
-        opacity: canAddReserveStudy() ? 1 : 0.9
+        boxShadow: '0 10px 25px rgba(0, 0, 0, 0.15)'
       }}>
         <div style={{
           display: 'flex',
@@ -165,19 +154,9 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
             margin: 0,
             fontSize: '24px',
             fontWeight: '600',
-            color: canAddReserveStudy() ? '#1f2937' : '#9ca3af'
+            color: '#1f2937'
           }}>
             Add New Reserve Study
-            {!canAddReserveStudy() && (
-              <span style={{
-                fontSize: '12px',
-                color: '#dc2626',
-                marginLeft: '8px',
-                fontWeight: '500'
-              }}>
-                ({permissionLevel})
-              </span>
-            )}
           </h2>
           <button
             onClick={handleClose}
@@ -199,26 +178,7 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
           </button>
         </div>
 
-        {!canAddReserveStudy() && (
-          <div style={{
-            padding: '12px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            textAlign: 'center'
-          }}>
-            <p style={{
-              margin: 0,
-              fontSize: '14px',
-              color: '#dc2626',
-              fontWeight: '500'
-            }}>
-              <i className="fas fa-lock" style={{ marginRight: '8px' }}></i>
-              You don't have permission to add reserve studies. Contact your administrator for EDITOR or ADMIN access.
-            </p>
-          </div>
-        )}
+
 
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '20px' }}>
@@ -226,7 +186,7 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
               display: 'block',
               fontSize: '14px',
               fontWeight: '500',
-              color: canAddReserveStudy() ? '#374151' : '#9ca3af',
+              color: '#374151',
               marginBottom: '8px'
             }}>
               Study Name *
@@ -234,24 +194,23 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
             <input
               type="text"
               value={studyName}
-              onChange={(e) => canAddReserveStudy() && setStudyName(e.target.value)}
-              placeholder={canAddReserveStudy() ? "Enter study name" : "Permission required"}
-              disabled={!canAddReserveStudy()}
+              onChange={(e) => setStudyName(e.target.value)}
+              placeholder="Enter study name"
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                border: `2px solid ${canAddReserveStudy() ? '#e2e8f0' : '#f3f4f6'}`,
+                border: '2px solid #e2e8f0',
                 borderRadius: '8px',
                 fontSize: '16px',
                 outline: 'none',
                 transition: 'border-color 0.2s',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                backgroundColor: canAddReserveStudy() ? 'white' : '#f9fafb',
-                color: canAddReserveStudy() ? '#1f2937' : '#9ca3af',
-                cursor: canAddReserveStudy() ? 'text' : 'not-allowed'
+                backgroundColor: 'white',
+                color: '#1f2937',
+                cursor: 'text'
               }}
-              onFocus={(e) => canAddReserveStudy() && (e.target.style.borderColor = '#3b82f6')}
-              onBlur={(e) => canAddReserveStudy() && (e.target.style.borderColor = '#e2e8f0')}
+              onFocus={(e) => (e.target.style.borderColor = '#3b82f6')}
+              onBlur={(e) => (e.target.style.borderColor = '#e2e8f0')}
             />
           </div>
 
@@ -260,59 +219,53 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
               display: 'block',
               fontSize: '14px',
               fontWeight: '500',
-              color: canAddReserveStudy() ? '#374151' : '#9ca3af',
+              color: '#374151',
               marginBottom: '8px'
             }}>
               Excel File *
             </label>
             <div style={{
-              border: `2px dashed ${canAddReserveStudy() ? '#e2e8f0' : '#f3f4f6'}`,
+              border: '2px dashed #e2e8f0',
               borderRadius: '8px',
               padding: '24px',
               textAlign: 'center',
-              backgroundColor: canAddReserveStudy() ? '#f9fafb' : '#f3f4f6',
-              cursor: canAddReserveStudy() ? 'pointer' : 'not-allowed',
-              transition: 'border-color 0.2s',
-              opacity: canAddReserveStudy() ? 1 : 0.6
+              backgroundColor: '#f9fafb',
+              cursor: 'pointer',
+              transition: 'border-color 0.2s'
             }}
             onDragOver={(e) => {
-              if (canAddReserveStudy()) {
-                e.preventDefault();
-                e.currentTarget.style.borderColor = '#3b82f6';
-              }
+              e.preventDefault();
+              e.currentTarget.style.borderColor = '#3b82f6';
             }}
             onDragLeave={(e) => {
-              if (canAddReserveStudy()) {
-                e.currentTarget.style.borderColor = '#e2e8f0';
-              }
+              e.currentTarget.style.borderColor = '#e2e8f0';
             }}
-            onClick={() => canAddReserveStudy() && document.getElementById('file-input')?.click()}
+            onClick={() => document.getElementById('file-input')?.click()}
             >
               <input
                 id="file-input"
                 type="file"
                 accept=".xlsx,.xls"
                 onChange={handleFileChange}
-                disabled={!canAddReserveStudy()}
                 style={{ display: 'none' }}
               />
               <i className="fas fa-file-excel" style={{
                 fontSize: '32px',
-                color: canAddReserveStudy() ? '#10b981' : '#9ca3af',
+                color: '#10b981',
                 marginBottom: '12px'
               }}></i>
               <p style={{
                 margin: '0 0 8px 0',
                 fontSize: '16px',
                 fontWeight: '500',
-                color: canAddReserveStudy() ? '#374151' : '#9ca3af'
+                color: '#374151'
               }}>
-                {selectedFile ? selectedFile.name : (canAddReserveStudy() ? 'Click to upload or drag and drop' : 'Permission required to upload')}
+                {selectedFile ? selectedFile.name : 'Click to upload or drag and drop'}
               </p>
               <p style={{
                 margin: 0,
                 fontSize: '14px',
-                color: canAddReserveStudy() ? '#6b7280' : '#9ca3af'
+                color: '#6b7280'
               }}>
                 Excel files only (.xlsx, .xls)
               </p>
@@ -369,28 +322,28 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
             </button>
             <button
               type="submit"
-              disabled={isLoading || !canAddReserveStudy()}
+              disabled={isLoading}
               style={{
                 padding: '12px 24px',
                 border: 'none',
                 borderRadius: '8px',
-                backgroundColor: (isLoading || !canAddReserveStudy()) ? '#9ca3af' : '#0e519b',
+                backgroundColor: isLoading ? '#9ca3af' : '#0e519b',
                 color: 'white',
                 fontSize: '16px',
                 fontWeight: '500',
-                cursor: (isLoading || !canAddReserveStudy()) ? 'not-allowed' : 'pointer',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
                 transition: 'background-color 0.2s',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px'
               }}
               onMouseEnter={(e) => {
-                if (!isLoading && canAddReserveStudy()) {
+                if (!isLoading) {
                   e.currentTarget.style.backgroundColor = '#1e40af';
                 }
               }}
               onMouseLeave={(e) => {
-                if (!isLoading && canAddReserveStudy()) {
+                if (!isLoading) {
                   e.currentTarget.style.backgroundColor = '#0e519b';
                 }
               }}
@@ -398,14 +351,7 @@ const AddReserveStudyPopup: React.FC<AddReserveStudyPopupProps> = ({
               {isLoading && (
                 <i className="fas fa-spinner fa-spin"></i>
               )}
-              {!canAddReserveStudy() ? (
-                <>
-                  <i className="fas fa-lock"></i>
-                  {permissionLevel} Access
-                </>
-              ) : (
-                isLoading ? 'Creating...' : 'Create Study'
-              )}
+              {isLoading ? 'Creating...' : 'Create Study'}
             </button>
           </div>
         </form>

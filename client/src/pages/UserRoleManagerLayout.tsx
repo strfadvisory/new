@@ -28,7 +28,7 @@ const UserRoleManagerLayout: React.FC = () => {
   const refreshSelectedRole = async () => {
     if (selectedRole?._id) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${API_BASE_URL}/roles/${selectedRole._id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -49,7 +49,7 @@ const UserRoleManagerLayout: React.FC = () => {
 
   const fetchRoles = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/roles`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -139,7 +139,7 @@ const UserRoleManagerLayout: React.FC = () => {
   const confirmDelete = async () => {
     if (roleToDelete) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${API_BASE_URL}/roles/${roleToDelete}`, {
           method: 'DELETE',
           headers: {
@@ -170,7 +170,7 @@ const UserRoleManagerLayout: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       
       let url = `${API_BASE_URL}/roles`;
       let method = 'POST';
@@ -244,7 +244,7 @@ const UserRoleManagerLayout: React.FC = () => {
                   }
                   
                   try {
-                    const token = localStorage.getItem('token');
+                    const token = sessionStorage.getItem('token');
                     const response = await fetch(`${API_BASE_URL}/roles/${role._id}`, {
                       headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -391,7 +391,7 @@ const UserRoleManagerLayout: React.FC = () => {
                           
                           if (editMode && formData._id) {
                             try {
-                              const token = localStorage.getItem('token');
+                              const token = sessionStorage.getItem('token');
                               await fetch(`${API_BASE_URL}/roles/${formData._id}`, {
                                 method: 'PUT',
                                 headers: {

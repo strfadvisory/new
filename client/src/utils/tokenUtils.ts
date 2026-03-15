@@ -9,11 +9,11 @@ export const isTokenExpired = (token: string): boolean => {
 };
 
 export const checkTokenExpiration = (): boolean => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   if (!token) return true;
   
   if (isTokenExpired(token)) {
-    localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     return true;
   }
   

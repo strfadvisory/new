@@ -86,7 +86,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
     
     if (checked) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(API_ENDPOINTS.profile, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -128,7 +128,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
     
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const state = getSignupState();
       const formDataToSend = new FormData();
       
@@ -165,7 +165,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
       console.log('Response:', data);
       
       if (response.ok) {
-        localStorage.setItem('user', JSON.stringify(data));
+        sessionStorage.setItem('user', JSON.stringify(data));
         toast.success('Company profile created successfully');
         clearSignupState();
         

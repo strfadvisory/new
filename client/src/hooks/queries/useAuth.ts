@@ -56,7 +56,7 @@ export const useLogin = () => {
     onSuccess: (data) => {
       // Store token
       if (data.token) {
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('token', data.token);
       }
       // Invalidate and refetch user profile
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.PROFILE });
@@ -79,7 +79,7 @@ export const useVerifyOtp = () => {
     mutationFn: authApi.verifyOtp,
     onSuccess: (data) => {
       if (data.token) {
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('token', data.token);
       }
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.PROFILE });
     },

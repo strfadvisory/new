@@ -35,7 +35,7 @@ const CompanyDropdown = () => {
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(API_ENDPOINTS.companyDropdown, {
           headers: { 'Authorization': `Bearer ${token}` },
         });

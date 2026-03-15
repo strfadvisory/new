@@ -20,7 +20,7 @@ export const useAssociations = () => {
   // Get current user ID for cache key
   const getCurrentUserId = () => {
     try {
-      const userData = localStorage.getItem('user');
+      const userData = sessionStorage.getItem('user');
       if (userData) {
         const user = JSON.parse(userData);
         return user.id || user._id;
@@ -51,7 +51,7 @@ export const useAssociation = (associationId: string, enabled = true) => {
   // Get current user ID for cache key
   const getCurrentUserId = () => {
     try {
-      const userData = localStorage.getItem('user');
+      const userData = sessionStorage.getItem('user');
       if (userData) {
         const user = JSON.parse(userData);
         return user.id || user._id;

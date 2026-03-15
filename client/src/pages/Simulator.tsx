@@ -37,8 +37,8 @@ const Simulator: React.FC = () => {
   const childRoles = rolesData?.filter((role: any) => role.type === 'User') || [];
 
   React.useEffect(() => {
-    // Get user from localStorage
-    const userData = localStorage.getItem('user');
+    // Get user from sessionStorage
+    const userData = sessionStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
     }

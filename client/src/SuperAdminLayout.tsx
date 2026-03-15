@@ -34,7 +34,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const [iconPreview, setIconPreview] = useState<string>('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   
-  // Simulator state using component state (no localStorage needed in SPA)
+  // Simulator state using component state (no sessionStorage needed in SPA)
   const [showCalculator, setShowCalculator] = useState(false);
   const [calculatorData, setCalculatorData] = useState({ association: '', reserveStudy: '', excelData: null });
   const [selectedAssociation, setSelectedAssociation] = useState('');
@@ -95,7 +95,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
 
   const fetchLibraryItems = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/library`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -114,7 +114,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const refreshSelectedRole = async () => {
     if (selectedRole?._id) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(`${API_BASE_URL}/roles/${selectedRole._id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -135,7 +135,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
 
   const fetchRoles = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/roles`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -241,7 +241,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     }
     
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/roles/default-permissions`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -266,7 +266,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const confirmDelete = async () => {
     if (roleToDelete) {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         let url;
         
         if (currentPage === 'library') {
@@ -307,7 +307,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       
       if (currentPage === 'library') {
         const submitData = {
@@ -480,7 +480,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                           }
                           
                           try {
-                            const token = localStorage.getItem('token');
+                            const token = sessionStorage.getItem('token');
                             const response = await fetch(`${API_BASE_URL}/roles/${role._id}`, {
                               headers: { 'Authorization': `Bearer ${token}` }
                             });
@@ -677,7 +677,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
                           
                           if (editMode && formData._id) {
                             try {
-                              const token = localStorage.getItem('token');
+                              const token = sessionStorage.getItem('token');
                               const url = currentPage === 'library' 
                                 ? `${API_BASE_URL}/library/${formData._id}`
                                 : `${API_BASE_URL}/roles/${formData._id}`;

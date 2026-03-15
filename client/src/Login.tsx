@@ -34,8 +34,8 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
         const stateManager = SimulatorStateManager.getInstance();
         stateManager.forceReset();
         
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data));
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data));
         onLogin(data);
       } else {
         toast.error(data.message || 'Login failed');

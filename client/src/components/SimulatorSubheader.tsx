@@ -1438,7 +1438,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             // Step 1: Update local state immediately
             console.log('[SimulatorSubheader] Setting up new study:', newStudyId);
             updateCompany(newStudyName, newStudyId);
-            localStorage.setItem('simulator_selectedStudyId', newStudyId);
+            // Don't store study ID in sessionStorage
             setIsLoadingData(false);
             setFetchingStudyId('');
             setLastFetchedStudy(''); // Clear to allow new study fetch

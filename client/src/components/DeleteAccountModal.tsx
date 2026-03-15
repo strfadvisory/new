@@ -21,7 +21,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
   const handleConfirmDelete = async () => {
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/user/delete-account`, {
         method: 'DELETE',
         headers: {
@@ -30,8 +30,8 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
       });
 
       if (response.ok) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         if (onLogout) {
           onLogout();
         }

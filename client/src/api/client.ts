@@ -20,7 +20,7 @@ apiClient.interceptors.request.use(
       return Promise.reject(new Error('Token expired'));
     }
     
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -40,7 +40,7 @@ apiClient.interceptors.response.use(
     // Handle common errors
     if (error.response?.status === 401) {
       // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
       window.location.href = '/login';
     }
     
@@ -74,7 +74,7 @@ export const createFormDataClient = (): AxiosInstance => {
         return Promise.reject(new Error('Token expired'));
       }
       
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }

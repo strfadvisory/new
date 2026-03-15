@@ -27,21 +27,6 @@ export const usePermissions = (companyId?: string): PermissionHook => {
 
   const fetchPermissions = useCallback(async () => {
     if (!companyId) {
-      // If no company selected, check localStorage for current company
-      const storedUser = localStorage.getItem('user');
-      const storedPermissions = localStorage.getItem('userPermissions');
-      
-      if (storedUser && storedPermissions) {
-        try {
-          const permissions = JSON.parse(storedPermissions);
-          setPermissionLevel(permissions.permissionLevel || 'VIEWER');
-          setIsOwnCompany(permissions.isOwnCompany || false);
-          return;
-        } catch (e) {
-          console.error('Error parsing stored permissions:', e);
-        }
-      }
-      
       // Default to VIEWER if no company context
       setPermissionLevel('VIEWER');
       setIsOwnCompany(false);
@@ -55,13 +40,6 @@ export const usePermissions = (companyId?: string): PermissionHook => {
       const response = await getUserPermissionLevel(companyId);
       setPermissionLevel(response.permissionLevel);
       setIsOwnCompany(response.isOwnCompany);
-      
-      // Store permissions in localStorage for persistence
-      localStorage.setItem('userPermissions', JSON.stringify({
-        permissionLevel: response.permissionLevel,
-        isOwnCompany: response.isOwnCompany,
-        companyId: response.companyId
-      }));
     } catch (err: any) {
       setError(err.message || 'Failed to fetch permissions');
       console.error('Error fetching permissions:', err);

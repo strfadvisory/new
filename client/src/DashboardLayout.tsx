@@ -126,7 +126,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
 
   const handleUserUpdate = (updatedUser: any) => {
     setCurrentUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    sessionStorage.setItem('user', JSON.stringify(updatedUser));
     if (onUserUpdate) {
       onUserUpdate(updatedUser);
     }
@@ -135,7 +135,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const response = await fetch(API_ENDPOINTS.userPermissions, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -144,12 +144,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
         const data = await response.json();
         if (response.ok) {
           setMenu(data.menu || []);
-          // Only redirect to first menu item if on dashboard root AND it's the initial load
-          if (location.pathname === '/dashboard' && data.menu && data.menu.length > 0 && !sessionStorage.getItem('dashboardVisited')) {
+          // Only redirect to first menu item if on dashboard root
+          if (location.pathname === '/dashboard' && data.menu && data.menu.length > 0) {
             navigate(data.menu[0].path, { replace: true });
           }
-          // Mark dashboard as visited
-          sessionStorage.setItem('dashboardVisited', 'true');
         }
       } catch (error) {
         console.error('Error fetching permissions:', error);
@@ -162,8 +160,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
   // Cleanup dashboard state on component unmount (user logout)
   useEffect(() => {
     return () => {
-      // Clear simulator state from storage on logout
-      stateManager.clearStorage();
+      // Reset simulator state on logout
+      stateManager.resetState();
     };
   }, [stateManager]);
 

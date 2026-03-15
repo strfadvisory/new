@@ -39,7 +39,7 @@ memberfor: [{
 ### 2. Frontend Changes
 
 #### Company Selection Component (`client/src/CompanySelection.tsx`)
-- Updated `handleCompanySwitch()` to properly handle response and update localStorage
+- Updated `handleCompanySwitch()` to properly handle response and update sessionStorage
 - Improved error handling and user feedback
 
 #### Change Company Modal (`client/src/components/ChangeCompanyModal.tsx`)
@@ -80,7 +80,7 @@ memberfor: [{
 2. System fetches user's companies from memberFor array
 3. User selects company to switch to
 4. System validates access and updates user context
-5. Frontend updates localStorage and reloads
+5. Frontend updates sessionStorage and reloads
 
 ## API Endpoints
 
@@ -120,7 +120,7 @@ npm run test:memberfor
 2. **Company switching not working**
    - Ensure user has proper memberFor entries
    - Check API endpoints are returning correct data
-   - Verify localStorage is being updated
+   - Verify sessionStorage is being updated
 
 3. **Pending requests not showing**
    - Check reqorg array structure
@@ -146,7 +146,7 @@ db.users.find({}, {email: 1, memberfor: 1, reqorg: 1}).pretty()
 ## Performance Notes
 
 1. **Population**: memberFor.company is populated only when needed
-2. **Caching**: User permissions are cached in localStorage
+2. **Caching**: User permissions are cached in sessionStorage
 3. **Lazy Loading**: Company data is fetched only when Change Company modal opens
 
 ## Future Enhancements

@@ -1,6 +1,6 @@
 /**
  * Professional-grade Simulator State Manager
- * Handles all dropdown state persistence and synchronization
+ * Handles all dropdown state in memory only
  */
 
 interface Association {
@@ -31,7 +31,7 @@ class SimulatorStateManager {
   private state: SimulatorState;
 
   private constructor() {
-    this.state = this.loadStateFromStorage();
+    this.state = this.getDefaultState();
   }
 
   public static getInstance(): SimulatorStateManager {
@@ -39,31 +39,6 @@ class SimulatorStateManager {
       SimulatorStateManager.instance = new SimulatorStateManager();
     }
     return SimulatorStateManager.instance;
-  }
-
-  private loadStateFromStorage(): SimulatorState {
-    try {
-      const savedState = sessionStorage.getItem('simulator_complete_state');
-      if (savedState) {
-        const parsed = JSON.parse(savedState);
-        console.log('[StateManager] Loaded state from storage:', parsed);
-        
-        // Validate that the state is not stale by checking if user token exists
-        const token = localStorage.getItem('token');
-        if (!token) {
-          console.log('[StateManager] No token found, clearing stale state');
-          sessionStorage.removeItem('simulator_complete_state');
-          return this.getDefaultState();
-        }
-        
-        return parsed;
-      }
-    } catch (error) {
-      console.error('[StateManager] Error loading state:', error);
-      sessionStorage.removeItem('simulator_complete_state');
-    }
-
-    return this.getDefaultState();
   }
 
   private getDefaultState(): SimulatorState {
@@ -82,15 +57,6 @@ class SimulatorStateManager {
     };
   }
 
-  private saveStateToStorage(): void {
-    try {
-      sessionStorage.setItem('simulator_complete_state', JSON.stringify(this.state));
-      console.log('[StateManager] State saved to storage:', this.state);
-    } catch (error) {
-      console.error('[StateManager] Error saving state:', error);
-    }
-  }
-
   public getState(): SimulatorState {
     return { ...this.state };
   }
@@ -105,7 +71,6 @@ class SimulatorStateManager {
       updates
     });
 
-    this.saveStateToStorage();
     this.notifyListeners('stateChange', this.state);
   }
 
@@ -163,19 +128,11 @@ class SimulatorStateManager {
     console.log('[StateManager] Resetting all state');
     
     this.state = this.getDefaultState();
-
-    this.saveStateToStorage();
     this.notifyListeners('stateReset', this.state);
-  }
-
-  public clearStorage(): void {
-    sessionStorage.removeItem('simulator_complete_state');
-    console.log('[StateManager] Storage cleared');
   }
 
   public forceReset(): void {
     console.log('[StateManager] Force resetting for new user session');
-    this.clearStorage();
     this.state = this.getDefaultState();
     this.notifyListeners('stateReset', this.state);
   }

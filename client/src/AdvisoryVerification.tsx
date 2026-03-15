@@ -95,8 +95,8 @@ const AdvisoryVerification: React.FC = () => {
       });
       const data = await response.json();
       if (response.ok) {
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
+        sessionStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(data.user));
         toast.success('Profile completed successfully!');
         navigate('/dashboard');
       } else {

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { rolesApi } from '../api/services/rolesApi';
 import { useAddMember } from '../hooks/queries/useAuth';
+import { toast } from 'react-toastify';
 
 interface InviteMemberModalProps {
   isOpen: boolean;
@@ -72,7 +73,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = ({
       if (response.userExists) {
         alert(`User already exists! Organization request has been sent to ${inviteData.email}`);
       } else {
-        alert(`Invitation sent successfully to ${inviteData.email}`);
+          toast.success(`Invitation sent successfully to ${inviteData.email}`);
       }
       
       setInviteData({ selectedRole: '', firstName: '', lastName: '', email: '', designation: '' });

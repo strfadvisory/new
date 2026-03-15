@@ -107,15 +107,6 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect, i
     try {
       const response = await switchCompany(companyId);
       
-      // Update user data in localStorage
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const user = JSON.parse(userData);
-        user.currentCompany = companyId;
-        user.selectedCompany = response.companyInfo.name;
-        localStorage.setItem('user', JSON.stringify(user));
-      }
-      
       // Reload to apply company switch
       window.location.reload();
     } catch (error) {
