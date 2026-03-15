@@ -26,7 +26,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const currentPage = location.pathname.split('/').pop() || '';
-  const [companyName, setCompanyName] = useState(user?.companyProfile?.companyName || 'Company name');
+  const [companyName, setCompanyName] = useState('Company name');
+  const [userRole, setUserRole] = useState('User');
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -51,12 +52,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   }, [showProfileDropdown]);
 
   useEffect(() => {
-    const createCompanyProfileIfNeeded = async () => {
-      if (!isSuperAdmin && (!user?.companyProfile?.companyName)) {
+    const fetchUserMemberInfo = async () => {
+      if (!isSuperAdmin) {
         try {
           const token = sessionStorage.getItem('token');
-          const response = await fetch(API_ENDPOINTS.createCompanyProfile, {
-            method: 'POST',
+          const response = await fetch(API_ENDPOINTS.userMemberInfo, {
+            method: 'GET',
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -65,23 +66,73 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           
           if (response.ok) {
             const data = await response.json();
-            setCompanyName(data.companyProfile.companyName);
-            if (onUserUpdate) {
-              onUserUpdate({ ...user, companyProfile: data.companyProfile });
-            }
+            setCompanyName(data.companyName || 'Company name');
+            setUserRole(data.userRole || 'User');
+            
+            // Store current company info in sessionStorage for consistency
+            sessionStorage.setItem('currentCompany', JSON.stringify({
+              id: data.currentCompanyId,
+              name: data.companyName,
+              role: data.userRole,
+              roleId: data.roleId
+            }));
+          } else {
+            console.error('Failed to fetch user member info:', response.statusText);
           }
         } catch (error) {
-          console.error('Error creating company profile:', error);
+          console.error('Error fetching user member info:', error);
         }
       }
     };
 
-    createCompanyProfileIfNeeded();
-  }, [user, isSuperAdmin, onUserUpdate]);
+    fetchUserMemberInfo();
+    
+    // Listen for company change events
+    const handleCompanyChange = (event: CustomEvent) => {
+      if (event.detail) {
+        setCompanyName(event.detail.companyName || 'Company name');
+        setUserRole(event.detail.userRole || 'User');
+        
+        // Also refresh from API to ensure consistency
+        setTimeout(() => {
+          refreshHeaderInfo();
+        }, 500);
+      }
+    };
+    
+    window.addEventListener('companyChanged', handleCompanyChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('companyChanged', handleCompanyChange as EventListener);
+    };
+  }, [user, isSuperAdmin]);
 
   const handleCompanyChanged = () => {
     // Refresh the page to update company context
     window.location.reload();
+  };
+  
+  const refreshHeaderInfo = async () => {
+    if (!isSuperAdmin) {
+      try {
+        const token = sessionStorage.getItem('token');
+        const response = await fetch(API_ENDPOINTS.userMemberInfo, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setCompanyName(data.companyName || 'Company name');
+          setUserRole(data.userRole || 'User');
+        }
+      } catch (error) {
+        console.error('Error refreshing header info:', error);
+      }
+    }
   };
 
   return (
@@ -95,7 +146,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
            <div className="company-dropdown">
              <div className="company-info">
                <div className="company-name" style={{color:"white"}}>{companyName}</div>
-               <div className="user-role" style={{color:"white"}}>{user?.role}</div>
+               <div className="user-role" style={{color:"white"}}>{userRole}</div>
              </div>
              
              <button className="menu-toggle" onClick={() => setShowChangeCompanyModal(true)}>

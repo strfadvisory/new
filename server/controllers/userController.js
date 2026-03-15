@@ -215,45 +215,118 @@ const getUserCompanies = async (req, res) => {
   try {
     const userId = req.user._id;
     
-    // Get user with populated memberfor companies
+    // Get user with populated memberfor companies and roleId for subRoles lookup
     const user = await User.findById(userId)
       .populate({
         path: 'memberfor.company',
         select: 'companyProfile firstName lastName _id'
       })
-      .select('memberfor parentcompany companyProfile firstName lastName');
+      .populate('roleId', 'name subRoles')
+      .select('memberfor companyProfile firstName lastName roleId');
     
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    let companies = [];
+    // Get all roles to lookup subRole names
+    const allRoles = await Role.find({}, 'name subRoles').lean();
     
-    // Add user's own company if they have one
-    if (user.companyProfile && user.companyProfile.companyName) {
-      companies.push({
-        _id: user._id,
-        companyProfile: user.companyProfile,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        isOwn: true
-      });
+    // Helper function to find role name from any role's subRoles
+    const findRoleNameById = (roleId) => {
+      for (const role of allRoles) {
+        if (role.subRoles && role.subRoles.length > 0) {
+          const subRole = role.subRoles.find(sr => sr.id === roleId);
+          if (subRole && subRole.role) {
+            return subRole.role;
+          }
+        }
+      }
+      return null;
+    };
+
+    let companies = [];
+    let currentCompanyId = null;
+    
+    // Get current company ID from memberfor[0] (first entry is current)
+    if (user.memberfor && user.memberfor.length > 0) {
+      currentCompanyId = user.memberfor[0].company?._id?.toString();
     }
     
-    // Add companies user is member of from memberfor array
+    // Add user's own company if they have one (this should be memberfor[0] typically)
+    if (user.companyProfile && user.companyProfile.companyName) {
+      // Check if user's own company is in memberfor
+      const ownCompanyInMemberFor = user.memberfor?.find(member => 
+        member.company && member.company._id.toString() === user._id.toString()
+      );
+      
+      if (ownCompanyInMemberFor) {
+        // Get role name from all roles' subRoles
+        let roleName = findRoleNameById(ownCompanyInMemberFor.role);
+        if (!roleName) {
+          roleName = 'Administrator'; // Default for own company
+        }
+        
+        companies.push({
+          _id: user._id,
+          companyProfile: user.companyProfile,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          isOwn: true,
+          role: roleName,
+          roleId: ownCompanyInMemberFor.role,
+          isSelected: currentCompanyId === user._id.toString() // Mark as selected if it's current
+        });
+      }
+    }
+    
+    // Add all companies from memberfor array
     if (user.memberfor && user.memberfor.length > 0) {
       const memberCompanies = user.memberfor
-        .filter(member => member.company) // Only include valid company references
-        .map(member => ({
-          _id: member.company._id,
-          companyProfile: member.company.companyProfile,
-          firstName: member.company.firstName,
-          lastName: member.company.lastName,
-          isOwn: false,
-          role: member.role
-        }));
+        .filter(member => {
+          // Filter out invalid company references and avoid duplicating own company
+          return member.company && 
+                 member.company._id.toString() !== user._id.toString();
+        })
+        .map(member => {
+          // Get role name from all roles' subRoles
+          let roleName = findRoleNameById(member.role);
+          if (!roleName) {
+            roleName = 'User'; // Default for member companies
+          }
+          
+          return {
+            _id: member.company._id,
+            companyProfile: member.company.companyProfile || {
+              companyName: `${member.company.firstName} ${member.company.lastName}`,
+              description: 'Personal Company'
+            },
+            firstName: member.company.firstName,
+            lastName: member.company.lastName,
+            isOwn: false,
+            role: roleName,
+            roleId: member.role,
+            isSelected: currentCompanyId === member.company._id.toString() // Mark as selected if it's current
+          };
+        });
       
       companies = [...companies, ...memberCompanies];
+    }
+    
+    // If no companies found, add user as their own company (fallback)
+    if (companies.length === 0) {
+      companies.push({
+        _id: user._id,
+        companyProfile: user.companyProfile || {
+          companyName: `${user.firstName} ${user.lastName}`,
+          description: 'Personal Company'
+        },
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isOwn: true,
+        role: 'Administrator',
+        roleId: 'Administrator',
+        isSelected: true // Only company, so it's selected
+      });
     }
     
     res.json(companies);
@@ -332,11 +405,25 @@ const handleOrgRequest = async (req, res) => {
       );
       
       if (!existingMember) {
+        // Find the role details to get proper role information
+        const requestingUser = await User.findById(request.orgId).populate('roleId');
+        let roleInfo = request.role || 'Administrator';
+        
+        // If requesting user has a role with subRoles, find appropriate subrole ID
+        if (requestingUser && requestingUser.roleId && requestingUser.roleId.subRoles) {
+          const adminSubRole = requestingUser.roleId.subRoles.find(subRole => 
+            subRole.role && subRole.role.toLowerCase().includes('administrator')
+          );
+          if (adminSubRole) {
+            roleInfo = adminSubRole.id; // Use the proper ID like "BO_004"
+          }
+        }
+        
         user.memberfor.push({
-          company: request.orgId,
-          role: request.role || 'Administrator'
+          company: request.orgId, // Company ID from the request
+          role: roleInfo // Role ID like "BO_004" or role name
         });
-        console.log('Added to memberfor array');
+        console.log('Added to memberfor array with proper company and role info');
       } else {
         console.log('User already member of this company');
       }
@@ -364,7 +451,7 @@ const switchCompany = async (req, res) => {
     const userId = req.user._id;
     const { companyId } = req.body;
     
-    // Verify user has access to this company
+    // Verify user has access to this company and update memberfor order
     const user = await User.findById(userId)
       .populate({
         path: 'memberfor.company',
@@ -378,29 +465,64 @@ const switchCompany = async (req, res) => {
     
     let permissionLevel = 'ADMIN'; // Default for own company
     let isOwnCompany = false;
+    let selectedMemberEntry = null;
     
     // Check if it's user's own company
     if (user._id.toString() === companyId) {
       isOwnCompany = true;
       permissionLevel = 'ADMIN';
+      
+      // Find user's own company in memberfor
+      selectedMemberEntry = user.memberfor.find(member => 
+        member.company && member.company._id.toString() === companyId
+      );
     } else {
       // Check if user is a member of this company
-      const memberEntry = user.memberfor.find(member => 
+      selectedMemberEntry = user.memberfor.find(member => 
         member.company && member.company._id.toString() === companyId
       );
       
-      if (!memberEntry) {
+      if (!selectedMemberEntry) {
         return res.status(403).json({ message: 'Access denied to this company' });
       }
       
       // Set permission level based on role
-      permissionLevel = memberEntry.role || 'VIEWER';
+      if (user.roleId && user.roleId.subRoles && selectedMemberEntry.role) {
+        const subRole = user.roleId.subRoles.find(sr => sr.id === selectedMemberEntry.role);
+        if (subRole) {
+          permissionLevel = subRole.permissionLevel || 'VIEWER';
+        }
+      }
+    }
+    
+    // Reorder memberfor array to put selected company first
+    if (selectedMemberEntry) {
+      // Remove the selected entry from its current position
+      user.memberfor = user.memberfor.filter(member => 
+        !(member.company && member.company._id.toString() === companyId)
+      );
+      
+      // Add it to the beginning
+      user.memberfor.unshift(selectedMemberEntry);
+      
+      // Save the updated user
+      await user.save();
+      console.log(`Switched company order - ${companyId} is now first in memberfor array`);
     }
     
     // Get company information
     const company = await User.findById(companyId)
       .select('companyProfile firstName lastName')
       .lean();
+    
+    // Get role name for response
+    let roleName = selectedMemberEntry?.role || 'User';
+    if (user.roleId && user.roleId.subRoles && selectedMemberEntry?.role) {
+      const subRole = user.roleId.subRoles.find(sr => sr.id === selectedMemberEntry.role);
+      if (subRole) {
+        roleName = subRole.role;
+      }
+    }
     
     res.json({ 
       message: 'Company switched successfully',
@@ -410,6 +532,10 @@ const switchCompany = async (req, res) => {
       companyInfo: {
         name: company?.companyProfile?.companyName || `${company?.firstName} ${company?.lastName}`,
         _id: companyId
+      },
+      roleInfo: {
+        roleName,
+        roleId: selectedMemberEntry?.role
       }
     });
   } catch (error) {
@@ -466,6 +592,93 @@ const getUserPermissionLevel = async (req, res) => {
   }
 };
 
+// Get user member information for header display
+const getUserMemberInfo = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    const user = await User.findById(userId)
+      .populate('roleId', 'name type subRoles')
+      .populate({
+        path: 'memberfor.company',
+        select: 'companyProfile firstName lastName _id'
+      })
+      .select('companyProfile firstName lastName role roleId memberfor');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Get all roles to lookup subRole names
+    const allRoles = await Role.find({}, 'name subRoles').lean();
+    
+    // Helper function to find role name from any role's subRoles
+    const findRoleNameById = (roleId) => {
+      for (const role of allRoles) {
+        if (role.subRoles && role.subRoles.length > 0) {
+          const subRole = role.subRoles.find(sr => sr.id === roleId);
+          if (subRole && subRole.role) {
+            return subRole.role;
+          }
+        }
+      }
+      return null;
+    };
+
+    // Get company name from memberfor[0] (default selected company)
+    let companyName = 'Company name';
+    let userRole = 'User';
+    let currentCompanyId = null;
+    let roleId = null;
+    
+    // Check if user has memberfor entries
+    if (user.memberfor && user.memberfor.length > 0) {
+      const firstMember = user.memberfor[0];
+      currentCompanyId = firstMember.company?._id;
+      roleId = firstMember.role;
+      
+      // Get company name from the company's profile
+      if (firstMember.company && firstMember.company.companyProfile) {
+        companyName = firstMember.company.companyProfile.companyName;
+      } else if (firstMember.company) {
+        // Fallback to user's name if no company profile
+        companyName = `${firstMember.company.firstName} ${firstMember.company.lastName}`;
+      }
+      
+      // Get role name from roles table subRoles
+      if (roleId) {
+        const roleName = findRoleNameById(roleId);
+        if (roleName) {
+          userRole = roleName;
+        } else {
+          userRole = roleId; // Use the ID as fallback
+        }
+      }
+    } else if (user.companyProfile && user.companyProfile.companyName) {
+      // Fallback to user's own company if no memberfor entries
+      companyName = user.companyProfile.companyName;
+      currentCompanyId = user._id;
+      
+      // Get role from user's roleId
+      if (user.roleId && user.roleId.name) {
+        userRole = user.roleId.name;
+      } else if (user.role) {
+        userRole = user.role;
+      }
+    }
+    
+    res.json({
+      companyName,
+      userRole,
+      currentCompanyId,
+      roleId
+    });
+  } catch (error) {
+    console.error('Error fetching user member info:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllUsers,
   updateUserStatus,
@@ -479,5 +692,6 @@ module.exports = {
   getPendingRequests,
   handleOrgRequest,
   switchCompany,
-  getUserPermissionLevel
+  getUserPermissionLevel,
+  getUserMemberInfo
 };

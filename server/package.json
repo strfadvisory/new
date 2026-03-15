@@ -14,7 +14,8 @@
     "migrate": "node runAllMigrations.js",
     "migrate:permissions": "node runPermissionMigration.js",
     "migrate:memberfor": "node runMemberForMigration.js",
-    "test:memberfor": "node testMemberForStructure.js"
+    "test:memberfor": "node testMemberForStructure.js",
+    "test:company-switch": "node testCompanySwitching.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

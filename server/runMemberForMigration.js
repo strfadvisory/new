@@ -1,10 +1,10 @@
-const fixMemberForStructure = require('./migrations/fixMemberForStructure');
+const fixEmptyMemberFor = require('./migrations/fixEmptyMemberFor');
 
 const runMigration = async () => {
   try {
-    console.log('Running memberFor structure migration...');
-    await fixMemberForStructure();
-    console.log('Migration completed successfully!');
+    console.log('Starting memberfor migration...');
+    const result = await fixEmptyMemberFor();
+    console.log('Migration completed successfully:', result);
   } catch (error) {
     console.error('Migration failed:', error);
     process.exit(1);

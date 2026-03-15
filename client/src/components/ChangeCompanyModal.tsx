@@ -13,6 +13,9 @@ interface Company {
   firstName: string;
   lastName: string;
   isOwn: boolean;
+  role?: string;
+  roleId?: string;
+  isSelected?: boolean;
 }
 
 interface PendingRequest {
@@ -97,16 +100,43 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
 
   const handleCompanySwitch = async (companyId: string) => {
     try {
-      await switchCompany(companyId);
+      const response = await switchCompany(companyId);
+      
+      // Find the selected company data to get role information
+      const selectedCompany = userCompanies.find(company => company._id === companyId);
+      
+      // Update sessionStorage with new company information
+      if (response.companyInfo) {
+        sessionStorage.setItem('currentCompany', JSON.stringify({
+          id: companyId,
+          name: response.companyInfo.name,
+          permissionLevel: response.permissionLevel,
+          isOwnCompany: response.isOwnCompany,
+          role: response.roleInfo?.roleName || selectedCompany?.role || 'User',
+          roleId: response.roleInfo?.roleId || selectedCompany?.roleId || 'User'
+        }));
+      }
       
       if (isInitialSelection) {
         // For initial selection, call the completion handler
         onCompanyChanged?.();
       } else {
-        // For regular company switching, reload the page
+        // For regular company switching, trigger header refresh without full page reload
         onCompanyChanged?.();
         onClose();
-        window.location.reload();
+        
+        // Dispatch custom event to notify header to refresh
+        window.dispatchEvent(new CustomEvent('companyChanged', {
+          detail: {
+            companyName: response.companyInfo.name,
+            userRole: response.roleInfo?.roleName || selectedCompany?.role || 'User'
+          }
+        }));
+        
+        // Optional: Still reload page for complete context switch
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       }
     } catch (error) {
       console.error('Error switching company:', error);
@@ -135,16 +165,22 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
 
   // Combine companies and requests for unified display
   const allItems = [
-    ...userCompanies.map(company => ({
-      id: company._id,
-      type: 'company' as const,
-      name: company.companyProfile.companyName,
-      subtitle: company.companyProfile.contactPerson || 'No Contact Person',
-      address: 'Address',
-      status: company.isOwn ? 'current' : 'available',
-      logoId: company.companyProfile.logoId,
-      data: company
-    })),
+    ...userCompanies.map(company => {
+      // Use the isSelected property from backend to determine current selection
+      const isCurrentlySelected = company.isSelected || false;
+      
+      return {
+        id: company._id,
+        type: 'company' as const,
+        name: company.companyProfile.companyName,
+        subtitle: company.role || 'No Role Assigned',
+        address: company.isOwn ? 'Your Company' : 'Member Company',
+        status: isCurrentlySelected ? 'current' : 'available',
+        logoId: company.companyProfile.logoId,
+        data: company,
+        isSelected: isCurrentlySelected
+      };
+    }),
     ...pendingRequests.map(request => ({
       id: request._id,
       type: 'request' as const,
@@ -153,7 +189,8 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
       address: 'Address',
       status: request.status,
       logoId: request.orgId.companyProfile.logoId,
-      data: request
+      data: request,
+      isSelected: false
     }))
   ];
 
@@ -343,187 +380,206 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
                       gap: '16px'
                     }}
                   >
-                {/* Company Avatar */}
-                <div style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '6px',
-                  flexShrink: 0,
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: '#f3f4f6',
-                  border: '1px solid #e5e7eb'
-                }}>
-                  {item.logoId && getLogoUrl(item.logoId) ? (
-                    <img 
-                      src={getLogoUrl(item.logoId)!} 
-                      alt={`${item.name} logo`}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover'
-                      }}
-                      onError={(e) => {
-                        // Fallback to initials if image fails to load
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const parent = target.parentElement;
-                        if (parent) {
-                          parent.innerHTML = `<span style="font-size: 16px; font-weight: 600; color: #6b7280;">${getCompanyInitials(item.name)}</span>`;
-                        }
-                      }}
-                    />
-                  ) : (
-                    <span style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#6b7280'
-                    }}>
-                      {getCompanyInitials(item.name)}
-                    </span>
-                  )}
-                </div>
-                
-                {/* Company Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h3 style={{
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#111827',
-                    margin: '0 0 4px 0',
-                    lineHeight: '1.2'
-                  }}>
-                    {item.name}
-                  </h3>
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#9ca3af',
-                    margin: '0 0 2px 0',
-                    lineHeight: '1.2'
-                  }}>
-                    {item.subtitle}
-                  </p>
-                  <p style={{
-                    fontSize: '14px',
-                    color: '#9ca3af',
-                    margin: '0',
-                    lineHeight: '1.2'
-                  }}>
-        
-                  </p>
-                </div>
-                
-                {/* Action Button */}
-                <div style={{ flexShrink: 0 }}>
-                  {item.type === 'request' && item.status === 'pending' ? (
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        onClick={() => handleRequestAction(item.id, 'accept')}
-                        disabled={processingRequest === item.id}
-                        style={{
-                          padding: '8px 16px',
-                          border: 'none',
-                          borderRadius: '6px',
-                          background: '#10b981',
-                          color: 'white',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          cursor: processingRequest === item.id ? 'not-allowed' : 'pointer',
-                          opacity: processingRequest === item.id ? 0.6 : 1,
-                          transition: 'all 0.2s ease',
-                          minWidth: '70px'
-                        }}
-                      >
-                        {processingRequest === item.id ? 'Processing...' : 'Accept'}
-                      </button>
-                      <button
-                        onClick={() => handleRequestAction(item.id, 'reject')}
-                        disabled={processingRequest === item.id}
-                        style={{
-                          padding: '8px 16px',
-                          border: '1px solid #ef4444',
-                          borderRadius: '6px',
-                          background: 'white',
-                          color: '#ef4444',
-                          fontSize: '14px',
-                          fontWeight: '500',
-                          cursor: processingRequest === item.id ? 'not-allowed' : 'pointer',
-                          opacity: processingRequest === item.id ? 0.6 : 1,
-                          transition: 'all 0.2s ease',
-                          minWidth: '70px'
-                        }}
-                        onMouseEnter={(e) => {
-                          if (processingRequest !== item.id) {
-                            e.currentTarget.style.backgroundColor = '#ef4444';
-                            e.currentTarget.style.color = 'white';
-                          }
-                        }}
-                        onMouseLeave={(e) => {
-                          if (processingRequest !== item.id) {
-                            e.currentTarget.style.backgroundColor = 'white';
-                            e.currentTarget.style.color = '#ef4444';
-                          }
-                        }}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  ) : item.status === 'accepted' || item.status === 'current' ? (
+                    {/* Company Avatar */}
                     <div style={{
-                      padding: '10px 20px',
+                      width: '48px',
+                      height: '48px',
                       borderRadius: '6px',
-                      background: isInitialSelection ? '#10b981' : '#2563eb',
-                      color: 'white',
-                      fontSize: '14px',
-                      fontWeight: '500',
+                      flexShrink: 0,
+                      overflow: 'hidden',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      minWidth: '80px',
-                      cursor: isInitialSelection ? 'pointer' : 'default'
-                    }}
-                    onClick={isInitialSelection ? () => handleCompanySwitch(item.id) : undefined}
-                    >
-                      {isInitialSelection ? 'Select' : (
-                        <>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: '4px' }}>
-                            <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </>
+                      backgroundColor: '#f3f4f6',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      {item.logoId && getLogoUrl(item.logoId) ? (
+                        <img 
+                          src={getLogoUrl(item.logoId)!} 
+                          alt={`${item.name} logo`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                          }}
+                          onError={(e) => {
+                            // Fallback to initials if image fails to load
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              // Create a safe span element instead of using innerHTML
+                              const span = document.createElement('span');
+                              span.style.fontSize = '16px';
+                              span.style.fontWeight = '600';
+                              span.style.color = '#6b7280';
+                              span.textContent = getCompanyInitials(item.name);
+                              parent.appendChild(span);
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span style={{
+                          fontSize: '16px',
+                          fontWeight: '600',
+                          color: '#6b7280'
+                        }}>
+                          {getCompanyInitials(item.name)}
+                        </span>
                       )}
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => item.type === 'company' && handleCompanySwitch(item.id)}
-                      style={{
-                        padding: '10px 20px',
-                        border: '1px solid #d1d5db',
-                        borderRadius: '6px',
-                        background: 'white',
-                        color: '#374151',
+                    
+                    {/* Company Info */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{
+                        fontSize: '16px',
+                        fontWeight: '600',
+                        color: '#111827',
+                        margin: '0 0 4px 0',
+                        lineHeight: '1.2'
+                      }}>
+                        {item.name}
+                      </h3>
+                      <p style={{
                         fontSize: '14px',
-                        fontWeight: '500',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        minWidth: '80px'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f9fafb';
-                        e.currentTarget.style.borderColor = '#9ca3af';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'white';
-                        e.currentTarget.style.borderColor = '#d1d5db';
-                      }}
-                    >
-                      {isInitialSelection ? 'Select' : 'Change'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))
+                        color: '#9ca3af',
+                        margin: '0 0 2px 0',
+                        lineHeight: '1.2'
+                      }}>
+                        {item.subtitle}
+                      </p>
+                      <p style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        margin: '0',
+                        lineHeight: '1.2'
+                      }}>
+                        {item.address}
+                      </p>
+                    </div>
+                    
+                    {/* Action Button */}
+                    <div style={{ flexShrink: 0 }}>
+                      {item.type === 'request' && item.status === 'pending' ? (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <button
+                            onClick={() => handleRequestAction(item.id, 'accept')}
+                            disabled={processingRequest === item.id}
+                            style={{
+                              padding: '8px 16px',
+                              border: 'none',
+                              borderRadius: '6px',
+                              background: '#10b981',
+                              color: 'white',
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              cursor: processingRequest === item.id ? 'not-allowed' : 'pointer',
+                              opacity: processingRequest === item.id ? 0.6 : 1,
+                              transition: 'all 0.2s ease',
+                              minWidth: '70px'
+                            }}
+                          >
+                            {processingRequest === item.id ? 'Processing...' : 'Accept'}
+                          </button>
+                          <button
+                            onClick={() => handleRequestAction(item.id, 'reject')}
+                            disabled={processingRequest === item.id}
+                            style={{
+                              padding: '8px 16px',
+                              border: '1px solid #ef4444',
+                              borderRadius: '6px',
+                              background: 'white',
+                              color: '#ef4444',
+                              fontSize: '14px',
+                              fontWeight: '500',
+                              cursor: processingRequest === item.id ? 'not-allowed' : 'pointer',
+                              opacity: processingRequest === item.id ? 0.6 : 1,
+                              transition: 'all 0.2s ease',
+                              minWidth: '70px'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (processingRequest !== item.id) {
+                                e.currentTarget.style.backgroundColor = '#ef4444';
+                                e.currentTarget.style.color = 'white';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (processingRequest !== item.id) {
+                                e.currentTarget.style.backgroundColor = 'white';
+                                e.currentTarget.style.color = '#ef4444';
+                              }
+                            }}
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      ) : item.status === 'accepted' || item.status === 'current' || (item.type === 'company' && item.isSelected) ? (
+                        <div style={{
+                          padding: '10px 20px',
+                          borderRadius: '6px',
+                          background: (item.type === 'company' && item.isSelected) ? '#10b981' : '#2563eb',
+                          color: 'white',
+                          fontSize: '14px',
+                          fontWeight: '500',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          minWidth: '80px',
+                          cursor: isInitialSelection && !(item.type === 'company' && item.isSelected) ? 'pointer' : 'default'
+                        }}
+                        onClick={isInitialSelection && !(item.type === 'company' && item.isSelected) ? () => handleCompanySwitch(item.id) : undefined}
+                        >
+                          {(item.type === 'company' && item.isSelected) ? (
+                            <>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: '4px' }}>
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              Selected
+                            </>
+                          ) : isInitialSelection ? 'Select' : (
+                            <>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ marginRight: '4px' }}>
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              Current
+                            </>
+                          )}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => item.type === 'company' && !item.isSelected && handleCompanySwitch(item.id)}
+                          disabled={item.type === 'company' && item.isSelected}
+                          style={{
+                            padding: '10px 20px',
+                            border: (item.type === 'company' && item.isSelected) ? 'none' : '1px solid #d1d5db',
+                            borderRadius: '6px',
+                            background: (item.type === 'company' && item.isSelected) ? '#e5e7eb' : 'white',
+                            color: (item.type === 'company' && item.isSelected) ? '#9ca3af' : '#374151',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            cursor: (item.type === 'company' && item.isSelected) ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s ease',
+                            minWidth: '80px'
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!(item.type === 'company' && item.isSelected)) {
+                              e.currentTarget.style.backgroundColor = '#f9fafb';
+                              e.currentTarget.style.borderColor = '#9ca3af';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!(item.type === 'company' && item.isSelected)) {
+                              e.currentTarget.style.backgroundColor = 'white';
+                              e.currentTarget.style.borderColor = '#d1d5db';
+                            }
+                          }}
+                        >
+                          {(item.type === 'company' && item.isSelected) ? 'Current' : (isInitialSelection ? 'Select' : 'Switch')}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
               )}
             </>
           )}

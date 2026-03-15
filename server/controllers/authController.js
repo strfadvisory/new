@@ -47,13 +47,13 @@ const register = async (req, res) => {
     }
 
     // Find Administrator subrole ID from the selected role
-    let administratorRoleId = null;
+    let administratorRoleId = 'Administrator'; // Default fallback
     if (selectedRole.subRoles && selectedRole.subRoles.length > 0) {
       const adminSubRole = selectedRole.subRoles.find(subRole => 
         subRole.role && subRole.role.toLowerCase().includes('administrator')
       );
       if (adminSubRole) {
-        administratorRoleId = adminSubRole.id;
+        administratorRoleId = adminSubRole.id; // Use the ID like "BO_004"
       }
     }
 
@@ -73,11 +73,15 @@ const register = async (req, res) => {
       otp,
       otpExpiry,
       isVerified: false,
-      memberfor: [{
-        company: selectedRole._id,
-        role: administratorRoleId || 'Administrator'
-      }]
+      memberfor: [] // Initialize empty, will be populated after user creation
     });
+
+    // After user creation, add self to memberfor with proper structure
+    user.memberfor.push({
+      company: user._id, // User's own company ID
+      role: administratorRoleId // Use the proper role ID like "BO_004"
+    });
+    await user.save();
 
     try {
       await sendOTPEmail(email, otp);
@@ -237,6 +241,28 @@ const createCompanyProfile = async (req, res) => {
     }
 
     user.companyProfile = companyData;
+    
+    // Ensure user has proper memberfor entry for their own company
+    if (!user.memberfor || user.memberfor.length === 0) {
+      // Find Administrator subrole ID from the user's role
+      let administratorRoleId = 'Administrator'; // Default fallback
+      
+      const role = await Role.findById(user.roleId);
+      if (role && role.subRoles && role.subRoles.length > 0) {
+        const adminSubRole = role.subRoles.find(subRole => 
+          subRole.role && subRole.role.toLowerCase().includes('administrator')
+        );
+        if (adminSubRole) {
+          administratorRoleId = adminSubRole.id; // Use the proper ID like "BO_004"
+        }
+      }
+      
+      user.memberfor = [{
+        company: user._id,
+        role: administratorRoleId
+      }];
+    }
+    
     await user.save();
     
     console.log('User saved with company profile:', user.companyProfile);
@@ -263,6 +289,7 @@ const createCompanyProfile = async (req, res) => {
       navigation,
       permissions: role?.permissions || {},
       companyProfile: user.companyProfile,
+      memberfor: user.memberfor, // Include memberfor in response
       redirectTo: '/dashboard/simulator-management' // Add explicit redirect path for new signups
     });
   } catch (error) {
@@ -668,6 +695,33 @@ const completeMember = async (req, res) => {
     user.status = 'Active';
     user.verificationToken = undefined;
     user.verificationTokenExpiry = undefined;
+    
+    // Ensure memberfor array is properly structured with correct role IDs
+    if (user.memberfor && user.memberfor.length > 0) {
+      // Get the parent company to find the correct role structure
+      const parentCompany = await User.findById(user.parentcompany).populate('roleId');
+      
+      // Update existing memberfor entries to ensure proper structure
+      user.memberfor = user.memberfor.map(member => {
+        let roleId = member.role || 'Administrator';
+        
+        // If parent company has role with subRoles, find appropriate role ID
+        if (parentCompany && parentCompany.roleId && parentCompany.roleId.subRoles) {
+          const adminSubRole = parentCompany.roleId.subRoles.find(subRole => 
+            subRole.role && subRole.role.toLowerCase().includes('administrator')
+          );
+          if (adminSubRole) {
+            roleId = adminSubRole.id; // Use the proper ID like "BO_004"
+          }
+        }
+        
+        return {
+          company: member.company,
+          role: roleId
+        };
+      });
+    }
+    
     await user.save();
 
     const authToken = generateToken(user._id);
@@ -678,7 +732,8 @@ const completeMember = async (req, res) => {
         _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
-        email: user.email
+        email: user.email,
+        memberfor: user.memberfor // Include memberfor in response
       }
     });
   } catch (error) {
