@@ -50,7 +50,7 @@
 
 .btn-cancel-delete {
   padding: 10px 24px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #C7C7C7;
   border-radius: 8px;
   background: white;
   color: #374151;
@@ -126,7 +126,7 @@
 
 .btn-cancel-confirm {
   padding: 10px 24px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #C7C7C7;
   border-radius: 8px;
   background: white;
   color: #374151;

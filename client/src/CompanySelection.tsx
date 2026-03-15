@@ -117,7 +117,10 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect, i
   const handleRequestAction = async (requestId: string, action: 'accept' | 'reject') => {
     try {
       setProcessingRequest(requestId);
-      await handleOrgRequest(requestId, action);
+      console.log('Processing request:', { requestId, action });
+      
+      const response = await handleOrgRequest(requestId, action);
+      console.log('Request response:', response);
       
       // Update local state
       setPendingRequests(prev => 
@@ -126,11 +129,19 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect, i
       
       // If accepted, refresh companies list
       if (action === 'accept') {
-        const companiesData = await getUserCompanies();
-        setUserCompanies(companiesData);
+        try {
+          const companiesData = await getUserCompanies();
+          setUserCompanies(companiesData);
+        } catch (companiesError) {
+          console.error('Error refreshing companies:', companiesError);
+        }
       }
+      
+      // Show success message
+      alert(`Request ${action}ed successfully!`);
     } catch (error) {
       console.error(`Error ${action}ing request:`, error);
+      alert(`Failed to ${action} request. Please try again.`);
     } finally {
       setProcessingRequest(null);
     }

@@ -53,18 +53,24 @@ export const getUserCompanies = async () => {
 
 export const getPendingRequests = async () => {
   try {
+    console.log('API call - getPendingRequests');
     const response = await axiosInstance.get('/users/pending-requests');
+    console.log('API response - getPendingRequests:', response.data);
     return response.data;
   } catch (error: any) {
+    console.error('API error - getPendingRequests:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to fetch pending requests');
   }
 };
 
 export const handleOrgRequest = async (requestId: string, action: 'accept' | 'reject') => {
   try {
+    console.log('API call - handleOrgRequest:', { requestId, action });
     const response = await axiosInstance.put(`/users/org-request/${requestId}`, { action });
+    console.log('API response - handleOrgRequest:', response.data);
     return response.data;
   } catch (error: any) {
+    console.error('API error - handleOrgRequest:', error.response?.data || error.message);
     throw new Error(error.response?.data?.message || 'Failed to handle request');
   }
 };

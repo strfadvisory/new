@@ -15,6 +15,13 @@ input, select, textarea, button, label {
   font-family: 'DM Sans', sans-serif !important;
 }
 
+/* Global placeholder styling */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: #8E8E8E !important;
+}
+
 /* Global Checkbox Styling */
 .checkbox-group {
   display: flex;
@@ -33,7 +40,7 @@ input, select, textarea, button, label {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  border: 2px solid #d1d5db;
+  border: 2px solid #C7C7C7;
   border-radius: 4px;
   background: white;
   cursor: pointer;
@@ -95,7 +102,7 @@ input, select, textarea, button, label {
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  border: 2px solid #d1d5db;
+  border: 2px solid #C7C7C7;
   border-radius: 4px;
   background: white;
   cursor: pointer;

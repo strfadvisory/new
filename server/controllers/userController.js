@@ -298,6 +298,8 @@ const handleOrgRequest = async (req, res) => {
     const { requestId } = req.params;
     const { action } = req.body; // 'accept' or 'reject'
     
+    console.log('Handling org request:', { userId, requestId, action });
+    
     if (!['accept', 'reject'].includes(action)) {
       return res.status(400).json({ message: 'Invalid action. Must be accept or reject' });
     }
@@ -307,32 +309,24 @@ const handleOrgRequest = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    console.log('User reqorg array:', user.reqorg);
+    
     // Find the request in reqorg array
     const requestIndex = user.reqorg.findIndex(req => req._id.toString() === requestId);
     if (requestIndex === -1) {
+      console.log('Request not found in reqorg array');
       return res.status(404).json({ message: 'Request not found' });
     }
     
     const request = user.reqorg[requestIndex];
+    console.log('Found request:', request);
+    
     if (request.status !== 'pending') {
       return res.status(400).json({ message: 'Request is not pending' });
     }
     
     if (action === 'accept') {
-      // Find the role and get Administrator subrole
-      const role = await Role.findById(request.role);
-      let administratorRoleId = 'Administrator'; // Default
-      
-      if (role && role.subRoles && role.subRoles.length > 0) {
-        const adminSubRole = role.subRoles.find(subRole => 
-          subRole.role && subRole.role.toLowerCase().includes('administrator')
-        );
-        if (adminSubRole) {
-          administratorRoleId = adminSubRole.id;
-        }
-      }
-      
-      // Add to memberfor array with proper structure
+      // Add to memberfor array with the role from the request
       const existingMember = user.memberfor.find(member => 
         member.company && member.company.toString() === request.orgId.toString()
       );
@@ -340,15 +334,20 @@ const handleOrgRequest = async (req, res) => {
       if (!existingMember) {
         user.memberfor.push({
           company: request.orgId,
-          role: administratorRoleId
+          role: request.role || 'Administrator'
         });
+        console.log('Added to memberfor array');
+      } else {
+        console.log('User already member of this company');
       }
     }
     
     // Remove from reqorg array
     user.reqorg.splice(requestIndex, 1);
+    console.log('Removed from reqorg array');
     
     await user.save();
+    console.log('User saved successfully');
     
     res.json({ 
       message: `Request ${action}ed successfully`,

@@ -47,7 +47,7 @@
 }
 
 .breadcrumb-wrapper {
-  border-bottom: 1px solid #D9D9D9;
+  border-bottom: 1px solid #C7C7C7;
   margin-bottom: 50px;
 }
 
@@ -78,7 +78,7 @@
   background: #ffffff;
   border-radius: 10px;
   padding: 0;
-  border: 1px solid #e6e6e6;
+  border: 1px solid #C7C7C7;
   width: 100%;
 }
 
@@ -89,7 +89,7 @@
   color: #2f2f2f;
   margin: 0;
   margin-bottom: 8px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid #C7C7C7;
   padding: 20px 20px 8px 20px;
 }
 
@@ -147,7 +147,7 @@
   width: 100%;
   height: 44px;
   border-radius: 8px;
-  border: 1px solid #dcdcdc;
+  border: 1px solid #C7C7C7;
   padding: 0 14px;
   font-size: 14px;
   background: #fafafa;
@@ -176,10 +176,16 @@
   border-color: #10b981;
 }
 
+.form-card .form-input::placeholder,
+.form-card .form-group input::placeholder,
+.form-card .form-group select::placeholder {
+  color: #8E8E8E;
+}
+
 /* Phone Input - Only inside form card */
 .form-card .phone-input {
   display: flex;
-  border: 2px solid #e2e8f0;
+  border: 2px solid #C7C7C7;
   border-radius: 8px;
   overflow: hidden;
   background: white;
@@ -201,7 +207,7 @@
   gap: 6px;
   padding: 14px 16px;
   background: #f9fafb;
-  border-right: 2px solid #e2e8f0;
+  border-right: 2px solid #C7C7C7;
   font-size: 14px;
   min-width: 80px;
   cursor: pointer;
@@ -219,6 +225,10 @@
   font-size: 14px;
   outline: none;
   background: transparent;
+}
+
+.form-card .phone-input input::placeholder {
+  color: #8E8E8E;
 }
 
 /* Password Input - Only inside form card */
@@ -288,7 +298,7 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  border: 2px solid #d1d5db;
+  border: 2px solid #C7C7C7;
   border-radius: 4px;
   background: white;
   cursor: pointer;
@@ -412,7 +422,7 @@
   text-align: center;
   margin: 0;
   padding: 16px 20px;
-  border-top: 1px solid #e6e6e6;
+  border-top: 1px solid #C7C7C7;
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 700;
   font-style: normal;

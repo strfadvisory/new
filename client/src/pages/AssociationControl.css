@@ -7,7 +7,7 @@
   background: #ffffff;
   border-radius: 10px;
   padding: 0;
-  border: 1px solid #e6e6e6;
+  border: 1px solid #C7C7C7;
   width: 100%;
   max-width: 800px;
   max-height: 90vh;
@@ -22,7 +22,7 @@
   color: #2f2f2f;
   margin: 0;
   margin-bottom: 8px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid #C7C7C7;
   padding: 20px 20px 8px 20px;
 }
 
@@ -107,7 +107,7 @@
 }
 
 .form-input::placeholder {
-  color: #9ca3af;
+  color: #8E8E8E;
 }
 
 /* Select dropdown styling */
@@ -201,6 +201,10 @@ select.form-input {
   box-sizing: border-box;
 }
 
+.phone-input input::placeholder {
+  color: #8E8E8E;
+}
+
 .social-input {
   display: flex;
   align-items: center;
@@ -241,6 +245,10 @@ select.form-input {
   background: transparent;
   height: 100%;
   box-sizing: border-box;
+}
+
+.social-input input::placeholder {
+  color: #8E8E8E;
 }
 
 .primary-button {
