@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getUserCompanies, getPendingRequests, handleOrgRequest, switchCompany } from '../services/userApi';
+import { getUserCompanies, getPendingRequests } from '../services/userApi';
+import { useHandleOrgRequest } from '../hooks/queries/useAuth';
 import { API_BASE_URL } from '../config';
 
 interface Company {
@@ -58,6 +59,9 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
   const [loading, setLoading] = useState(true);
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Use the mutation hook for handling org requests
+  const handleOrgRequestMutation = useHandleOrgRequest();
 
   // Helper function to get logo URL
   const getLogoUrl = (logoId?: string) => {
@@ -98,6 +102,7 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
 
   const handleCompanySwitch = async (companyId: string) => {
     try {
+      const { switchCompany } = require('../services/userApi');
       const response = await switchCompany(companyId);
       
       // Find the selected company data to get role information
@@ -144,12 +149,16 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
   const handleRequestAction = async (requestId: string, action: 'accept' | 'reject') => {
     try {
       setProcessingRequest(requestId);
-      await handleOrgRequest(requestId, action);
       
+      // Use the mutation to handle the request
+      await handleOrgRequestMutation.mutateAsync({ requestId, action });
+      
+      // Remove the request from local state immediately for better UX
       setPendingRequests(prev => 
         prev.filter(req => req._id !== requestId)
       );
       
+      // Refresh the user companies list
       if (action === 'accept') {
         const companiesData = await getUserCompanies();
         setUserCompanies(companiesData);

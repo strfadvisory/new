@@ -120,6 +120,13 @@ router.get('/users-with-requests', protect, async (req, res) => {
     .populate('roleId', 'name')
     .select('-password -otp -otpExpiry');
     
+    // Get users who are members of current user's organization (in memberfor array)
+    const memberUsers = await User.find({
+      'memberfor.company': loggedInUser._id
+    })
+    .populate('roleId', 'name')
+    .select('-password -otp -otpExpiry');
+    
     // Helper function to resolve role ID to role name
     const resolveRoleName = (roleId) => {
       if (!roleId || !roleId.includes('_')) {
@@ -150,32 +157,57 @@ router.get('/users-with-requests', protect, async (req, res) => {
     
     // Combine and format the results
     const allUsers = [];
+    const processedUserIds = new Set();
     
     // Add created users with 'member' status
     createdUsers.forEach(user => {
-      allUsers.push({
-        ...user.toObject(),
-        requestStatus: user.status === 'pending' ? 'invitation_pending' : 'member',
-        requestRole: resolveRoleName(user.designation) || 'Member'
-      });
+      if (!processedUserIds.has(user._id.toString())) {
+        allUsers.push({
+          ...user.toObject(),
+          requestStatus: user.status === 'pending' ? 'invitation_pending' : 'member',
+          requestRole: resolveRoleName(user.designation) || 'Member'
+        });
+        processedUserIds.add(user._id.toString());
+      }
     });
     
     // Add users with organization requests
     usersWithRequests.forEach(user => {
       const request = user.reqorg.find(req => req.orgId.toString() === loggedInUser._id.toString());
       if (request) {
-        // Check if user is already in createdUsers to avoid duplicates
-        const existingIndex = allUsers.findIndex(u => u._id.toString() === user._id.toString());
-        if (existingIndex === -1) {
+        if (!processedUserIds.has(user._id.toString())) {
           allUsers.push({
             ...user.toObject(),
             requestStatus: request.status, // pending, accepted, rejected
             requestRole: resolveRoleName(request.role)
           });
+          processedUserIds.add(user._id.toString());
         } else {
           // Update existing user with request info
-          allUsers[existingIndex].requestStatus = request.status;
-          allUsers[existingIndex].requestRole = resolveRoleName(request.role);
+          const existingIndex = allUsers.findIndex(u => u._id.toString() === user._id.toString());
+          if (existingIndex !== -1) {
+            allUsers[existingIndex].requestStatus = request.status;
+            allUsers[existingIndex].requestRole = resolveRoleName(request.role);
+          }
+        }
+      }
+    });
+    
+    // Add users who are members (accepted requests and now in memberfor)
+    memberUsers.forEach(user => {
+      if (!processedUserIds.has(user._id.toString())) {
+        // Find the member entry for this organization
+        const memberEntry = user.memberfor.find(member => 
+          member.company && member.company.toString() === loggedInUser._id.toString()
+        );
+        
+        if (memberEntry) {
+          allUsers.push({
+            ...user.toObject(),
+            requestStatus: 'member', // They are now active members
+            requestRole: resolveRoleName(memberEntry.role) || 'Member'
+          });
+          processedUserIds.add(user._id.toString());
         }
       }
     });

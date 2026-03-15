@@ -201,3 +201,24 @@ export const useInviteMemberWithValidation = () => {
     },
   });
 };
+
+// Handle organization request mutation
+export const useHandleOrgRequest = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<any, Error, { requestId: string; action: 'accept' | 'reject' }>({
+    mutationFn: ({ requestId, action }) => {
+      // Call the userApi function
+      const { handleOrgRequest } = require('../../services/userApi');
+      return handleOrgRequest(requestId, action);
+    },
+    onSuccess: () => {
+      // Invalidate all user-related queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.USERS });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.ORG_USERS });
+      queryClient.invalidateQueries({ queryKey: ['auth', 'users-with-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'pending-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['users', 'user-companies'] });
+    },
+  });
+};

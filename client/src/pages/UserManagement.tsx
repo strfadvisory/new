@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import './superadmin/AllCompanies.css';
-import { useUsersWithRequests, useRemoveLogo, useDeleteUser } from '../hooks/queries/useAuth';
+import { useUsersWithRequests, useRemoveLogo, useDeleteUser, useHandleOrgRequest } from '../hooks/queries/useAuth';
 import { authApi } from '../api/services/authApi';
 import { API_ENDPOINTS } from '../api/config';
 import InviteMemberModal from '../components/InviteMemberModal';
@@ -48,6 +48,7 @@ const UserManagement: React.FC = () => {
 
   const removeLogoMutation = useRemoveLogo();
   const deleteUserMutation = useDeleteUser();
+  const handleOrgRequestMutation = useHandleOrgRequest();
 
   const typedUsers = Array.isArray(users) ? users as User[] : [];
 
