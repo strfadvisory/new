@@ -93,6 +93,9 @@ function App() {
     setUser(userData);
     sessionStorage.setItem('user', JSON.stringify(userData));
     
+    // Clear company selection flag on new login
+    sessionStorage.removeItem('companySelectionCompleted');
+    
     if (userData.isSuperAdmin) {
       navigate('/admin/simulators');
       setLoading(false);
@@ -211,12 +214,16 @@ function App() {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
     sessionStorage.removeItem('tempEmail');
+    sessionStorage.removeItem('companySelectionCompleted');
     
     setUser(null);
     navigate('/login');
   };
 
   const handleCompanySelectionComplete = () => {
+    // Mark company selection as completed for this session
+    sessionStorage.setItem('companySelectionCompleted', 'true');
+    
     setShowCompanySelectionModal(false);
     if (pendingNavigation) {
       navigate(pendingNavigation);
@@ -250,6 +257,8 @@ function App() {
   useEffect(() => {
     if (user && !user.isSuperAdmin && !isCreatingNewCompany && !loading) {
       const currentPath = window.location.pathname;
+      const companySelectionCompleted = sessionStorage.getItem('companySelectionCompleted');
+      
       // Don't show modal if user is in signup flow or on login page
       const isInSignupFlow = currentPath.includes('/signup') || 
                             currentPath.includes('/create-profile') || 
@@ -259,8 +268,15 @@ function App() {
                             currentPath === '/forgot-password' ||
                             currentPath.includes('/reset-password');
       
-      // Only show modal if user is trying to access protected routes and modal is not already shown
-      if ((currentPath.startsWith('/dashboard') || currentPath === '/profile') && !isInSignupFlow && !showCompanySelectionModal) {
+      // Only show modal if:
+      // 1. User is trying to access protected routes
+      // 2. Not in signup flow
+      // 3. Modal is not already shown
+      // 4. Company selection has not been completed in this session
+      if ((currentPath.startsWith('/dashboard') || currentPath === '/profile') && 
+          !isInSignupFlow && 
+          !showCompanySelectionModal && 
+          !companySelectionCompleted) {
         setShowCompanySelectionModal(true);
         setPendingNavigation(currentPath);
       }

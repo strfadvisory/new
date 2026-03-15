@@ -99,8 +99,12 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
     try {
       await switchCompany(companyId);
       
-      onCompanyChanged?.();
-      if (!isInitialSelection) {
+      if (isInitialSelection) {
+        // For initial selection, call the completion handler
+        onCompanyChanged?.();
+      } else {
+        // For regular company switching, reload the page
+        onCompanyChanged?.();
         onClose();
         window.location.reload();
       }
