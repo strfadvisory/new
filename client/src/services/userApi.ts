@@ -84,6 +84,24 @@ export const switchCompany = async (companyId: string) => {
   }
 };
 
+export const inviteMemberWithValidation = async (memberData: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  selectedRole: string;
+  designation?: string;
+  associationIds?: string[];
+  reserveStudyIds?: string[];
+  organizationId?: string;
+}) => {
+  try {
+    const response = await axiosInstance.post('/users/invite-member', memberData);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to invite member');
+  }
+};
+
 export const getUserPermissionLevel = async (companyId: string) => {
   try {
     const response = await axiosInstance.get(`/users/permission-level/${companyId}`);

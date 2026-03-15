@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUserSubRoles } from '../hooks/queries/useRoles';
-import { useAddMember } from '../hooks/queries/useAuth';
+import { useInviteMemberWithValidation } from '../hooks/queries/useAuth';
 import { useApiCallTracker } from '../hooks/useApiCallTracker';
 import { toast } from 'react-toastify';
 
@@ -55,7 +55,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = React.memo(({
     reserveStudyIds: selectedReserveStudies.map(r => r._id)
   });
   
-  const addMemberMutation = useAddMember();
+  const addMemberMutation = useInviteMemberWithValidation();
   
   // API call tracker to monitor and prevent infinite loops
   const { callCount, getGlobalStats } = useApiCallTracker('user-subroles', isOpen);
@@ -96,9 +96,14 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = React.memo(({
       
       // Show appropriate message based on response
       if (response.userExists) {
-        alert(`User already exists! Organization request has been sent to ${inviteData.email}`);
+        toast.info(`User already exists! Organization request has been sent to ${inviteData.email}`);
       } else {
-          toast.success(`Invitation sent successfully to ${inviteData.email}`);
+        toast.success(`Invitation sent successfully to ${inviteData.email}`);
+      }
+      
+      // Show role information if available
+      if (response.roleInfo) {
+        console.log('Assigned role:', response.roleInfo);
       }
       
       setInviteData({ 
@@ -113,7 +118,8 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = React.memo(({
       onClose();
     } catch (error: any) {
       console.error('Error sending invitation:', error);
-      alert(error.response?.data?.message || 'Failed to send invitation');
+      const errorMessage = error.response?.data?.message || 'Failed to send invitation';
+      toast.error(errorMessage);
     }
   };
 
@@ -276,7 +282,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = React.memo(({
               </option>
               {subRoles.map((role) => (
                 <option key={role._id} value={role._id}>
-                  {role.name} ({role.permissionLevel})
+                  {role.name} - {role.permissionLevel}
                 </option>
               ))}
             </select>
@@ -288,6 +294,21 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = React.memo(({
                 fontStyle: 'italic'
               }}>
                 No sub-roles found. Please contact your administrator to set up role permissions.
+              </p>
+            )}
+            {inviteData.selectedRole && subRoles.length > 0 && (
+              <p style={{
+                fontSize: '12px',
+                color: '#10b981',
+                margin: '4px 0 0 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                Role validated for your organization
               </p>
             )}
           </div>

@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, verifyOTP, resendOTP, createCompanyProfile, addMember, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken, resendMemberInvitation, verifyMemberToken, completeMember } = require('../controllers/authController');
+const { register, login, verifyOTP, resendOTP, createCompanyProfile, addMember, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken, resendMemberInvitation, verifyMemberToken, completeMember, inviteMemberWithValidation } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware.jsx');
 const { upload, uploadToGridFS } = require('../middleware/upload.jsx');
 const User = require('../models/User');
@@ -15,6 +15,7 @@ router.get('/verify-reset-token/:token', verifyResetToken);
 router.post('/reset-password/:token', resetPassword);
 router.post('/company-profile', protect, upload.single('logo'), uploadToGridFS, createCompanyProfile);
 router.post('/addmember', protect, addMember);
+router.post('/invite-member-validated', protect, inviteMemberWithValidation);
 router.post('/resend-member-invitation/:userId', protect, resendMemberInvitation);
 router.get('/verify-member/:token', verifyMemberToken);
 router.post('/complete-member/:token', completeMember);
@@ -188,13 +189,25 @@ router.get('/users-with-requests', protect, async (req, res) => {
 
 router.get('/org-users', protect, async (req, res) => {
   try {
-    const currentUser = await User.findById(req.user._id);
-    if (!currentUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    const users = await User.find({ orgId: currentUser.orgId,   roleType: { $exists: true } }).select('-password -otp -otpExpiry');
+    const currentUserId = req.user._id;
+    
+    // Find users who:
+    // 1. Were created by current user (createdBy)
+    // 2. Have current user's company in their memberfor array
+    // 3. Are the current user themselves
+    const users = await User.find({
+      $or: [
+        { createdBy: currentUserId },
+        { 'memberfor.company': currentUserId },
+        { _id: currentUserId }
+      ]
+    })
+    .populate('roleId', 'name subRoles')
+    .select('-password -otp -otpExpiry');
+    
     res.json(users);
   } catch (error) {
+    console.error('Error fetching org users:', error);
     res.status(500).json({ message: 'Error fetching users' });
   }
 });

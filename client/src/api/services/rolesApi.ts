@@ -31,6 +31,7 @@ interface UserSubRolesResponse {
     _id: string;
     name: string;
     permissionLevel: string;
+    organizationId?: string;
   }>;
   debug?: {
     message: string;
@@ -38,7 +39,22 @@ interface UserSubRolesResponse {
     roleType?: string;
     subRolesCount?: number;
     suggestion?: string;
+    currentCompanyId?: string;
+    currentCompanyRole?: string;
+    isOwnCompany?: boolean;
   };
+}
+
+interface OrganizationRolesResponse {
+  roles: Array<{
+    _id: string;
+    name: string;
+    permissionLevel: string;
+    description: string;
+  }>;
+  organizationName: string;
+  organizationId: string;
+  roleStructure: string;
 }
 
 // Roles API functions
@@ -121,6 +137,12 @@ export const rolesApi = {
       circuitBreaker.onFailure(apiKey);
       throw error;
     }
+  },
+
+  // Get organization-specific roles
+  getOrganizationRoles: async (organizationId: string): Promise<OrganizationRolesResponse> => {
+    const response = await apiClient.get(`/api/roles/organization/${organizationId}/roles`);
+    return response.data;
   },
 
   // Get child roles

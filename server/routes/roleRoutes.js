@@ -1,5 +1,5 @@
 const express = require('express');
-const { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getMasterRoles, getUserPermissions, getUserNextSteps, getUserVideos, getUserSubRoles, getRoleSubRoles } = require('../controllers/roleController');
+const { createRole, getAllRoles, getRoleById, updateRole, deleteRole, getMasterRoles, getUserPermissions, getUserNextSteps, getUserVideos, getUserSubRoles, getRoleSubRoles, getOrganizationRoles } = require('../controllers/roleController');
 const { protect } = require('../middleware/authMiddleware.jsx');
 const { restrictToUserRole, requirePermission } = require('../middleware/userRoleMiddleware');
 
@@ -17,6 +17,9 @@ router.get('/user-nextsteps', protect, getUserNextSteps);
 router.get('/user-videos', protect, getUserVideos);
 router.get('/user-subroles', protect, getUserSubRoles);
 router.get('/child-roles', protect, getUserSubRoles); // Alias for backward compatibility
+
+// Organization-specific roles
+router.get('/organization/:organizationId/roles', protect, getOrganizationRoles);
 
 // Protected CRUD routes
 router.post('/', protect, createRole);

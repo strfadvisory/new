@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../pages/superadmin/AllCompanies.css';
 import { useOrgUsers } from '../hooks/queries/useAuth';
 
@@ -11,6 +11,10 @@ interface User {
   designation: string;
   companyType: string;
   isVerified?: boolean;
+  memberfor?: Array<{
+    company: string;
+    role: string;
+  }>;
   address?: {
     address1?: string;
     address2?: string;
@@ -24,15 +28,25 @@ const Users: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Use React Query hook
-  const { data: users = [], isLoading: loading } = useOrgUsers();
+  // Use React Query hook with refetch interval to catch new members
+  const { data: users = [], isLoading: loading, refetch } = useOrgUsers();
 
   // Set first user as selected when data loads
-  React.useEffect(() => {
+  useEffect(() => {
     if (users.length > 0 && !selectedUser) {
       setSelectedUser(users[0]);
     }
   }, [users, selectedUser]);
+
+  // Listen for company changes to refresh user list
+  useEffect(() => {
+    const handleCompanyChange = () => {
+      refetch();
+    };
+
+    window.addEventListener('companyChanged', handleCompanyChange);
+    return () => window.removeEventListener('companyChanged', handleCompanyChange);
+  }, [refetch]);
 
   const getFullAddress = (user: User) => {
     const addr = user.address;

@@ -187,3 +187,17 @@ export const useAddMember = () => {
     },
   });
 };
+
+// Add member with validation mutation
+export const useInviteMemberWithValidation = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation<any, Error, InviteData>({
+    mutationFn: authApi.inviteMemberWithValidation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.USERS });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.ORG_USERS });
+      queryClient.invalidateQueries({ queryKey: ['auth', 'users-with-requests'] });
+    },
+  });
+};

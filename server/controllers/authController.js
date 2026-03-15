@@ -787,4 +787,147 @@ const resendMemberInvitation = async (req, res) => {
   }
 };
 
-module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile, addMember, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken, resendMemberInvitation, verifyMemberToken, completeMember };
+const inviteMemberWithValidation = async (req, res) => {
+  try {
+    const { name, firstName: fName, lastName: lName, email, role, selectedRole, designation, associationIds, reserveStudyIds } = req.body;
+    const loggedInUser = req.user;
+
+    const resolvedFirstName = fName || (name ? name.split(' ')[0] : '');
+    const resolvedLastName = lName || (name ? name.split(' ').slice(1).join(' ') : '');
+    const resolvedEmail = email;
+    const resolvedRole = role || selectedRole;
+
+    // Validation
+    if (!resolvedFirstName || !resolvedEmail || !resolvedRole) {
+      return res.status(400).json({ message: 'Name, email, and role are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Prevent self-invite
+    if (email === loggedInUser.email) {
+      return res.status(400).json({ message: 'Cannot invite yourself' });
+    }
+
+    // Validate role permissions - check if user can assign this role
+    const userRole = await Role.findById(loggedInUser.roleId);
+    if (!userRole) {
+      return res.status(403).json({ message: 'Your role configuration not found' });
+    }
+
+    // Find the role being assigned from the user's available subroles
+    let roleToAssign = null;
+    if (userRole.subRoles && userRole.subRoles.length > 0) {
+      roleToAssign = userRole.subRoles.find(subRole => subRole.id === resolvedRole);
+    }
+
+    if (!roleToAssign) {
+      return res.status(403).json({ 
+        message: 'You do not have permission to assign this role',
+        availableRoles: userRole.subRoles || []
+      });
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      // Case A: Email does not exist - create new user
+      const tempPassword = Math.random().toString(36).slice(-8);
+      const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+      const verificationTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      const newUser = await User.create({
+        firstName: resolvedFirstName,
+        lastName: resolvedLastName,
+        email: resolvedEmail,
+        designation: designation || roleToAssign.role,
+        phone: '',
+        password: tempPassword,
+        status: 'pending',
+        parentcompany: loggedInUser._id,
+        memberfor: [{
+          company: loggedInUser._id,
+          role: resolvedRole
+        }],
+        verificationToken,
+        verificationTokenExpiry,
+        isVerified: false,
+        createdBy: loggedInUser._id
+      });
+
+      // Add user to associations and reserve studies
+      await addUserToResources(newUser._id, associationIds, reserveStudyIds);
+
+      const verificationLink = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-member/${verificationToken}`;
+      
+      try {
+        await sendMemberInvitationEmail(
+          resolvedEmail, 
+          verificationLink, 
+          `${resolvedFirstName} ${resolvedLastName}`.trim(),
+          loggedInUser.companyProfile?.companyName || `${loggedInUser.firstName} ${loggedInUser.lastName}`,
+          `${loggedInUser.firstName} ${loggedInUser.lastName}`
+        );
+      } catch (emailError) {
+        console.log('Email send failed. Link:', verificationLink);
+      }
+
+      res.status(201).json({ 
+        message: 'Member invitation sent successfully', 
+        userId: newUser._id,
+        userExists: false,
+        roleInfo: {
+          roleId: resolvedRole,
+          roleName: roleToAssign.role,
+          permissionLevel: roleToAssign.permissionLevel
+        }
+      });
+    } else {
+      // Case B: Email already exists - add organization request
+      
+      // Check if request already exists
+      const existingRequest = existingUser.reqorg.find(
+        req => req.orgId.toString() === loggedInUser._id.toString()
+      );
+      
+      if (existingRequest) {
+        return res.status(400).json({ 
+          message: 'Organization request already exists',
+          status: existingRequest.status
+        });
+      }
+
+      existingUser.reqorg.push({
+        orgId: loggedInUser._id,
+        role: resolvedRole,
+        requestedBy: loggedInUser._id,
+        status: 'pending'
+      });
+
+      await existingUser.save();
+
+      // Add user to associations and reserve studies
+      await addUserToResources(existingUser._id, associationIds, reserveStudyIds);
+
+      res.json({ 
+        message: 'User already exists. Organization request sent.',
+        userExists: true,
+        userId: existingUser._id,
+        roleInfo: {
+          roleId: resolvedRole,
+          roleName: roleToAssign.role,
+          permissionLevel: roleToAssign.permissionLevel
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Invite member with validation error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports = { register, login, verifyOTP, resendOTP, createCompanyProfile, addMember, inviteAdvisory, verifyAdvisoryToken, completeAdvisoryProfile, forgotPassword, resetPassword, verifyResetToken, resendMemberInvitation, verifyMemberToken, completeMember, inviteMemberWithValidation };

@@ -127,6 +127,12 @@ export const authApi = {
     return response.data;
   },
 
+  // Add member with validation
+  inviteMemberWithValidation: async (inviteData: InviteData) => {
+    const response = await apiClient.post('/auth/invite-member-validated', inviteData);
+    return response.data;
+  },
+
   // Get users with request status
   getUsersWithRequests: async () => {
     const response = await apiClient.get('/auth/users-with-requests');

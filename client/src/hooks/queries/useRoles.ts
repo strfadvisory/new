@@ -104,6 +104,17 @@ export const useUserSubRoles = (enabled = true) => {
   });
 };
 
+// Get organization-specific roles
+export const useOrganizationRoles = (organizationId: string, enabled = true) => {
+  return useQuery({
+    queryKey: ['roles', 'organization', organizationId],
+    queryFn: () => rolesApi.getOrganizationRoles(organizationId),
+    enabled: enabled && !!organizationId,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
+  });
+};
+
 // Get default permissions
 export const useDefaultPermissions = () => {
   return useQuery({

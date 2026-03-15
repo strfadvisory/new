@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const Role = require('../models/Role');
+const jwt = require('jsonwebtoken');
+const { sendMemberInvitationEmail } = require('../services/emailService.jsx');
 
 const getAllUsers = async (req, res) => {
   try {
@@ -268,7 +270,10 @@ const getUserCompanies = async (req, res) => {
         
         companies.push({
           _id: user._id,
-          companyProfile: user.companyProfile,
+          companyProfile: {
+            ...user.companyProfile,
+            logoId: user.companyProfile.logoId
+          },
           firstName: user.firstName,
           lastName: user.lastName,
           isOwn: true,
@@ -296,9 +301,12 @@ const getUserCompanies = async (req, res) => {
           
           return {
             _id: member.company._id,
-            companyProfile: member.company.companyProfile || {
-              companyName: `${member.company.firstName} ${member.company.lastName}`,
-              description: 'Personal Company'
+            companyProfile: {
+              ...(member.company.companyProfile || {
+                companyName: `${member.company.firstName} ${member.company.lastName}`,
+                description: 'Personal Company'
+              }),
+              logoId: member.company.companyProfile?.logoId
             },
             firstName: member.company.firstName,
             lastName: member.company.lastName,
@@ -316,9 +324,12 @@ const getUserCompanies = async (req, res) => {
     if (companies.length === 0) {
       companies.push({
         _id: user._id,
-        companyProfile: user.companyProfile || {
-          companyName: `${user.firstName} ${user.lastName}`,
-          description: 'Personal Company'
+        companyProfile: {
+          ...(user.companyProfile || {
+            companyName: `${user.firstName} ${user.lastName}`,
+            description: 'Personal Company'
+          }),
+          logoId: user.companyProfile?.logoId
         },
         firstName: user.firstName,
         lastName: user.lastName,
@@ -405,25 +416,14 @@ const handleOrgRequest = async (req, res) => {
       );
       
       if (!existingMember) {
-        // Find the role details to get proper role information
-        const requestingUser = await User.findById(request.orgId).populate('roleId');
-        let roleInfo = request.role || 'Administrator';
-        
-        // If requesting user has a role with subRoles, find appropriate subrole ID
-        if (requestingUser && requestingUser.roleId && requestingUser.roleId.subRoles) {
-          const adminSubRole = requestingUser.roleId.subRoles.find(subRole => 
-            subRole.role && subRole.role.toLowerCase().includes('administrator')
-          );
-          if (adminSubRole) {
-            roleInfo = adminSubRole.id; // Use the proper ID like "BO_004"
-          }
-        }
+        // Use the exact role from the request without modification
+        const roleInfo = request.role;
         
         user.memberfor.push({
           company: request.orgId, // Company ID from the request
-          role: roleInfo // Role ID like "BO_004" or role name
+          role: roleInfo // Use the exact role ID from the request
         });
-        console.log('Added to memberfor array with proper company and role info');
+        console.log('Added to memberfor array with role:', roleInfo);
       } else {
         console.log('User already member of this company');
       }
@@ -679,6 +679,180 @@ const getUserMemberInfo = async (req, res) => {
   }
 };
 
+// Helper function to add user to associations and reserve studies
+const addUserToResources = async (userId, associationIds = [], reserveStudyIds = []) => {
+  const Association = require('../models/Association');
+  const ReserveStudy = require('../models/ReserveStudy');
+
+  try {
+    // Add user to associations
+    if (associationIds && associationIds.length > 0) {
+      await Association.updateMany(
+        { _id: { $in: associationIds } },
+        { $addToSet: { allowUser: userId } }
+      );
+      console.log(`Added user ${userId} to ${associationIds.length} associations`);
+    }
+
+    // Add user to reserve studies
+    if (reserveStudyIds && reserveStudyIds.length > 0) {
+      await ReserveStudy.updateMany(
+        { _id: { $in: reserveStudyIds } },
+        { $addToSet: { allowUser: userId } }
+      );
+      console.log(`Added user ${userId} to ${reserveStudyIds.length} reserve studies`);
+    }
+  } catch (error) {
+    console.error('Error adding user to resources:', error);
+    throw error;
+  }
+};
+
+// Enhanced addMember with organization-specific role validation
+const addMemberWithRoleValidation = async (req, res) => {
+  try {
+    const { firstName, lastName, email, selectedRole, designation, associationIds, reserveStudyIds, organizationId } = req.body;
+    const loggedInUser = req.user;
+
+    // Validation
+    if (!firstName || !email || !selectedRole) {
+      return res.status(400).json({ message: 'First name, email, and role are required' });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' });
+    }
+
+    // Prevent self-invite
+    if (email === loggedInUser.email) {
+      return res.status(400).json({ message: 'Cannot invite yourself' });
+    }
+
+    // Get organization context (default to logged-in user's company)
+    const targetOrganizationId = organizationId || loggedInUser._id;
+    
+    // Validate role exists in the target organization's role structure
+    const organization = await User.findById(targetOrganizationId).populate('roleId');
+    if (!organization || !organization.roleId || !organization.roleId.subRoles) {
+      return res.status(400).json({ message: 'Invalid organization or role structure' });
+    }
+    
+    const validRole = organization.roleId.subRoles.find(sr => sr.id === selectedRole);
+    if (!validRole) {
+      return res.status(400).json({ message: 'Invalid role for this organization' });
+    }
+    
+    // Check if requesting user has permission to assign this role
+    if (loggedInUser._id.toString() !== targetOrganizationId) {
+      const memberEntry = loggedInUser.memberfor?.find(member => 
+        member.company && member.company.toString() === targetOrganizationId
+      );
+      
+      if (!memberEntry) {
+        return res.status(403).json({ message: 'No permission to invite members to this organization' });
+      }
+      
+      // Check permission level
+      const userRole = organization.roleId.subRoles.find(sr => sr.id === memberEntry.role);
+      if (userRole && userRole.permissionLevel !== 'ADMIN' && validRole.permissionLevel !== 'VIEWER') {
+        return res.status(403).json({ message: 'Insufficient permissions to assign this role' });
+      }
+    }
+
+    const existingUser = await User.findOne({ email });
+
+    if (!existingUser) {
+      // Case A: Email does not exist - create new user
+      const tempPassword = Math.random().toString(36).slice(-8);
+      const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
+      const verificationTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      const newUser = await User.create({
+        firstName,
+        lastName,
+        email,
+        designation: designation || validRole.role,
+        phone: '',
+        password: tempPassword,
+        status: 'pending',
+        parentcompany: targetOrganizationId,
+        memberfor: [{
+          company: targetOrganizationId,
+          role: selectedRole
+        }],
+        verificationToken,
+        verificationTokenExpiry,
+        isVerified: false,
+        createdBy: loggedInUser._id
+      });
+
+      // Add user to associations and reserve studies
+      await addUserToResources(newUser._id, associationIds, reserveStudyIds);
+
+      const verificationLink = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-member/${verificationToken}`;
+      
+      try {
+        await sendMemberInvitationEmail(
+          email, 
+          verificationLink, 
+          `${firstName} ${lastName}`.trim(),
+          organization.companyProfile?.companyName || `${organization.firstName} ${organization.lastName}`,
+          `${loggedInUser.firstName} ${loggedInUser.lastName}`
+        );
+      } catch (emailError) {
+        console.log('Email send failed. Link:', verificationLink);
+      }
+
+      res.status(201).json({ 
+        message: 'Member invitation sent successfully', 
+        userId: newUser._id,
+        userExists: false,
+        organizationId: targetOrganizationId,
+        roleName: validRole.role
+      });
+    } else {
+      // Case B: Email already exists - add organization request
+      
+      // Check if request already exists
+      const existingRequest = existingUser.reqorg.find(
+        req => req.orgId.toString() === targetOrganizationId.toString()
+      );
+      
+      if (existingRequest) {
+        return res.status(400).json({ 
+          message: 'Organization request already exists',
+          status: existingRequest.status
+        });
+      }
+
+      existingUser.reqorg.push({
+        orgId: targetOrganizationId,
+        role: selectedRole,
+        requestedBy: loggedInUser._id,
+        status: 'pending'
+      });
+
+      await existingUser.save();
+
+      // Add user to associations and reserve studies
+      await addUserToResources(existingUser._id, associationIds, reserveStudyIds);
+
+      res.json({ 
+        message: 'User already exists. Organization request sent.',
+        userExists: true,
+        userId: existingUser._id,
+        organizationId: targetOrganizationId,
+        roleName: validRole.role
+      });
+    }
+  } catch (error) {
+    console.error('Add member error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getAllUsers,
   updateUserStatus,
@@ -693,5 +867,6 @@ module.exports = {
   handleOrgRequest,
   switchCompany,
   getUserPermissionLevel,
-  getUserMemberInfo
+  getUserMemberInfo,
+  addMemberWithRoleValidation
 };

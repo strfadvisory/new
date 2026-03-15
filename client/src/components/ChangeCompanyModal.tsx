@@ -43,7 +43,6 @@ interface ChangeCompanyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCompanyChanged?: () => void;
-  onCreateNewCompany?: () => void;
   isInitialSelection?: boolean;
 }
 
@@ -51,10 +50,9 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
   isOpen, 
   onClose, 
   onCompanyChanged,
-  onCreateNewCompany,
   isInitialSelection = false
 }) => {
-  console.log('ChangeCompanyModal render:', { isOpen, isInitialSelection, hasCreateHandler: !!onCreateNewCompany });
+  console.log('ChangeCompanyModal render:', { isOpen, isInitialSelection });
   const [userCompanies, setUserCompanies] = useState<Company[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,11 +167,14 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
       // Use the isSelected property from backend to determine current selection
       const isCurrentlySelected = company.isSelected || false;
       
+      // Get role display name - prioritize role over roleId
+      const roleDisplay = company.role || company.roleId || 'No Role Assigned';
+      
       return {
         id: company._id,
         type: 'company' as const,
         name: company.companyProfile.companyName,
-        subtitle: company.role || 'No Role Assigned',
+        subtitle: roleDisplay,
         address: company.isOwn ? 'Your Company' : 'Member Company',
         status: isCurrentlySelected ? 'current' : 'available',
         logoId: company.companyProfile.logoId,
@@ -207,9 +208,7 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          if (!isInitialSelection) {
-            onClose();
-          }
+          onClose();
         }}
         style={{
           position: 'fixed',
@@ -291,82 +290,11 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
             </div>
           ) : (
             <>
-              {/* Create New Company Option - Only show for initial selection */}
-              {isInitialSelection && onCreateNewCompany && (
-                <div 
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '16px 24px',
-                    borderBottom: '1px solid #f3f4f6',
-                    gap: '16px',
-                    cursor: 'pointer',
-                    backgroundColor: '#f8fafc',
-                    transition: 'background-color 0.2s ease'
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Create new company option clicked');
-                    onCreateNewCompany();
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f1f5f9';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                  }}
-                >
-                  {/* Plus Icon */}
-                  <div style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '6px',
-                    flexShrink: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: '#3b82f6',
-                    color: 'white'
-                  }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <path d="M12 5V19M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                  
-                  {/* Create Company Info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <h3 style={{
-                      fontSize: '16px',
-                      fontWeight: '600',
-                      color: '#111827',
-                      margin: '0 0 4px 0',
-                      lineHeight: '1.2'
-                    }}>
-                      Create New Company
-                    </h3>
-                    <p style={{
-                      fontSize: '14px',
-                      color: '#6b7280',
-                      margin: '0',
-                      lineHeight: '1.2'
-                    }}>
-                      Set up a new organizational entity
-                    </p>
-                  </div>
-                  
-                  {/* Arrow */}
-                  <div style={{ flexShrink: 0 }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M9 18L15 12L9 6" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </div>
-                </div>
-              )}
+
               
               {filteredItems.length === 0 ? (
                 <div style={{ padding: '40px', textAlign: 'center', color: '#6b7280' }}>
-                  {isInitialSelection ? 'No companies available. Create a new company to get started.' : 'No companies found'}
+                  {isInitialSelection ? 'No companies available.' : 'No companies found'}
                 </div>
               ) : (
                 filteredItems.map((item, index) => (
@@ -393,7 +321,7 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
                       backgroundColor: '#f3f4f6',
                       border: '1px solid #e5e7eb'
                     }}>
-                      {item.logoId && getLogoUrl(item.logoId) ? (
+                      {item.logoId ? (
                         <img 
                           src={getLogoUrl(item.logoId)!} 
                           alt={`${item.name} logo`}
@@ -403,12 +331,10 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
                             objectFit: 'cover'
                           }}
                           onError={(e) => {
-                            // Fallback to initials if image fails to load
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
                             const parent = target.parentElement;
-                            if (parent) {
-                              // Create a safe span element instead of using innerHTML
+                            if (parent && !parent.querySelector('span')) {
                               const span = document.createElement('span');
                               span.style.fontSize = '16px';
                               span.style.fontWeight = '600';
@@ -585,39 +511,37 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
           )}
         </div>
 
-        {/* Close Button - Only show for non-initial selection */}
-        {!isInitialSelection && (
-          <button
-            onClick={onClose}
-            style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              background: 'none',
-              border: 'none',
-              fontSize: '20px',
-              cursor: 'pointer',
-              color: '#6b7280',
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '4px',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#f3f4f6';
-              e.currentTarget.style.color = '#374151';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#6b7280';
-            }}
-          >
-            ×
-          </button>
-        )}
+        {/* Close Button - Always show and allow closing */}
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            background: 'none',
+            border: 'none',
+            fontSize: '20px',
+            cursor: 'pointer',
+            color: '#6b7280',
+            width: '32px',
+            height: '32px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: '4px',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#f3f4f6';
+            e.currentTarget.style.color = '#374151';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#6b7280';
+          }}
+        >
+          ×
+        </button>
       </div>
     </>
   );

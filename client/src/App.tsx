@@ -235,25 +235,6 @@ function App() {
     }
   };
 
-  const handleCreateNewCompany = () => {
-    console.log('Create new company clicked - closing modal');
-    // Force close modal immediately
-    setShowCompanySelectionModal(false);
-    setPendingNavigation('');
-    setIsCreatingNewCompany(true);
-    
-    // Clear any existing signup state
-    clearSignupState();
-    
-    // Force re-render to ensure modal is closed
-    setLoading(prev => !prev && prev);
-    
-    // Navigate after ensuring state is updated
-    setTimeout(() => {
-      navigate('/signup');
-    }, 50);
-  };
-
   // Add effect to handle company selection requirement on route changes
   useEffect(() => {
     if (user && !user.isSuperAdmin && !isCreatingNewCompany && !loading) {
@@ -311,9 +292,8 @@ function App() {
           <ChangeCompanyModal 
             key={`modal-${showCompanySelectionModal}-${isCreatingNewCompany}`}
             isOpen={showCompanySelectionModal && !isCreatingNewCompany}
-            onClose={() => {}} // Prevent closing without selection
+            onClose={() => setShowCompanySelectionModal(false)}
             onCompanyChanged={handleCompanySelectionComplete}
-            onCreateNewCompany={handleCreateNewCompany}
             isInitialSelection={true}
           />
         )}
