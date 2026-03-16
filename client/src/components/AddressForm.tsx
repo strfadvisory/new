@@ -24,6 +24,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
   onUseMyAddressChange
 }) => {
   const [loadingZip, setLoadingZip] = useState(false);
+  const [zipError, setZipError] = useState<string>('');
 
   const usStates = [
     { code: 'AL', name: 'Alabama' }, { code: 'AK', name: 'Alaska' }, { code: 'AZ', name: 'Arizona' },
@@ -47,20 +48,32 @@ const AddressForm: React.FC<AddressFormProps> = ({
 
   const fetchLocationByZip = async (zipCode: string) => {
     setLoadingZip(true);
+    setZipError('');
     try {
       const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
       if (response.ok) {
         const data = await response.json();
-        const place = data.places[0];
-        const newAddressData = {
-          ...addressData,
-          state: place['state abbreviation'],
-          city: place['place name']
-        };
-        onAddressChange(newAddressData);
+        if (data.places && data.places.length > 0) {
+          const place = data.places[0];
+          const newAddressData = {
+            ...addressData,
+            state: place['state abbreviation'],
+            city: place['place name']
+          };
+          onAddressChange(newAddressData);
+          setZipError(''); // Clear error on success
+        } else {
+          // Data found but no places - show error but keep ZIP code
+          setZipError('ZIP code information not available. Please enter address details manually.');
+        }
+      } else {
+        // API returned error - show message but keep ZIP code intact
+        setZipError('ZIP code not found. Please enter address details manually.');
       }
     } catch (error) {
       console.error('Error fetching location:', error);
+      // Keep ZIP code field intact even on error
+      setZipError('Could not lookup ZIP code. Please enter address details manually.');
     } finally {
       setLoadingZip(false);
     }
@@ -73,9 +86,19 @@ const AddressForm: React.FC<AddressFormProps> = ({
       [name]: value
     };
     onAddressChange(newAddressData);
+  };
 
-    if (name === 'zipCode' && value.length === 5) {
-      fetchLocationByZip(value);
+  const handleZipBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const zipValue = e.target.value;
+    // Only fetch if exactly 5 digits are entered
+    if (zipValue.length === 5 && /^[0-9]{5}$/.test(zipValue)) {
+      fetchLocationByZip(zipValue);
+    } else if (zipValue.length > 0 && zipValue.length < 5) {
+      // Show warning if user entered incomplete ZIP code
+      setZipError('Please enter a complete 5-digit ZIP code.');
+    } else if (zipValue.length === 0) {
+      // Clear error if field is empty
+      setZipError('');
     }
   };
 
@@ -83,7 +106,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
     <>
       <div className="section-title mt-4">
         <h3>Add your Address</h3>
-        <p>Provide the official location details of , including street, city, state, country, and ZIP code.</p>
+        <p>Enter a 5-digit ZIP code to automatically fill City and State, or manually provide all address details.</p>
       </div>
       
       {showUseMyAddress && (
@@ -111,13 +134,14 @@ const AddressForm: React.FC<AddressFormProps> = ({
               name="zipCode"
               value={addressData.zipCode}
               onChange={handleInputChange}
+              onBlur={handleZipBlur}
               maxLength={5}
-              pattern="[0-9]{5}"
-              placeholder="Zip Code *"
-              required
+              pattern="[0-9]*"
+              placeholder="Zip Code (5 digits for auto-fill)"
               style={{width: '100%'}}
             />
-            {loadingZip && <div className="text-muted small mt-1"><i className="fas fa-spinner fa-spin"></i> Loading...</div>}
+            {loadingZip && <div className="text-muted small mt-1"><i className="fas fa-spinner fa-spin"></i> Loading city and state...</div>}
+            {zipError && <div className="text-warning small mt-1"><i className="fas fa-exclamation-circle"></i> {zipError}</div>}
           </div>
         </div>
         <div className="col-md-12">
@@ -127,10 +151,9 @@ const AddressForm: React.FC<AddressFormProps> = ({
               name="state"
               value={addressData.state}
               onChange={handleInputChange}
-              required
               style={{width: '100%'}}
             >
-              <option value="">State *</option>
+              <option value="">State</option>
               {usStates.map(state => (
                 <option key={state.code} value={state.code}>{state.name}</option>
               ))}
@@ -146,8 +169,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
           name="city"
           value={addressData.city}
           onChange={handleInputChange}
-          placeholder="City *"
-          required
+          placeholder="City"
           style={{width: '100%'}}
         />
       </div>
@@ -159,8 +181,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
           name="address1"
           value={addressData.address1}
           onChange={handleInputChange}
-          placeholder="Address 1 *"
-          required
+          placeholder="Address 1"
           style={{width: '100%'}}
         />
       </div>

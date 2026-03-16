@@ -167,9 +167,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
       }
     }
 
-    if (name === 'zipCode' && value.length === 5) {
-      fetchLocationByZip(value);
-    }
+    // Removed ZIP code lookup from onChange - now handled in onBlur
   };
 
   const fetchLocationByZip = async (zipCode: string) => {
@@ -178,17 +176,21 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
       const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
       if (response.ok) {
         const data = await response.json();
-        const place = data.places[0];
-        const newFormData = {
-          ...formData,
-          state: place['state abbreviation'],
-          city: place['place name']
-        };
-        setFormData(newFormData);
-        updateFormData(newFormData);
+        if (data.places && data.places.length > 0) {
+          const place = data.places[0];
+          const newFormData = {
+            ...formData,
+            state: place['state abbreviation'],
+            city: place['place name']
+          };
+          setFormData(newFormData);
+          updateFormData(newFormData);
+        }
       }
+      // Keep ZIP code intact even if lookup fails
     } catch (error) {
       console.error('Error fetching location:', error);
+      // Keep ZIP code field intact on error
     } finally {
       setLoadingZip(false);
     }
@@ -414,8 +416,8 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                       position: 'absolute',
                       left: 0,
                       top: 0,
-                      width: '100px',
-                      height: '100%',
+                      width: '0px',
+                      height: '0px',
                       opacity: 0,
                       cursor: 'pointer'
                     }}
@@ -475,6 +477,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                     className="password-toggle"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label="Toggle password visibility"
+                    tabIndex={-1}
                   >
                     <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                   </button>
@@ -498,6 +501,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                     className="password-toggle"
                     onClick={() => setShowRePassword(!showRePassword)}
                     aria-label="Toggle password confirmation visibility"
+                    tabIndex={-1}
                   >
                     <i className={`fas ${showRePassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                   </button>
