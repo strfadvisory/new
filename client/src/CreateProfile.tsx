@@ -4,9 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import './CreateProfile.css';
 import { API_ENDPOINTS } from './config';
 import { updateSignupState, getSignupState, getFormData, updateFormData, SignupFormData } from './utils/signupState';
+import { validatePassword, PasswordStrength } from './utils/passwordValidator';
 import Breadcrumb from './components/Breadcrumb';
 import AuthSidebar from './components/AuthSidebar';
 import AddressForm from './components/AddressForm';
+import DesignationInput from './components/DesignationInput';
+import PasswordRequirements from './components/PasswordRequirements';
 
 interface CreateProfileProps {
   onBack: () => void;
@@ -35,6 +38,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
   const [showRePassword, setShowRePassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [useMyAddress, setUseMyAddress] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength | null>(null);
 
   const currentCountry = countries.find(c => c.code === selectedCountry) || { code: 'US', name: 'United States', dialCode: '+1', flag: 'us', prefix: '1' };
 
@@ -147,6 +151,12 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
       [name]: value
     };
     setFormData(newFormData);
+    
+    // Update password strength when password field changes
+    if (name === 'password') {
+      const strength = validatePassword(value);
+      setPasswordStrength(strength);
+    }
 
     updateFormData(newFormData);
     updateSignupState({ selectedCountry, agreeToTerms });
@@ -232,6 +242,13 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate password requirements
+    if (!passwordStrength || !passwordStrength.isValid) {
+      toast.error('Password does not meet all requirements');
+      return;
+    }
+    
     if (formData.password !== formData.rePassword) {
       toast.error('Passwords do not match');
       return;
@@ -366,18 +383,18 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                 )}
               </div>
             
-              <div className="form-group">
-                <input
-                  type="text"
-                  className="form-input"
-                  name="designation"
-                  placeholder="Designation *"
-                  value={formData.designation}
-                  onChange={handleInputChange}
-                  required
-                  style={{width: '100%'}}
-                />
-              </div>
+              <DesignationInput
+                value={formData.designation}
+                onChange={(value) => {
+                  const newFormData = {
+                    ...formData,
+                    designation: value
+                  };
+                  setFormData(newFormData);
+                  updateFormData(newFormData);
+                }}
+                required
+              />
             
               <div className="form-group">
                 <div className="phone-input">
@@ -482,15 +499,16 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                     <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                   </button>
                 </div>
+                {passwordStrength && <PasswordRequirements strength={passwordStrength} />}
               </div>
             
               <div className="form-group">
                 <div className="password-input">
                   <input
                     type={showRePassword ? "text" : "password"}
-                    className="form-input"
+                    className={`form-input ${formData.password && formData.rePassword && formData.password !== formData.rePassword ? 'is-invalid' : formData.password && formData.rePassword && formData.password === formData.rePassword ? 'is-valid' : ''}`}
                     name="rePassword"
-                    placeholder="Re Password *"
+                    placeholder="Confirm Password *"
                     value={formData.rePassword}
                     onChange={handleInputChange}
                     required
@@ -506,6 +524,11 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                     <i className={`fas ${showRePassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
                   </button>
                 </div>
+                {formData.password && formData.rePassword && (
+                  <div className={formData.password === formData.rePassword ? 'valid-feedback' : 'invalid-feedback'}>
+                    {formData.password === formData.rePassword ? 'Passwords match' : 'Passwords do not match'}
+                  </div>
+                )}
               </div>
             
               <div className="form-group">
@@ -532,7 +555,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
               <button 
                 type="submit" 
                 className="primary-button" 
-                disabled={loading || !agreeToTerms}
+                disabled={loading || !agreeToTerms || !passwordStrength?.isValid || formData.password !== formData.rePassword}
               >
                 {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : 'Continue'}
               </button>

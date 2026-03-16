@@ -66,9 +66,6 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = React.memo(({
   
   // Debug logging with API call tracking
   useEffect(() => {
-    if (subRolesData?.debug) {
-      console.log('SubRoles Debug Info:', subRolesData.debug);
-    }
     if (error) {
       console.error('SubRoles API Error:', error);
     }
@@ -76,7 +73,7 @@ const InviteMemberModal: React.FC<InviteMemberModalProps> = React.memo(({
       console.warn(`🚨 INFINITE LOOP DETECTED: user-subroles called ${callCount} times`);
       console.log('Global API Stats:', getGlobalStats());
     }
-  }, [subRolesData, error, callCount, getGlobalStats]);
+  }, [error, callCount, getGlobalStats]);
 
   useEffect(() => {
     if (isOpen) {
