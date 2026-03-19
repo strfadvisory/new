@@ -18,14 +18,16 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const [feePopupPos, setFeePopupPos] = useState<{ x: number; y: number } | undefined>();
   const feeValueRef = useRef<HTMLSpanElement>(null);
 
-  const year = selectedYearData?.year || 2032;
-  const value = selectedYearData?.value || "$234,333";
-  const isPositive = selectedYearData?.pos !== false;
-
   // Full projection record for the selected year (attached by FundGraph)
   const proj = selectedYearData?.projection;
 
   const config = excelData?.data?.data?.config || excelData?.data?.config || {};
+
+  // Derive sensible defaults from loaded excelData config rather than hardcoding
+  const configStartYear = config['Beginning Fiscal Year of the Report'] || new Date().getFullYear();
+  const year = selectedYearData?.year ?? configStartYear;
+  const value = selectedYearData?.value ?? 'N/A';
+  const isPositive = selectedYearData?.pos !== false;
   
   const monthlyFeePerUnit = config['Average Monthly Fee per Unit'] || 0;
   // Use the override if the user has adjusted it, otherwise show the config value

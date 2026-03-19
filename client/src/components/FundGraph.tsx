@@ -465,7 +465,19 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     
     return { cashflowData: generatedCashflowData, feeData: generatedFeeData };
   }, [excelData, feeOverride]);
-  
+
+  // Auto-select the first year whenever cashflowData is recalculated (new study loaded).
+  // This keeps LeftPanel in sync with the graph without requiring a manual click.
+  useEffect(() => {
+    if (cashflowData.length > 0 && onYearSelect) {
+      setSel1('f0');
+      setSel2('c0');
+      onYearSelect(cashflowData[0]);
+    }
+  // cashflowData reference only changes when excelData/feeOverride changes (useMemo)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cashflowData]);
+
   const d2 = sel2 !== null ? cashflowData[parseInt(sel2.replace("c",""))] : null;
 
   // List view - only show Cashflow Simulator Data table

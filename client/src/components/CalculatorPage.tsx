@@ -55,11 +55,6 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
     };
   }, []);
  
-  React.useEffect(() => {
-    console.log('[CalculatorPage.tsx] excelData changed, resetting selectedYearData');
-    setSelectedYearData(null);
-  }, [excelData]);
-
   const toggleLeftPanel = () => {
     setIsLeftPanelCollapsed(!isLeftPanelCollapsed);
   };
