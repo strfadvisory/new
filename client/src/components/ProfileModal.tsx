@@ -56,7 +56,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onCh
         }
       });
       const data = await response.json();
-      console.log('Profile data:', data); // Debug log
       setProfileData(data);
     } catch (error) {
       console.error('Error fetching profile:', error);

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useRef } from 'react';
+import MonthlyFeePopup from './MonthlyFeePopup';
 
 interface LeftPanelProps {
   isCollapsed: boolean;
@@ -9,7 +10,11 @@ interface LeftPanelProps {
 
 const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYearData, excelData }) => {
   console.log('[LeftPanel.tsx] Rendering with new design');
-  
+
+  const [feePopupOpen, setFeePopupOpen] = useState(false);
+  const [feePopupPos, setFeePopupPos] = useState<{ x: number; y: number } | undefined>();
+  const feeValueRef = useRef<HTMLSpanElement>(null);
+
   const year = selectedYearData?.year || 2032;
   const value = selectedYearData?.value || "$234,333";
   const isPositive = selectedYearData?.pos !== false;
@@ -20,6 +25,14 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const monthlyFeePerUnit = config['Average Monthly Fee per Unit'] || 345;
   const startingBalance = config['Beginning Reserve Funds (Dollar Amount)'] || 234333;
   const annualFee = (config['Average Monthly Fee per Unit'] || 345) * (config['Total Number of Housing Units'] || 1) * 12;
+
+  const handleFeeClick = () => {
+    if (feeValueRef.current) {
+      const rect = feeValueRef.current.getBoundingClientRect();
+      setFeePopupPos({ x: rect.right + 8, y: rect.top });
+    }
+    setFeePopupOpen(true);
+  };
   
   return (
     <div style={{
@@ -69,7 +82,22 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         {/* Quick Stats */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
           <span style={{ fontSize: '14px', color: '#374151' }}>Monthly Fee</span>
-          <span style={{ fontSize: '14px', fontWeight: '500', color: '#10b981' }}>${monthlyFeePerUnit}</span>
+          <span
+            ref={feeValueRef}
+            onClick={handleFeeClick}
+            style={{
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#10b981',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              textDecorationStyle: 'dashed',
+              textUnderlineOffset: '3px',
+            }}
+            title="Click to adjust Monthly Fee"
+          >
+            ${monthlyFeePerUnit}
+          </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
           <span style={{ fontSize: '14px', color: '#374151' }}>Year Priority</span>
@@ -105,6 +133,12 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
           </div>
         ))}
       </div>
+      <MonthlyFeePopup
+        isOpen={feePopupOpen}
+        onClose={() => setFeePopupOpen(false)}
+        monthlyFee={monthlyFeePerUnit}
+        initialPosition={feePopupPos}
+      />
     </div>
   );
 };
