@@ -1,10 +1,20 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 
+export interface FeeAdjustmentConfig {
+  monthlyFeePerUnit: number;       // new monthly fee per unit (slider)
+  optimizeAll?: boolean;           // use calculateOptimalFee to eliminate all deficits
+  inflationRate?: number;          // % e.g. 3.5
+  maxPctIncrease?: number;         // % cap
+  safetyNet?: number;              // $
+  cashReserveThreshold?: number;   // $
+}
+
 interface MonthlyFeePopupProps {
   isOpen: boolean;
   onClose: () => void;
   monthlyFee: number;
   initialPosition?: { x: number; y: number };
+  onApply?: (config: FeeAdjustmentConfig) => void;
 }
 
 // Pill toggle component
@@ -28,8 +38,8 @@ const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ 
 
 // Slider with green track + thumb
 const SliderRow: React.FC<{
-  value: number; onChange: (v: number) => void; max?: number; suffix?: string;
-}> = ({ value, onChange, max = 200, suffix = '$' }) => {
+  value: number; onChange: (v: number) => void; onCommit?: () => void; max?: number; suffix?: string;
+}> = ({ value, onChange, onCommit, max = 200, suffix = '$' }) => {
   const pct = Math.min(100, Math.max(0, (value / max) * 100));
   return (
     <div style={{ position: 'relative', height: '16px' }}>
@@ -42,6 +52,8 @@ const SliderRow: React.FC<{
       <input
         type="range" min={0} max={max} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
+        onMouseUp={onCommit}
+        onTouchEnd={onCommit}
         style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', margin: 0, padding: 0 }}
       />
       <div style={{
@@ -85,6 +97,7 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
   onClose,
   monthlyFee,
   initialPosition,
+  onApply,
 }) => {
   const [activeTab, setActiveTab] = useState<'manual' | 'advanced'>('manual');
   const [settings, setSettings] = useState({
@@ -93,17 +106,39 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
     safetyNet: '',
     cashReserveThreshold: '',
   });
-  const [sliderValue, setSliderValue] = useState(30);
+  const [sliderValue, setSliderValue] = useState(monthlyFee || 0);
 
-  // Advanced tab state
-  const [optimizeAll, setOptimizeAll] = useState(true);
+  // Sync slider when the base monthly fee prop changes (new study loaded)
+  useEffect(() => {
+    setSliderValue(monthlyFee || 0);
+  }, [monthlyFee]);
+
+  const sliderMax = Math.max(500, Math.ceil((monthlyFee || 100) * 3 / 50) * 50);
+
+  // ── Advanced tab state (must be declared BEFORE triggerApply so they're captured in the closure)
+  const [optimizeAll, setOptimizeAll] = useState(false);
   const [customRangeEnabled, setCustomRangeEnabled] = useState(true);
   const [customStartYear, setCustomStartYear] = useState('');
   const [customEndYear, setCustomEndYear] = useState('');
-  const [customSlider, setCustomSlider] = useState(30);
+  const [customSlider, setCustomSlider] = useState(monthlyFee || 0);
   const [gradualStartYear, setGradualStartYear] = useState('');
   const [gradualEndYear, setGradualEndYear] = useState('');
   const [gradualSlider, setGradualSlider] = useState(20);
+
+  // Collect current state and call onApply.
+  // Pass `overrides` to immediately use a new value before React state update flushes.
+  const triggerApply = useCallback((overrides?: { optimizeAll?: boolean }) => {
+    if (!onApply) return;
+    const effectiveOptimizeAll = overrides?.optimizeAll ?? optimizeAll;
+    onApply({
+      monthlyFeePerUnit: sliderValue,
+      optimizeAll: effectiveOptimizeAll,
+      inflationRate:         settings.inflationRate         ? parseFloat(settings.inflationRate)         : undefined,
+      maxPctIncrease:        settings.maxMonthlyFees        ? parseFloat(settings.maxMonthlyFees)        : undefined,
+      safetyNet:             settings.safetyNet             ? parseFloat(settings.safetyNet)             : undefined,
+      cashReserveThreshold:  settings.cashReserveThreshold  ? parseFloat(settings.cashReserveThreshold) : undefined,
+    });
+  }, [sliderValue, settings, onApply, optimizeAll]);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [initialized, setInitialized] = useState(false);
@@ -190,10 +225,10 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
       {/* Input Fields */}
       <div style={{ padding: '0 16px 12px' }}>
         {[
-          { key: 'maxMonthlyFees', label: 'Maximum % Monthly Fees' },
-          { key: 'inflationRate', label: 'Inflation Rate' },
-          { key: 'safetyNet', label: 'Safety Net ®' },
-          { key: 'cashReserveThreshold', label: 'Cash Reserve Threshold' },
+          { key: 'maxMonthlyFees', label: 'Maximum % Monthly Fees', unit: '%' },
+          { key: 'inflationRate',  label: 'Inflation Rate',          unit: '%' },
+          { key: 'safetyNet',      label: 'Safety Net ®',            unit: '$' },
+          { key: 'cashReserveThreshold', label: 'Cash Reserve Threshold', unit: '$' },
         ].map((field, idx) => (
           <div
             key={field.key}
@@ -208,6 +243,7 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
               placeholder={field.label}
               value={settings[field.key as keyof typeof settings]}
               onChange={(e) => setSettings((prev) => ({ ...prev, [field.key]: e.target.value }))}
+              onBlur={() => triggerApply()}
               style={{
                 flex: 1, border: 'none', outline: 'none', padding: '0 8px',
                 fontSize: '14px', color: '#000', background: 'transparent',
@@ -215,7 +251,7 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
               }}
             />
             <div style={{ width: '1px', height: '100%', background: '#dedede' }} />
-            <span style={{ padding: '0 10px', fontSize: '14px', color: '#000', flexShrink: 0 }}>%</span>
+            <span style={{ padding: '0 10px', fontSize: '14px', color: '#000', flexShrink: 0 }}>{field.unit}</span>
           </div>
         ))}
       </div>
@@ -259,7 +295,7 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
             <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Current Monthly Fees:</span>
             <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${sliderValue}</span>
           </div>
-          <SliderRow value={sliderValue} onChange={setSliderValue} />
+          <SliderRow value={sliderValue} max={sliderMax} onChange={setSliderValue} onCommit={triggerApply} />
         </div>
       )}
 
@@ -277,14 +313,21 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
               <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Current Monthly Fees:</span>
               <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${sliderValue}</span>
             </div>
-            <SliderRow value={sliderValue} onChange={setSliderValue} />
+            <SliderRow value={sliderValue} max={sliderMax} onChange={setSliderValue} onCommit={triggerApply} />
           </div>
 
           {/* ── Optimize All Monthly Fees ── */}
           <div style={{ borderTop: '1px solid #e5e5e5', padding: '16px 17px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
               <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Optimize All Monthly Fees</span>
-              <Toggle value={optimizeAll} onChange={setOptimizeAll} />
+              <Toggle
+                value={optimizeAll}
+                onChange={(v) => {
+                  setOptimizeAll(v);
+                  // Pass the new value directly — state update is async so closure would still see old value
+                  triggerApply({ optimizeAll: v });
+                }}
+              />
             </div>
             <p style={{ fontSize: '12px', color: '#000', margin: 0, lineHeight: '1.5', fontWeight: '400' }}>
               When this option is enabled, all previous and future deficits will also be optimized and any manual Monthly Fees will be overriden.
@@ -305,7 +348,7 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
               <span style={{ fontSize: '14px', fontWeight: '400', color: '#000' }}>Current Monthly Fees:</span>
               <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${customSlider}</span>
             </div>
-            <SliderRow value={customSlider} onChange={setCustomSlider} />
+            <SliderRow value={customSlider} onChange={setCustomSlider} onCommit={triggerApply} />
           </div>
 
           {/* ── Gradual Custom Range ── */}
@@ -327,7 +370,7 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
               <span style={{ fontSize: '14px', fontWeight: '400', color: '#000' }}>Current Monthly Fees:</span>
               <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>{gradualSlider}%</span>
             </div>
-            <SliderRow value={gradualSlider} onChange={setGradualSlider} max={100} suffix="%" />
+            <SliderRow value={gradualSlider} onChange={setGradualSlider} onCommit={triggerApply} max={100} suffix="%" />
           </div>
 
         </div>

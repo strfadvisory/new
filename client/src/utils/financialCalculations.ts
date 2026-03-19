@@ -5,6 +5,7 @@ export interface FinancialConfig {
   monthlyFeePerUnit: number;
   totalUnits: number;
   inflationRate: number;
+  investmentRate: number;   // Suggested Rate of Return on Investments (as decimal, e.g. 0.01 for 1%)
   currentYear: number;
   yearsToProject: number;
 }
@@ -76,13 +77,19 @@ export function calculateFinancialProjections(
   let cumulativeContributions = 0;
   let cumulativeExpenses = 0;
   
-  // Group expenses by year with proper inflation calculation
+  // Group expenses by year with inflation — recurring every expectedLife years
   const expensesByYear = new Map<number, number>();
   items.forEach(item => {
-    const yearIndex = item.remainingLife;
-    // Apply compound inflation to replacement cost
-    const inflatedCost = calculateCompoundGrowth(item.replacementCost, config.inflationRate, yearIndex);
-    expensesByYear.set(yearIndex, (expensesByYear.get(yearIndex) || 0) + inflatedCost);
+    // Guard: skip items with no expected life (would cause infinite loop)
+    if (!item.expectedLife || item.expectedLife <= 0) return;
+
+    // First replacement at remainingLife, then every expectedLife years after that
+    let yearIndex = item.remainingLife;
+    while (yearIndex < config.yearsToProject) {
+      const inflatedCost = calculateCompoundGrowth(item.replacementCost, config.inflationRate, yearIndex);
+      expensesByYear.set(yearIndex, (expensesByYear.get(yearIndex) || 0) + inflatedCost);
+      yearIndex += item.expectedLife;
+    }
   });
   
   console.log('[FinancialCalculations] Expenses by year:', Object.fromEntries(expensesByYear));
@@ -95,8 +102,8 @@ export function calculateFinancialProjections(
     // Apply inflation to contributions starting from year 1
     const inflatedContribution = calculateCompoundGrowth(annualContribution, config.inflationRate, i);
     
-    // Calculate interest on opening balance (conservative approach)
-    const interest = openingBalance * (config.inflationRate * 0.8); // Slightly lower than inflation
+    // Calculate interest/investment return on positive opening balance only
+    const interest = openingBalance > 0 ? openingBalance * config.investmentRate : 0;
     
     // Get expenses for this year
     const expenses = expensesByYear.get(i) || 0;
@@ -162,7 +169,8 @@ export function calculateOptimalFee(
   targetBalance: number = 0
 ): number {
   let low = 0;
-  let high = config.monthlyFeePerUnit * 5;
+  // Guard: if current fee is 0 or very small, set a meaningful upper bound
+  let high = Math.max(config.monthlyFeePerUnit * 10, 5000);
   let optimal = config.monthlyFeePerUnit;
   
   // Binary search for optimal fee

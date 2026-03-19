@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import React from "react";
 import { calculateFinancialProjections, calculateHealthScore, calculateOptimalFee, FinancialConfig, ReserveItem } from '../utils/financialCalculations';
+import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
 
 interface FundGraphProps {
   association?: string;
@@ -8,47 +9,11 @@ interface FundGraphProps {
   onYearSelect?: (yearData: any) => void;
   excelData?: any;
   viewMode?: 'graph' | 'list';
+  feeOverride?: FeeAdjustmentConfig | null;
 }
 
 // ─────────────────────────────────────────────────────────────────
-// EXACT DATA from HTML source
-// positive-bar height% × 12rem = actual px bar height
-// negative-bar height% × 12rem = actual px bar height
-// ─────────────────────────────────────────────────────────────────
-const CASHFLOW = [
-  { year:2022, value:"$1,612,204",  pos:true,  barPct:16,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2023, value:"$1,960,192",  pos:true,  barPct:21,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2024, value:"$1,832,520",  pos:true,  barPct:19,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2025, value:"$2,189,321",  pos:true,  barPct:25,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2026, value:"$2,516,298",  pos:true,  barPct:30,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2027, value:"$2,205,418",  pos:true,  barPct:25,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2028, value:"$2,420,355",  pos:true,  barPct:29,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2029, value:"$2,675,869",  pos:true,  barPct:33,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2030, value:"$1,451,076",  pos:true,  barPct:13,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2031, value:"$1,436,107",  pos:true,  barPct:13,  negPct:1, studyName: 'Reserve Study'  },
-  { year:2032, value:"$1,123,095",  pos:true,  barPct:8,   negPct:1, studyName: 'Reserve Study'  },
-  { year:2033, value:"-$179,405",   pos:false, barPct:1,   negPct:1, studyName: 'Reserve Study'  },
-  { year:2034, value:"-$30,339",    pos:false, barPct:1,   negPct:1, studyName: 'Reserve Study'  },
-  { year:2035, value:"$129,961",    pos:true,  barPct:1,   negPct:1, studyName: 'Reserve Study'  },
-  { year:2036, value:"-$1,157,289", pos:false, barPct:1,   negPct:8, studyName: 'Reserve Study'  },
-  { year:2037, value:"-$1,093,889", pos:false, barPct:1,   negPct:7, studyName: 'Reserve Study'  },
-  { year:2038, value:"-$948,789",   pos:false, barPct:1,   negPct:5, studyName: 'Reserve Study'  },
-  { year:2039, value:"-$2,328,289", pos:false, barPct:1,   negPct:27, studyName: 'Reserve Study' },
-  { year:2040, value:"-$2,444,339", pos:false, barPct:1,   negPct:29, studyName: 'Reserve Study' },
-  { year:2041, value:"-$2,280,839", pos:false, barPct:1,   negPct:26, studyName: 'Reserve Study' },
-  { year:2042, value:"-$4,035,393", pos:false, barPct:1,   negPct:55, studyName: 'Reserve Study' },
-  { year:2043, value:"-$3,885,093", pos:false, barPct:1,   negPct:52, studyName: 'Reserve Study' },
-  { year:2044, value:"-$3,745,543", pos:false, barPct:1,   negPct:50, studyName: 'Reserve Study' },
-  { year:2045, value:"-$5,012,043", pos:false, barPct:1,   negPct:71, studyName: 'Reserve Study' },
-  { year:2046, value:"-$4,862,977", pos:false, barPct:1,   negPct:68, studyName: 'Reserve Study' },
-  { year:2047, value:"-$4,825,577", pos:false, barPct:1,   negPct:68, studyName: 'Reserve Study' },
-  { year:2048, value:"-$6,112,827", pos:false, barPct:1,   negPct:88, studyName: 'Reserve Study' },
-  { year:2049, value:"-$6,184,127", pos:false, barPct:1,   negPct:90, studyName: 'Reserve Study' },
-  { year:2050, value:"-$6,027,027", pos:false, barPct:1,   negPct:87, studyName: 'Reserve Study' },
-];
-
-// ─────────────────────────────────────────────────────────────────
-// EXACT COLORS from CSS
+// COLORS
 // ─────────────────────────────────────────────────────────────────
 const GREEN      = "#4CAF50";   // positive bar + line
 const GREEN_DK   = "#155217";   // ghost outline
@@ -75,20 +40,51 @@ const VAL_H_BOT  = 48;  // 3rem
 // ─────────────────────────────────────────────────────────────────
 // GRAPH 1 — Monthly Fee Collection (synchronized with cashflow)
 // ─────────────────────────────────────────────────────────────────
-function Graph1({ sel, onSel, onYearSelect, feeData }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void; feeData: any[] }) {
+function Graph1({ sel, onSel, onYearSelect, feeData, resetKey }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void; feeData: any[]; resetKey?: any }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollStart = useRef(0);
+
+  // ── Reset to first year when data changes
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
+    }
+  }, [resetKey]);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    // Don't steal clicks from column cells
+    if (target.closest('[data-col]')) return;
+    isDragging.current = true;
+    startX.current = e.pageX;
+    scrollStart.current = scrollRef.current?.scrollLeft ?? 0;
+    if (scrollRef.current) scrollRef.current.style.cursor = 'grabbing';
+  };
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    e.preventDefault();
+    if (scrollRef.current) scrollRef.current.scrollLeft = scrollStart.current - (e.pageX - startX.current);
+  };
+  const stopDrag = () => {
+    isDragging.current = false;
+    if (scrollRef.current) scrollRef.current.style.cursor = 'grab';
+  };
+
   return (
     <div style={{ borderBottom:"2px solid #e8e8e8", background:"#fff" }}>
       <div style={{ padding:"12px 16px 6px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
         <span style={{ fontWeight:700, fontSize:15, color:"#111",  }}>Monthly fee collection</span>
         <span style={{ color:"#bbb", fontSize:16, cursor:"pointer", letterSpacing:3 }}>•••</span>
       </div>
-      <div style={{ overflowX:"auto" }}>
+      <div ref={scrollRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={stopDrag} onMouseLeave={stopDrag} style={{ overflowX:"auto", cursor:"grab", userSelect:"none" }}>
         <div style={{ display:"flex", minWidth:"max-content", padding:"0 16px" }}>
           {feeData.map((data, i) => {
             const active = sel === `f${i}`;
             const h = data.height ?? 28;
             return (
-              <div key={i} onClick={() => {
+              <div key={i} data-col="true" onClick={() => {
                 onSel(active ? null : `f${i}`);
                 if (onYearSelect) {
                   onYearSelect({ year: data.year, value: data.feeValue, pos: true });
@@ -134,7 +130,37 @@ function Graph1({ sel, onSel, onYearSelect, feeData }: { sel: string | null; onS
 //   negative-line-t-odd:  bottom:0, height:41.6px → extends UP (odd)
 //   negative-line-b:      top:0,    height:40px → extends DOWN
 // ─────────────────────────────────────────────────────────────────
-function Graph2({ sel, onSel, onYearSelect, cashflowData = CASHFLOW }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void; cashflowData?: any[] }) {
+function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void; cashflowData?: any[]; resetKey?: any }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollStart = useRef(0);
+
+  // ── Reset to first year when data changes
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
+    }
+  }, [resetKey]);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('[data-col]')) return;
+    isDragging.current = true;
+    startX.current = e.pageX;
+    scrollStart.current = scrollRef.current?.scrollLeft ?? 0;
+    if (scrollRef.current) scrollRef.current.style.cursor = 'grabbing';
+  };
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    e.preventDefault();
+    if (scrollRef.current) scrollRef.current.scrollLeft = scrollStart.current - (e.pageX - startX.current);
+  };
+  const stopDrag = () => {
+    isDragging.current = false;
+    if (scrollRef.current) scrollRef.current.style.cursor = 'grab';
+  };
+
   return (
     <div style={{ background:"#fff" }}>
       <div style={{ display:"flex", alignItems:"center", padding:"12px 16px 4px", gap:8, borderTop:"1px solid #f0f0f0" }}>
@@ -145,7 +171,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = CASHFLOW }: { sel: st
         </div>
       </div>
 
-      <div style={{ overflowX:"auto", padding:"0 16px 28px" }}>
+      <div ref={scrollRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={stopDrag} onMouseLeave={stopDrag} style={{ overflowX:"auto", padding:"0 16px 28px", cursor:"grab", userSelect:"none" }}>
         <div style={{ display:"inline-flex", flexDirection:"row" }}>
           {cashflowData.map((d, i) => {
             const active  = sel === `c${i}`;
@@ -158,6 +184,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = CASHFLOW }: { sel: st
 
             return (
               <div key={i}
+                data-col="true"
                 data-positive={String(isPos)}
                 onClick={() => {
                   onSel(active ? null : `c${i}`);
@@ -171,8 +198,8 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = CASHFLOW }: { sel: st
                   background: active ? "#ccc" : "transparent",
                   display:"flex", flexDirection:"column", alignItems:"center",
                 }}
-                onMouseEnter={e => e.currentTarget.style.background = active ? "#ccc" : "#eee"}
-                onMouseLeave={e => e.currentTarget.style.background = active ? "#ccc" : "transparent"}
+                onMouseEnter={e => { if (!isDragging.current) e.currentTarget.style.background = active ? "#ccc" : "#eee"; }}
+                onMouseLeave={e => { if (!isDragging.current) e.currentTarget.style.background = active ? "#ccc" : "transparent"; }}
               >
 
                 {/* ── POSITIVE BAR ZONE (12rem, bars grow from bottom) ── */}
@@ -316,14 +343,22 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = CASHFLOW }: { sel: st
 // ─────────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────────
-const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph' }) => {
+const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph', feeOverride }) => {
   const [sel1, setSel1] = useState<string | null>(null);
   const [sel2, setSel2] = useState<string | null>(null);
-  
+  const listTableScrollRef = useRef<HTMLDivElement>(null);
+
+  // Unique key derived from excelData identity — used to trigger scroll-reset in sub-graphs
+  const dataResetKey = excelData?.timestamp ?? excelData?.studyId ?? excelData;
+
   React.useEffect(() => {
     console.log('[FundGraph.tsx] excelData changed, resetting selections');
     setSel1(null);
     setSel2(null);
+    // Reset list-view table scroll to first year
+    if (listTableScrollRef.current) {
+      listTableScrollRef.current.scrollLeft = 0;
+    }
   }, [excelData]);
   
   const { cashflowData, feeData } = React.useMemo(() => {
@@ -331,14 +366,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     console.log('[FundGraph.tsx] Complete excelData received:', excelData);
     
     if (!excelData?.data) {
-      console.log('[FundGraph.tsx] No excelData, using default CASHFLOW');
-      const defaultFeeData = Array.from({ length: 25 }, (_, i) => ({
-        year: 2025 + (i % 5),
-        feeValue: '$150',
-        percentage: 15,
-        height: 28 + (i % 3) * 10
-      }));
-      return { cashflowData: CASHFLOW, feeData: defaultFeeData };
+      return { cashflowData: [], feeData: [] };
     }
     
     // Handle nested data structure from SimulatorSubheader
@@ -352,13 +380,20 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     
     const financialConfig: FinancialConfig = {
       startingBalance: config['Beginning Reserve Funds (Dollar Amount)'] || 0,
-      monthlyFeePerUnit: config['Average Monthly Fee per Unit'] || 0,
+      // Base fee — will be overridden below if optimizeAll is active
+      monthlyFeePerUnit: feeOverride?.monthlyFeePerUnit != null
+        ? feeOverride.monthlyFeePerUnit
+        : (config['Average Monthly Fee per Unit'] || 0),
       totalUnits: config['Total Number of Housing Units'] || 1,
-      inflationRate: (config['Inflation Rate Used in the Report'] || 0) / 100,
+      // If user has set an inflation rate override, convert % → decimal
+      inflationRate: feeOverride?.inflationRate != null
+        ? feeOverride.inflationRate / 100
+        : (config['Inflation Rate Used in the Report'] || 0) / 100,
+      investmentRate: (config['Suggested Rate of Return on Investments'] || 0) / 100,
       currentYear: config['Beginning Fiscal Year of the Report'] || new Date().getFullYear(),
-      yearsToProject: 29
+      yearsToProject: config['Number of Years Covered in the Report'] || 30
     };
-    
+
     const reserveItems: ReserveItem[] = items.map((item: any) => ({
       itemName: item.itemName,
       expectedLife: item.expectedLife,
@@ -366,13 +401,19 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
       replacementCost: item.replacementCost,
       sirsType: item.sirsType
     }));
+
+    // ── OPTIMIZE ALL: compute the minimum fee that keeps balance ≥ 0 across all years
+    const activeConfig = feeOverride?.optimizeAll
+      ? { ...financialConfig, monthlyFeePerUnit: calculateOptimalFee(financialConfig, reserveItems) }
+      : financialConfig;
     
-    console.log('[FundGraph.tsx] Financial Config:', financialConfig);
+    console.log('[FundGraph.tsx] Financial Config:', activeConfig);
     console.log('[FundGraph.tsx] Reserve Items:', reserveItems.length);
+    console.log('[FundGraph.tsx] Optimize All:', feeOverride?.optimizeAll, '| Effective fee:', activeConfig.monthlyFeePerUnit);
     
-    const { projections, metrics } = calculateFinancialProjections(financialConfig, reserveItems);
+    const { projections, metrics } = calculateFinancialProjections(activeConfig, reserveItems);
     const healthScore = calculateHealthScore(projections);
-    const optimalFee = calculateOptimalFee(financialConfig, reserveItems);
+    const optimalFee = calculateOptimalFee(activeConfig, reserveItems);
     
     console.log('[FundGraph.tsx] Financial Metrics:', metrics);
     console.log('[FundGraph.tsx] Health Score:', healthScore.toFixed(2));
@@ -401,16 +442,21 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     });
     
     // Generate fee collection data synchronized with cashflow years
-    const monthlyFee = financialConfig.monthlyFeePerUnit * financialConfig.totalUnits;
+    const monthlyFee = activeConfig.monthlyFeePerUnit * activeConfig.totalUnits;
     const generatedFeeData = projections.map((proj, i) => {
-      const inflatedFee = monthlyFee * Math.pow(1 + financialConfig.inflationRate, i);
-      const feePercentage = i === 0 ? 15 : Math.min(25, 15 + (i * 0.5)); // Progressive increase
-      const barHeight = Math.min(60, 20 + (feePercentage * 1.5)); // Scale height with percentage
-      
+      const inflatedFee = monthlyFee * Math.pow(1 + activeConfig.inflationRate, i);
+      const annualInflatedFee = inflatedFee * 12;
+      // Fee % = annual contribution as % of that year's expenses (capped at 999%)
+      const feePercentage = proj.expenses > 0
+        ? Math.min(999, Math.round((annualInflatedFee / proj.expenses) * 100))
+        : 100;
+      const maxFee = Math.max(...projections.map(p => p.contributions));
+      const barHeight = maxFee > 0 ? Math.max(4, Math.round((annualInflatedFee / maxFee) * 60)) : 20;
+
       return {
         year: proj.year,
         feeValue: `$${Math.round(inflatedFee).toLocaleString()}`,
-        percentage: Math.round(feePercentage),
+        percentage: feePercentage,
         height: barHeight
       };
     });
@@ -419,7 +465,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     console.log('[FundGraph.tsx] Generated fee data synchronized:', generatedFeeData.slice(0, 3));
     
     return { cashflowData: generatedCashflowData, feeData: generatedFeeData };
-  }, [excelData]);
+  }, [excelData, feeOverride]);
   
   const d2 = sel2 !== null ? cashflowData[parseInt(sel2.replace("c",""))] : null;
 
@@ -428,7 +474,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     return (
       <div style={{ fontFamily: "system-ui,sans-serif", background: "white", minHeight: "calc(100vh - 100px)", padding: '20px' }}>
         <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '20px', color: '#1f2937' }}>Cashflow Simulator Data ({cashflowData[0]?.studyName || 'Reserve Study'})</h2>
-        <div style={{ overflowX: 'auto' }}>
+        <div ref={listTableScrollRef} style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             <thead>
               <tr style={{ background: '#f1f5f9' }}>
@@ -488,7 +534,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     <div style={{ fontFamily:"system-ui,sans-serif", background:"white", minHeight:"calc(100vh - 100px)" }}>
       <div style={{ background:"#fff", margin:"0px auto",    overflow:"hidden" }}>
 
-        <Graph1 sel={sel1} onSel={setSel1} onYearSelect={(yearData) => {
+        <Graph1 sel={sel1} resetKey={dataResetKey} onSel={setSel1} onYearSelect={(yearData) => {
           // Find matching cashflow data for the same year
           const cashflowIndex = cashflowData.findIndex(c => c.year === yearData.year);
           if (cashflowIndex >= 0) {
@@ -502,7 +548,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
 
      
 
-        <Graph2 sel={sel2} onSel={setSel2} onYearSelect={(yearData) => {
+        <Graph2 sel={sel2} resetKey={dataResetKey} onSel={setSel2} onYearSelect={(yearData) => {
           // Find matching fee data index for the same year
           const feeIndex = feeData.findIndex(f => f.year === yearData.year);
           if (feeIndex >= 0) {

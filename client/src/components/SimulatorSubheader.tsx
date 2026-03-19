@@ -190,20 +190,12 @@ const Dropdown: React.FC<DropdownProps> = ({
       const data = await apiService.get<User[]>('/auth/users');
       const usersWithRoles = Array.isArray(data) ? data.map(user => ({
         ...user,
-        role: user.role || (Math.random() > 0.5 ? 'Manager' : 'Member')
-      })) : [
-        { _id: '1', firstName: 'James', lastName: 'Anderson', email: 'james@example.com', role: 'Member' },
-        { _id: '2', firstName: 'Michael', lastName: '', email: 'michael@example.com', role: 'Members' },
-        { _id: '3', firstName: 'Johnson', lastName: '', email: 'johnson@example.com', role: 'Manager' }
-      ];
+        role: user.role || 'Member'
+      })) : [];
       setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error fetching users:', error);
-      setUsers([
-        { _id: '1', firstName: 'James', lastName: 'Anderson', email: 'james@example.com', role: 'Member' },
-        { _id: '2', firstName: 'Michael', lastName: '', email: 'michael@example.com', role: 'Members' },
-        { _id: '3', firstName: 'Johnson', lastName: '', email: 'johnson@example.com', role: 'Manager' }
-      ]);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -217,32 +209,10 @@ const Dropdown: React.FC<DropdownProps> = ({
     setLoading(true);
     try {
       const data = await apiService.get<Company[]>('/roles/company-types');
-      setCompanies(Array.isArray(data) ? data : [
-        { _id: '1', name: 'DemoTech Solutions' },
-        { _id: '2', name: 'SampleCorp Ltd.' },
-        { _id: '3', name: 'Testify Systems' },
-        { _id: '4', name: 'Alpha Demo Pvt. Ltd.' },
-        { _id: '5', name: 'Mockup Technologies' },
-        { _id: '6', name: 'BetaWorks Inc.' },
-        { _id: '7', name: 'Placeholder Enterprises' },
-        { _id: '8', name: 'TrialRun Solutions' },
-        { _id: '9', name: 'Prototype Labs' },
-        { _id: '10', name: 'ExampleSoft Technologies' }
-      ]);
+      setCompanies(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching companies:', error);
-      setCompanies([
-        { _id: '1', name: 'DemoTech Solutions' },
-        { _id: '2', name: 'SampleCorp Ltd.' },
-        { _id: '3', name: 'Testify Systems' },
-        { _id: '4', name: 'Alpha Demo Pvt. Ltd.' },
-        { _id: '5', name: 'Mockup Technologies' },
-        { _id: '6', name: 'BetaWorks Inc.' },
-        { _id: '7', name: 'Placeholder Enterprises' },
-        { _id: '8', name: 'TrialRun Solutions' },
-        { _id: '9', name: 'Prototype Labs' },
-        { _id: '10', name: 'ExampleSoft Technologies' }
-      ]);
+      setCompanies([]);
     } finally {
       setLoading(false);
     }
@@ -889,10 +859,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [showAddReserveStudyPopup, setShowAddReserveStudyPopup] = useState(false);
   const [refreshAssociations, setRefreshAssociations] = useState(0);
   const [refreshReserveStudies, setRefreshReserveStudies] = useState(0);
-  const [dataFetched, setDataFetched] = useState<Set<string>>(new Set());
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
   const [fetchingStudyId, setFetchingStudyId] = useState<string>('');
-  const [lastFetchedStudy, setLastFetchedStudy] = useState<string>('');
   const [associations, setAssociations] = useState<Association[]>([]);
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
@@ -909,8 +877,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
 
   // Handle reset functionality
   const handleReset = () => {
-    // Clear all simulator state
-    setDataFetched(new Set());
+    setIsLoadingData(false);
+    setFetchingStudyId('');
     setSelectedView('Graph View');
     
     // Call parent reset if provided
@@ -921,64 +889,26 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
 
   useEffect(() => {
     const fetchExcelData = async () => {
-      // Multiple layers of protection against duplicate calls
       if (!simulatorState.selectedAssociation || !simulatorState.selectedCompany || !simulatorState.selectedStudyId || !onShowCalculator) {
-        console.log('[SimulatorSubheader] Missing required data for calculator:', {
-          association: simulatorState.selectedAssociation,
-          company: simulatorState.selectedCompany,
-          studyId: simulatorState.selectedStudyId,
-          hasCallback: !!onShowCalculator
-        });
         return;
       }
-      
-      // Ensure association data is also valid
       if (!simulatorState.selectedAssociationData?._id) {
-        console.log('[SimulatorSubheader] Missing association data for calculator');
         return;
       }
-      
-      // Check if already fetched
-      if (dataFetched.has(simulatorState.selectedStudyId)) {
-        console.log('[SimulatorSubheader] Data already fetched for study:', simulatorState.selectedStudyId);
-        return;
-      }
-      
-      // Check if currently loading
-      if (isLoadingData) {
-        console.log('[SimulatorSubheader] Already loading data, skipping...');
-        return;
-      }
-      
-      // Check if this specific study is being fetched
+      // Prevent duplicate in-flight requests for the same study
       if (fetchingStudyId === simulatorState.selectedStudyId) {
-        console.log('[SimulatorSubheader] Already fetching this study:', simulatorState.selectedStudyId);
+        console.log('[SimulatorSubheader] Already fetching this study, skipping duplicate:', simulatorState.selectedStudyId);
         return;
       }
-      
-      // Check if this was the last fetched study
-      if (lastFetchedStudy === simulatorState.selectedStudyId) {
-        console.log('[SimulatorSubheader] This study was just fetched:', simulatorState.selectedStudyId);
-        return;
-      }
-      
-      console.log('[SimulatorSubheader] Starting fetch for study:', simulatorState.selectedStudyId);
+
+      console.log('[SimulatorSubheader] Fetching fresh data for study:', simulatorState.selectedStudyId);
       setFetchingStudyId(simulatorState.selectedStudyId);
       setIsLoadingData(true);
-      setLastFetchedStudy(simulatorState.selectedStudyId);
-      
+
       try {
         const response = await apiService.get<any>(`/reserve-studies/${simulatorState.selectedStudyId}/data`);
-        console.log('[SimulatorSubheader] Excel data fetched successfully for:', simulatorState.selectedStudyId);
-        
-        // Mark as fetched
-        setDataFetched(prev => {
-          const newSet = new Set(prev);
-          newSet.add(simulatorState.selectedStudyId);
-          return newSet;
-        });
-        
-        // Send complete JSON to calculator page
+        console.log('[SimulatorSubheader] Data fetched successfully:', simulatorState.selectedStudyId);
+
         const completeData = {
           studyId: simulatorState.selectedStudyId,
           association: simulatorState.selectedAssociation,
@@ -986,28 +916,20 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           data: response.data || response,
           timestamp: new Date().toISOString()
         };
-        
-        console.log('[SimulatorSubheader] Triggering calculator with data');
+
         onShowCalculator(simulatorState.selectedAssociation, simulatorState.selectedCompany, completeData);
       } catch (error) {
         console.error('[SimulatorSubheader] Error fetching Excel data:', error);
-        // Reset last fetched on error to allow retry
-        setLastFetchedStudy('');
-        // Still show calculator even if data fetch fails
         onShowCalculator(simulatorState.selectedAssociation, simulatorState.selectedCompany);
       } finally {
         setIsLoadingData(false);
         setFetchingStudyId('');
       }
     };
-    
-    // Debounce the fetch call
-    const timeoutId = setTimeout(() => {
-      fetchExcelData();
-    }, 200);
-    
+
+    const timeoutId = setTimeout(fetchExcelData, 200);
     return () => clearTimeout(timeoutId);
-  }, [simulatorState.selectedAssociation, simulatorState.selectedCompany, simulatorState.selectedStudyId, simulatorState.selectedAssociationData]);
+  }, [simulatorState.selectedStudyId, simulatorState.selectedAssociation, simulatorState.selectedCompany, simulatorState.selectedAssociationData]);
 
   useEffect(() => {
     if (simulatorState.selectedAssociation && onCompanyChange) {
@@ -1074,7 +996,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       const data = await apiService.get<User[]>('/auth/users');
       const usersWithRoles = Array.isArray(data) ? data.map(user => ({
         ...user,
-        role: user.role || (Math.random() > 0.5 ? 'Manager' : 'Member')
+        role: user.role || 'Member'
       })) : [];
       setDropdownUsers(usersWithRoles);
     } catch (error) {
@@ -1092,14 +1014,11 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       onCompanyChange(value, studyId);
     }
     if (studyId) {
-      // Only update if it's actually a different study
-      if (simulatorState.selectedStudyId !== studyId) {
-        console.log('[SimulatorSubheader] Changing to new study:', studyId);
-        updateCompany(value, studyId);
-        setIsLoadingData(false);
-        setFetchingStudyId('');
-        // Don't reset lastFetchedStudy here - let the effect handle it
-      }
+      console.log('[SimulatorSubheader] Reserve study selected, will fetch fresh data:', studyId);
+      // Always reset loading state so the effect fires a fresh fetch
+      setIsLoadingData(false);
+      setFetchingStudyId('');
+      updateCompany(value, studyId);
     }
   };
 
@@ -1438,10 +1357,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
             // Step 1: Update local state immediately
             console.log('[SimulatorSubheader] Setting up new study:', newStudyId);
             updateCompany(newStudyName, newStudyId);
-            // Don't store study ID in sessionStorage
             setIsLoadingData(false);
             setFetchingStudyId('');
-            setLastFetchedStudy(''); // Clear to allow new study fetch
             setSelectedView('Graph View');
             
             // Step 2: Notify parent components

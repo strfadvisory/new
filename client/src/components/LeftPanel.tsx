@@ -1,14 +1,17 @@
 import React, { useState, useRef } from 'react';
 import MonthlyFeePopup from './MonthlyFeePopup';
+import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
 
 interface LeftPanelProps {
   isCollapsed: boolean;
   onToggle: () => void;
   selectedYearData?: any;
   excelData?: any;
+  onFeeApply?: (config: FeeAdjustmentConfig) => void;
+  effectiveMonthlyFee?: number;
 }
 
-const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYearData, excelData }) => {
+const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYearData, excelData, onFeeApply, effectiveMonthlyFee }) => {
   console.log('[LeftPanel.tsx] Rendering with new design');
 
   const [feePopupOpen, setFeePopupOpen] = useState(false);
@@ -18,13 +21,25 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const year = selectedYearData?.year || 2032;
   const value = selectedYearData?.value || "$234,333";
   const isPositive = selectedYearData?.pos !== false;
-  
+
+  // Full projection record for the selected year (attached by FundGraph)
+  const proj = selectedYearData?.projection;
+
   const config = excelData?.data?.data?.config || excelData?.data?.config || {};
-  const projection = selectedYearData?.projection;
   
-  const monthlyFeePerUnit = config['Average Monthly Fee per Unit'] || 345;
-  const startingBalance = config['Beginning Reserve Funds (Dollar Amount)'] || 234333;
-  const annualFee = (config['Average Monthly Fee per Unit'] || 345) * (config['Total Number of Housing Units'] || 1) * 12;
+  const monthlyFeePerUnit = config['Average Monthly Fee per Unit'] || 0;
+  // Use the override if the user has adjusted it, otherwise show the config value
+  const displayMonthlyFee = effectiveMonthlyFee ?? monthlyFeePerUnit;
+  const startingBalance = config['Beginning Reserve Funds (Dollar Amount)'] || 0;
+  const annualFee = (config['Average Monthly Fee per Unit'] || 0) * (config['Total Number of Housing Units'] || 0) * 12;
+
+  // Per-year financial values — use projection when available, fall back to config
+  const displayOpeningBalance = proj ? `$${Math.round(proj.openingBalance).toLocaleString()}` : `$${startingBalance.toLocaleString()}`;
+  const displayContributions  = proj ? `$${Math.round(proj.contributions).toLocaleString()}` : `$${annualFee.toLocaleString()}`;
+  const displayInterest       = proj ? `$${Math.round(proj.interest).toLocaleString()}` : '$0';
+  const displayExpenses       = proj ? `$${Math.round(proj.expenses).toLocaleString()}` : '$0';
+  const displayFundingRatio   = proj ? `${proj.fundingRatio.toFixed(1)}%` : 'N/A';
+  const displayCumContrib     = proj ? `$${Math.round(proj.cumulativeContributions).toLocaleString()}` : 'N/A';
 
   const handleFeeClick = () => {
     if (feeValueRef.current) {
@@ -96,7 +111,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
             }}
             title="Click to adjust Monthly Fee"
           >
-            ${monthlyFeePerUnit}
+            ${displayMonthlyFee}
           </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
@@ -114,13 +129,13 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>Others Details</h3>
         
         {[
-          { label: 'Starting Amount', value: `$${startingBalance.toLocaleString()}` },
-          { label: 'Annual Fee', value: `$${annualFee.toLocaleString()}` },
-          { label: 'Assessment', value: value },
-          { label: 'Available to Invest', value: `$${startingBalance.toLocaleString()}` },
-          { label: 'Total Amount Invested', value: value },
-          { label: 'Total Loan Taken', value: value },
-          { label: 'Projected Net Earnings', value: value }
+          { label: 'Opening Balance',        value: displayOpeningBalance },
+          { label: 'Annual Contributions',   value: displayContributions },
+          { label: 'Investment Return',       value: displayInterest },
+          { label: 'Expenses This Year',      value: displayExpenses },
+          { label: 'Funding Ratio',           value: displayFundingRatio },
+          { label: 'Cumulative Contributions',value: displayCumContrib },
+          { label: 'Starting Balance (Config)', value: `$${startingBalance.toLocaleString()}` },
         ].map((item, index) => (
           <div key={index} style={{ 
             display: 'flex', 
@@ -138,6 +153,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         onClose={() => setFeePopupOpen(false)}
         monthlyFee={monthlyFeePerUnit}
         initialPosition={feePopupPos}
+        onApply={onFeeApply}
       />
     </div>
   );

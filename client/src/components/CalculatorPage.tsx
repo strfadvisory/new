@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import FundGraph from './FundGraph';
 import LeftPanel from './LeftPanel';
 import { viewModeEmitter } from '../utils/eventEmitter';
+import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
 
 interface CalculatorPageProps {
   association?: string;
@@ -34,6 +35,12 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
   const [isLeftPanelCollapsed, setIsLeftPanelCollapsed] = useState(false);
   const [selectedYearData, setSelectedYearData] = useState<any>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>(propViewMode);
+  const [feeOverride, setFeeOverride] = useState<FeeAdjustmentConfig | null>(null);
+
+  // Reset fee override when a new study is loaded
+  React.useEffect(() => {
+    setFeeOverride(null);
+  }, [excelData]);
 
   React.useEffect(() => {
     const handleViewModeChange = (mode: 'graph' | 'list') => {
@@ -78,7 +85,14 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
           overflow: 'hidden',
           height: '100vh'
         }}>
-          <LeftPanel isCollapsed={isLeftPanelCollapsed} onToggle={toggleLeftPanel} selectedYearData={selectedYearData} excelData={excelData} />
+          <LeftPanel
+            isCollapsed={isLeftPanelCollapsed}
+            onToggle={toggleLeftPanel}
+            selectedYearData={selectedYearData}
+            excelData={excelData}
+            onFeeApply={setFeeOverride}
+            effectiveMonthlyFee={feeOverride?.monthlyFeePerUnit}
+          />
         </div>
       )}
       
@@ -123,6 +137,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
           onYearSelect={handleYearSelect} 
           excelData={excelData}
           viewMode={viewMode}
+          feeOverride={feeOverride}
         />
       </div>
     </div>
