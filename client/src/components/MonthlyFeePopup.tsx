@@ -197,13 +197,15 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
         userSelect: 'none',
         fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         maxHeight: '90vh',
-        overflowY: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      {/* Header */}
+      {/* Header — fixed, never scrolls */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '12px 16px', borderBottom: '1px solid #e5e5e5',
+        flexShrink: 0,
       }}>
         <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>Monthly Fee Adjustment</span>
         <button
@@ -215,6 +217,9 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
           </svg>
         </button>
       </div>
+
+      {/* Scrollable body */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
 
       {/* Setting Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 17px 8px' }}>
@@ -375,6 +380,8 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
 
         </div>
       )}
+
+      </div>{/* end scrollable body */}
     </div>
   );
 };

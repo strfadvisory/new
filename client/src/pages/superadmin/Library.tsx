@@ -255,7 +255,7 @@ const Library: React.FC<LibraryProps> = ({ selectedItem, onEdit, onDelete }) => 
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 20px'
+              margin: '0 auto 20px', 
             }}>
               <i className="fas fa-video" style={{ fontSize: '24px', color: '#64748b' }}></i>
             </div>

@@ -13,12 +13,25 @@ interface FundGraphProps {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// COLORS
+// COLORS — Graph 1 (Monthly Fee Collection)
 // ─────────────────────────────────────────────────────────────────
 const GREEN      = "#4CAF50";   // positive bar + line
 const GREEN_DK   = "#155217";   // ghost outline
 const RED        = "#dc3545";   // --danger: negative bar + lines
 const RED_DK     = "#641a1a";   // ghost outline
+
+// ─────────────────────────────────────────────────────────────────
+// COLORS — Graph 2 (Cashflow Simulator)
+// ─────────────────────────────────────────────────────────────────
+const G2_POS    = "#4CAF50";   // positive bar
+const G2_POS_GR = "#4CAF50";   // positive bar (solid)
+const G2_POS_DK = "#155217";   // positive ghost outline
+const G2_NEG    = "#dc3545";   // negative bar
+const G2_NEG_GR = "#dc3545";   // negative bar (solid)
+const G2_NEG_DK = "#641a1a";   // negative ghost outline
+const G2_YEAR   = "#0E519B";   // year-row stripe
+const G2_ACTIVE = "#dbeafe";   // active column tint
+const G2_HOVER  = "#eff6ff";   // hover column tint
 const COL_W      = 64;          // 4rem = 64px
 const BAR_ZONE_H = 192;         // 12rem = 192px (exact from HTML style="height:12rem")
 const BAR_W      = "55%";       // exact from CSS .simulation-timeline-positive-bar
@@ -195,11 +208,12 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                 style={{
                   width: COL_W, flexShrink:0, cursor:"pointer",
                   borderRadius:10, paddingTop:8, paddingBottom:8,
-                  background: active ? "#ccc" : "transparent",
+                  background: active ? G2_ACTIVE : "transparent",
                   display:"flex", flexDirection:"column", alignItems:"center",
+                  transition:"background 0.15s ease",
                 }}
-                onMouseEnter={e => { if (!isDragging.current) e.currentTarget.style.background = active ? "#ccc" : "#eee"; }}
-                onMouseLeave={e => { if (!isDragging.current) e.currentTarget.style.background = active ? "#ccc" : "transparent"; }}
+                onMouseEnter={e => { if (!isDragging.current) e.currentTarget.style.background = active ? G2_ACTIVE : G2_HOVER; }}
+                onMouseLeave={e => { if (!isDragging.current) e.currentTarget.style.background = active ? G2_ACTIVE : "transparent"; }}
               >
 
                 {/* ── POSITIVE BAR ZONE (12rem, bars grow from bottom) ── */}
@@ -208,19 +222,11 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                   display:"flex", alignItems:"flex-end", justifyContent:"center",
                   position:"relative",
                 }}>
-                  {/* Ghost outline (always shown for pos) */}
-                  {isPos && (
-                    <div style={{
-                      width:BAR_W, height:posBarH,
-                      outline:`3px solid ${GREEN_DK}`,
-                      borderRadius:8, position:"absolute", bottom:12,
-                    }} />
-                  )}
                   {/* Filled bar */}
                   <div style={{
                     width:BAR_W, height:posBarH,
-                    background: isPos ? GREEN : "transparent",
-                    borderRadius:8, position:"absolute", bottom:12,
+                    background: isPos ? G2_POS_GR : "transparent",
+                    borderRadius:4, position:"absolute", bottom:12,
                     transition:"height 0.25s linear",
                     overflow:"hidden",
                   }} />
@@ -230,14 +236,14 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                 {/* Even: value on top row */}
                 {isEven ? (
                   <>
-                    <div style={{ width:COL_W, height:VAL_H_TOP, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <div style={{ width:COL_W, height:VAL_H_TOP, display:"flex", alignItems:"center", justifyContent:"center" , position:"relative" , zIndex:1}}>  
                       <span style={{
                         fontWeight:700, fontSize:"0.75rem", whiteSpace:"nowrap",
-                        color: active ? "#fff" : (isPos ? GREEN : RED),
-                        background: active ? (isPos ? GREEN : RED) : "#fff",
+                        color: active ? "#fff" : (isPos ? G2_POS : G2_NEG),
+                        background: active ? (isPos ? G2_POS : G2_NEG) : "#fff",
                         borderRadius:10, padding:"0 6px",
                       }}>
-                        {d.value}
+                        {d.value} 
                       </span>
                     </div>
                     <div style={{ width:COL_W, height:VAL_H_BOT }} />
@@ -246,14 +252,14 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                   /* Odd: value on bottom row */
                   <>
                     <div style={{ width:COL_W, height:VAL_H_TOP }} />
-                    <div style={{ width:COL_W, height:VAL_H_BOT, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <div style={{ width:COL_W, height:VAL_H_BOT, display:"flex", alignItems:"center", justifyContent:"center" , position:"relative", zIndex:1 }}>
                       <span style={{
                         fontWeight:700, fontSize:"0.75rem", whiteSpace:"nowrap",
-                        color: active ? "#fff" : (isPos ? GREEN : RED),
-                        background: active ? (isPos ? GREEN : RED) : "#fff",
+                        color: active ? "#fff" : (isPos ? G2_POS : G2_NEG),
+                        background: active ? (isPos ? G2_POS : G2_NEG) : "#fff",
                         borderRadius:10, padding:"0 6px",
                       }}>
-                        {d.value}
+                        {d.value} 
                       </span>
                     </div>
                   </>
@@ -262,7 +268,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                 {/* ── YEAR ROW with stems ── */}
                 <div style={{
                   width:"100%", height:YEAR_ROW_H,
-                  background:"#9e9e9e",
+                  background: G2_YEAR,
                   position:"relative", textAlign:"center",
                   borderRadius: i === 0 ? "8px 0 0 8px" : i === cashflowData.length-1 ? "0 8px 8px 0" : 0,
                 }}>
@@ -271,7 +277,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                     <div style={{
                       position:"absolute", bottom:0, left:0, right:0, margin:"auto",
                       width:STEM_W, height:POS_LINE_H,
-                      background:GREEN,
+                      background: G2_POS,
                     }} />
                   )}
                   {/* Negative lines: go UP (bottom:0, visible only when neg) */}
@@ -280,7 +286,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                       position:"absolute", bottom:0, left:0, right:0, margin:"auto",
                       width:STEM_W,
                       height: isEven ? NEG_LINE_T_EVEN : NEG_LINE_T_ODD,
-                      background:RED,
+                      background: G2_NEG,
                     }} />
                   )}
                   {/* Negative line: goes DOWN (top:0, visible only when neg) */}
@@ -288,7 +294,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                     <div style={{
                       position:"absolute", top:0, left:0, right:0, margin:"auto",
                       width:STEM_W, height:NEG_LINE_B,
-                      background:RED,
+                      background: G2_NEG,
                     }} />
                   )}
                   {/* Year pill */}
@@ -297,10 +303,11 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                     display:"flex", justifyContent:"center",
                   }}>
                     <span style={{
-                      background:"#fff", color: active ? (isPos?GREEN:RED) : "#000",
+                      background:"#fff", color: active ? (isPos ? G2_POS : G2_NEG) : "#0E519B",
                       fontWeight:700, fontSize:"0.8rem",
                       padding:"0 12px", borderRadius:10,
-                      border:"3px solid #9e9e9e",
+                      border:`2px solid ${G2_YEAR}`,
+                      boxShadow:"0 1px 4px rgba(14,81,155,0.20)",
                       whiteSpace:"nowrap",
                     }}>
                       {d.year}
@@ -314,19 +321,11 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                   display:"flex", alignItems:"flex-start", justifyContent:"center",
                   position:"relative",
                 }}>
-                  {/* Ghost outline */}
-                  {!isPos && negBarH > 8 && (
-                    <div style={{
-                      width:BAR_W, height:negBarH,
-                      outline:`3px solid ${RED_DK}`,
-                      borderRadius:8, position:"absolute", top:16,
-                    }} />
-                  )}
                   {/* Filled bar */}
                   <div style={{
                     width:BAR_W, height: !isPos ? negBarH : 0,
-                    background: !isPos ? RED : "transparent",
-                    borderRadius:8, position:"absolute", top:16,
+                    background: !isPos ? G2_NEG_GR : "transparent",
+                    borderRadius:4, position:"absolute", top:16,
                     transition:"height 0.25s linear",
                   }} />
                 </div>
