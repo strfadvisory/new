@@ -36,10 +36,13 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
   const [selectedYearData, setSelectedYearData] = useState<any>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'list'>(propViewMode);
   const [feeOverride, setFeeOverride] = useState<FeeAdjustmentConfig | null>(null);
+  const [totalHousingUnits, setTotalHousingUnits] = useState<number | null>(null);
 
-  // Reset fee override when a new study is loaded
+  // Reset fee override and housing units when a new study is loaded
   React.useEffect(() => {
     setFeeOverride(null);
+    const config = excelData?.data?.data?.config || excelData?.data?.config || {};
+    setTotalHousingUnits(config['Total Number of Housing Units'] || null);
   }, [excelData]);
 
   React.useEffect(() => {
@@ -62,6 +65,11 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
   const handleYearSelect = (yearData: any) => {
     console.log('[CalculatorPage.tsx] Year selected:', yearData);
     setSelectedYearData(yearData);
+  };
+
+  const handleHousingUnitsChange = (units: number | null) => {
+    console.log('[CalculatorPage.tsx] Housing units changed to:', units);
+    setTotalHousingUnits(units);
   };
 
   return (
@@ -91,6 +99,8 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
                 ? (selectedYearData?.optimalFee ?? feeOverride?.monthlyFeePerUnit)
                 : feeOverride?.monthlyFeePerUnit
             }
+            totalHousingUnits={totalHousingUnits}
+            onHousingUnitsChange={handleHousingUnitsChange}
           />
         </div>
       )}
@@ -137,6 +147,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
           excelData={excelData}
           viewMode={viewMode}
           feeOverride={feeOverride}
+          totalHousingUnits={totalHousingUnits}
         />
       </div>
     </div>

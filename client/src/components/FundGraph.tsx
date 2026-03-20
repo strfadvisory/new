@@ -10,6 +10,7 @@ interface FundGraphProps {
   excelData?: any;
   viewMode?: 'graph' | 'list';
   feeOverride?: FeeAdjustmentConfig | null;
+  totalHousingUnits?: number | null;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -342,7 +343,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
 // ─────────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────────
-const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph', feeOverride }) => {
+const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph', feeOverride, totalHousingUnits }) => {
   const [sel1, setSel1] = useState<string | null>(null);
   const [sel2, setSel2] = useState<string | null>(null);
   const [calcOpenRow, setCalcOpenRow] = useState<number | null>(null);
@@ -384,7 +385,9 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
       monthlyFeePerUnit: feeOverride?.monthlyFeePerUnit != null
         ? feeOverride.monthlyFeePerUnit
         : (config['Average Monthly Fee per Unit'] || 0),
-      totalUnits: config['Total Number of Housing Units'] || 1,
+      totalUnits: totalHousingUnits !== null && totalHousingUnits !== undefined 
+        ? totalHousingUnits 
+        : (config['Total Number of Housing Units'] || 1),
       // If user has set an inflation rate override, convert % → decimal
       inflationRate: feeOverride?.inflationRate != null
         ? feeOverride.inflationRate / 100
@@ -478,7 +481,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     console.log('[FundGraph.tsx] Generated fee data synchronized:', generatedFeeData.slice(0, 3));
     
     return { cashflowData: generatedCashflowData, feeData: generatedFeeData };
-  }, [excelData, feeOverride]);
+  }, [excelData, feeOverride, totalHousingUnits]);
 
   // Auto-select the first year whenever cashflowData is recalculated (new study loaded).
   // This keeps LeftPanel in sync with the graph without requiring a manual click.

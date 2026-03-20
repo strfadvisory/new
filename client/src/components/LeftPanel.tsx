@@ -9,14 +9,15 @@ interface LeftPanelProps {
   excelData?: any;
   onFeeApply?: (config: FeeAdjustmentConfig) => void;
   effectiveMonthlyFee?: number;
+  totalHousingUnits?: number | null;
+  onHousingUnitsChange?: (units: number | null) => void;
 }
 
-const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYearData, excelData, onFeeApply, effectiveMonthlyFee }) => {
+const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYearData, excelData, onFeeApply, effectiveMonthlyFee, totalHousingUnits: propTotalUnits, onHousingUnitsChange }) => {
   console.log('[LeftPanel.tsx] Rendering with new design');
 
   const [feePopupOpen, setFeePopupOpen] = useState(false);
   const [feePopupPos, setFeePopupPos] = useState<{ x: number; y: number } | undefined>();
-  const [totalHousingUnits, setTotalHousingUnits] = useState<number | string>('');
   const [isEditingUnits, setIsEditingUnits] = useState(false);
   const feeValueRef = useRef<HTMLSpanElement>(null);
   const unitsInputRef = useRef<HTMLInputElement>(null);
@@ -25,13 +26,9 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const proj = selectedYearData?.projection;
 
   const config = excelData?.data?.data?.config || excelData?.data?.config || {};
-
-  // Initialize totalHousingUnits from config if not already set
-  React.useEffect(() => {
-    if (!totalHousingUnits && config['Total Number of Housing Units']) {
-      setTotalHousingUnits(config['Total Number of Housing Units']);
-    }
-  }, [config]);
+  
+  // Use prop value if available, otherwise use config
+  const displayUnits = propTotalUnits !== null && propTotalUnits !== undefined ? propTotalUnits : (config['Total Number of Housing Units'] || 0);
 
   // Derive sensible defaults from loaded excelData config rather than hardcoding
   const configStartYear = config['Beginning Fiscal Year of the Report'] || new Date().getFullYear();
@@ -43,7 +40,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   // Use the override if the user has adjusted it, otherwise show the config value
   const displayMonthlyFee = effectiveMonthlyFee ?? monthlyFeePerUnit;
   const startingBalance = config['Beginning Reserve Funds (Dollar Amount)'] || 0;
-  const annualFee = (config['Average Monthly Fee per Unit'] || 0) * (Number(totalHousingUnits) || config['Total Number of Housing Units'] || 0) * 12;
+  const annualFee = (config['Average Monthly Fee per Unit'] || 0) * displayUnits * 12;
 
   // Per-year financial values — use projection when available, fall back to config
   const displayOpeningBalance = proj ? `$${Math.round(proj.openingBalance).toLocaleString()}` : `$${startingBalance.toLocaleString()}`;
@@ -72,7 +69,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
 
   const handleUnitsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setTotalHousingUnits(value);
+    onHousingUnitsChange?.(value ? Number(value) : null);
   };
 
   const handleUnitsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -80,7 +77,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
       handleUnitsSave();
     } else if (e.key === 'Escape') {
       setIsEditingUnits(false);
-      setTotalHousingUnits(config['Total Number of Housing Units'] || '');
+      onHousingUnitsChange?.(config['Total Number of Housing Units'] || null);
     }
   };
   
@@ -136,7 +133,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
             <input
               ref={unitsInputRef}
               type="number"
-              value={totalHousingUnits}
+              value={displayUnits}
               onChange={handleUnitsChange}
               onBlur={handleUnitsSave}
               onKeyDown={handleUnitsKeyDown}
@@ -165,7 +162,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
               }}
               title="Click to edit Total Housing Units"
             >
-              {totalHousingUnits}
+              {displayUnits}
             </span>
           )}
         </div>
@@ -209,7 +206,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
           { label: 'Expenses This Year',      value: displayExpenses },
           { label: 'Funding Ratio',           value: displayFundingRatio },
           { label: 'Cumulative Contributions',value: displayCumContrib },
-          { label: 'Total Housing Units',    value: totalHousingUnits || '0' },
+          { label: 'Total Housing Units',    value: displayUnits || '0' },
           { label: 'Starting Balance (Config)', value: `$${startingBalance.toLocaleString()}` },
         ].map((item, index) => (
           <div key={index} style={{ 
