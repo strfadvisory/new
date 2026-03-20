@@ -345,6 +345,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
 const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph', feeOverride }) => {
   const [sel1, setSel1] = useState<string | null>(null);
   const [sel2, setSel2] = useState<string | null>(null);
+  const [calcOpenRow, setCalcOpenRow] = useState<number | null>(null);
   const listTableScrollRef = useRef<HTMLDivElement>(null);
 
   // Unique key derived from excelData identity — used to trigger scroll-reset in sub-graphs
@@ -407,9 +408,12 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
       sirsType: item.sirsType
     }));
 
-    // ── OPTIMIZE ALL: compute the minimum fee that keeps balance ≥ 0 across all years
+    // ── OPTIMIZE ALL: compute the minimum fee that keeps balance ≥ safetyNet (or 0) across all years
+    // Store it once so we can (a) use it in activeConfig and (b) attach it to every data row without
+    // running the 50-iteration binary search a second time.
+    const optimalFee = calculateOptimalFee(financialConfig, reserveItems);
     const activeConfig = feeOverride?.optimizeAll
-      ? { ...financialConfig, monthlyFeePerUnit: calculateOptimalFee(financialConfig, reserveItems) }
+      ? { ...financialConfig, monthlyFeePerUnit: optimalFee }
       : financialConfig;
     
     console.log('[FundGraph.tsx] Financial Config:', activeConfig);
@@ -418,7 +422,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     
     const { projections, metrics } = calculateFinancialProjections(activeConfig, reserveItems);
     const healthScore = calculateHealthScore(projections);
-    const optimalFee = calculateOptimalFee(activeConfig, reserveItems);
+    // optimalFee already computed above — no second binary search needed
     
     console.log('[FundGraph.tsx] Financial Metrics:', metrics);
     console.log('[FundGraph.tsx] Health Score:', healthScore.toFixed(2));
@@ -448,23 +452,25 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
       };
     });
     
-    // Generate fee collection data synchronized with cashflow years
-    const monthlyFee = activeConfig.monthlyFeePerUnit * activeConfig.totalUnits;
-    const generatedFeeData = projections.map((proj, i) => {
-      const inflatedFee = monthlyFee * Math.pow(1 + activeConfig.inflationRate, i);
-      const annualInflatedFee = inflatedFee * 12;
-      // Fee % = annual contribution as % of that year's expenses (capped at 999%)
+    // Generate fee collection data synchronized with cashflow years.
+    // Derive values directly from proj.contributions (the ACTUAL simulated contribution)
+    // so Graph 1 always matches the cashflow projection — including custom range, gradual ramp,
+    // and maxAnnualPctIncrease overrides.
+    const maxContribution = Math.max(...projections.map(p => p.contributions), 1);
+    const generatedFeeData = projections.map((proj) => {
+      const annualContrib = proj.contributions;               // already the inflation/range-adjusted annual total
+      const monthlyTotal = annualContrib / 12;               // total monthly fee across all units
+      // Coverage %: how much of this year’s expenses are covered by contributions (capped at 999%)
       const feePercentage = proj.expenses > 0
-        ? Math.min(999, Math.round((annualInflatedFee / proj.expenses) * 100))
+        ? Math.min(999, Math.round((annualContrib / proj.expenses) * 100))
         : 100;
-      const maxFee = Math.max(...projections.map(p => p.contributions));
-      const barHeight = maxFee > 0 ? Math.max(4, Math.round((annualInflatedFee / maxFee) * 60)) : 20;
+      const barHeight = Math.max(4, Math.round((annualContrib / maxContribution) * 60));
 
       return {
         year: proj.year,
-        feeValue: `$${Math.round(inflatedFee).toLocaleString()}`,
+        feeValue: `$${Math.round(monthlyTotal).toLocaleString()}`,
         percentage: feePercentage,
-        height: barHeight
+        height: barHeight,
       };
     });
     
@@ -511,7 +517,8 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
                 const projection = data.projection;
                 
                 return (
-                  <tr key={index} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                  <React.Fragment key={index}>
+                  <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: '12px', fontWeight: '500', color: '#1f2937' }}>{data.year}</td>
                     <td style={{ padding: '12px', textAlign: 'right', color: '#6b7280' }}>
                       {projection ? `$${projection.openingBalance.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : 'N/A'}
@@ -527,18 +534,123 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
                     </td>
                     <td style={{ padding: '12px', textAlign: 'right', fontWeight: '600', color: data.pos ? '#10b981' : '#ef4444' }}>{data.value}</td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>
-                      <span style={{ 
-                        padding: '4px 8px', 
-                        borderRadius: '12px', 
-                        fontSize: '12px', 
-                        fontWeight: '500',
-                        background: data.pos ? '#dcfce7' : '#fee2e2',
-                        color: data.pos ? '#166534' : '#991b1b'
-                      }}>
-                        {data.pos ? 'Surplus' : 'Deficit'}
-                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                        <span style={{ 
+                          padding: '4px 8px', 
+                          borderRadius: '12px', 
+                          fontSize: '12px', 
+                          fontWeight: '500',
+                          background: data.pos ? '#dcfce7' : '#fee2e2',
+                          color: data.pos ? '#166534' : '#991b1b'
+                        }}>
+                          {data.pos ? 'Surplus' : 'Deficit'}
+                        </span>
+                        <button
+                          title="Show calculation breakdown"
+                          onClick={() => setCalcOpenRow(calcOpenRow === index ? null : index)}
+                          style={{
+                            background: calcOpenRow === index ? '#eff6ff' : 'transparent',
+                            border: `1px solid ${calcOpenRow === index ? '#3b82f6' : '#d1d5db'}`,
+                            borderRadius: '6px',
+                            padding: '3px 6px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            color: calcOpenRow === index ? '#2563eb' : '#6b7280',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          {/* Calculator SVG icon */}
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="4" y="2" width="16" height="20" rx="2"/>
+                            <line x1="8" y1="6" x2="16" y2="6"/>
+                            <line x1="8" y1="10" x2="10" y2="10"/>
+                            <line x1="14" y1="10" x2="16" y2="10"/>
+                            <line x1="8" y1="14" x2="10" y2="14"/>
+                            <line x1="14" y1="14" x2="16" y2="14"/>
+                            <line x1="8" y1="18" x2="16" y2="18"/>
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
+                  {/* ── Calculation breakdown row ── */}
+                  {calcOpenRow === index && projection && (
+                    <tr style={{ background: '#f8faff' }}>
+                      <td colSpan={7} style={{ padding: '0 16px 16px 16px', borderBottom: '2px solid #bfdbfe' }}>
+                        <div style={{
+                          background: 'white',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: '10px',
+                          padding: '16px 20px',
+                          maxWidth: '520px',
+                          marginLeft: 'auto',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '14px' }}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="4" y="2" width="16" height="20" rx="2"/>
+                              <line x1="8" y1="6" x2="16" y2="6"/>
+                              <line x1="8" y1="10" x2="10" y2="10"/>
+                              <line x1="14" y1="10" x2="16" y2="10"/>
+                              <line x1="8" y1="14" x2="10" y2="14"/>
+                              <line x1="14" y1="14" x2="16" y2="14"/>
+                              <line x1="8" y1="18" x2="16" y2="18"/>
+                            </svg>
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e40af' }}>Calculation Breakdown — {data.year}</span>
+                          </div>
+                          {/* Formula rows */}
+                          {[
+                            { label: 'Opening Balance', sign: '', value: projection.openingBalance, color: '#6b7280', bold: false },
+                            { label: 'Annual Contributions', sign: '+', value: projection.contributions, color: '#10b981', bold: false },
+                            { label: 'Interest Earned', sign: '+', value: projection.interest, color: '#3b82f6', bold: false },
+                            { label: 'Reserve Expenses', sign: '−', value: projection.expenses, color: '#ef4444', bold: false },
+                          ].map(({ label, sign, value, color, bold }) => (
+                            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 0', borderBottom: '1px dashed #e5e7eb' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                {sign ? (
+                                  <span style={{ width: '16px', textAlign: 'center', fontSize: '14px', fontWeight: '700', color }}>{sign}</span>
+                                ) : (
+                                  <span style={{ width: '16px' }} />
+                                )}
+                                <span style={{ fontSize: '12px', color: '#374151', fontWeight: bold ? '600' : '400' }}>{label}</span>
+                              </div>
+                              <span style={{ fontSize: '13px', fontWeight: bold ? '700' : '500', color }}>
+                                ${Math.round(value).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
+                          {/* Divider + result */}
+                          <div style={{ borderTop: '2px solid #1e40af', marginTop: '6px', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ width: '16px', textAlign: 'center', fontSize: '14px', fontWeight: '700', color: '#1e40af' }}>=</span>
+                              <span style={{ fontSize: '13px', fontWeight: '700', color: '#1e40af' }}>Closing Balance</span>
+                            </div>
+                            <span style={{ fontSize: '15px', fontWeight: '800', color: data.pos ? '#166534' : '#991b1b' }}>
+                              ${Math.round(projection.closingBalance ?? (projection.openingBalance + projection.contributions + projection.interest - projection.expenses)).toLocaleString()}
+                            </span>
+                          </div>
+                          {/* Status verdict */}
+                          <div style={{ marginTop: '10px', padding: '7px 10px', borderRadius: '8px', background: data.pos ? '#f0fdf4' : '#fef2f2', border: `1px solid ${data.pos ? '#86efac' : '#fca5a5'}` }}>
+                            <span style={{ fontSize: '11px', color: data.pos ? '#166534' : '#991b1b', fontWeight: '600' }}>
+                              {data.pos
+                                ? '✓ Surplus — reserve fund stays positive this year'
+                                : '✗ Deficit — reserve fund balance goes negative this year'}
+                            </span>
+                            {data.warning && (
+                              <div style={{ fontSize: '11px', color: '#92400e', marginTop: '3px' }}>
+                                ⚠ Balance is below the low-balance alert threshold
+                              </div>
+                            )}
+                          </div>
+                          {/* Formula reminder */}
+                          <div style={{ marginTop: '8px', fontSize: '10px', color: '#9ca3af', textAlign: 'right' }}>
+                            Opening + Contributions + Interest − Expenses = Closing Balance
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </React.Fragment>
                 );
               })}
             </tbody>

@@ -16,12 +16,22 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
 
   const [feePopupOpen, setFeePopupOpen] = useState(false);
   const [feePopupPos, setFeePopupPos] = useState<{ x: number; y: number } | undefined>();
+  const [totalHousingUnits, setTotalHousingUnits] = useState<number | string>('');
+  const [isEditingUnits, setIsEditingUnits] = useState(false);
   const feeValueRef = useRef<HTMLSpanElement>(null);
+  const unitsInputRef = useRef<HTMLInputElement>(null);
 
   // Full projection record for the selected year (attached by FundGraph)
   const proj = selectedYearData?.projection;
 
   const config = excelData?.data?.data?.config || excelData?.data?.config || {};
+
+  // Initialize totalHousingUnits from config if not already set
+  React.useEffect(() => {
+    if (!totalHousingUnits && config['Total Number of Housing Units']) {
+      setTotalHousingUnits(config['Total Number of Housing Units']);
+    }
+  }, [config]);
 
   // Derive sensible defaults from loaded excelData config rather than hardcoding
   const configStartYear = config['Beginning Fiscal Year of the Report'] || new Date().getFullYear();
@@ -33,7 +43,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   // Use the override if the user has adjusted it, otherwise show the config value
   const displayMonthlyFee = effectiveMonthlyFee ?? monthlyFeePerUnit;
   const startingBalance = config['Beginning Reserve Funds (Dollar Amount)'] || 0;
-  const annualFee = (config['Average Monthly Fee per Unit'] || 0) * (config['Total Number of Housing Units'] || 0) * 12;
+  const annualFee = (config['Average Monthly Fee per Unit'] || 0) * (Number(totalHousingUnits) || config['Total Number of Housing Units'] || 0) * 12;
 
   // Per-year financial values — use projection when available, fall back to config
   const displayOpeningBalance = proj ? `$${Math.round(proj.openingBalance).toLocaleString()}` : `$${startingBalance.toLocaleString()}`;
@@ -49,6 +59,29 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
       setFeePopupPos({ x: rect.right + 8, y: rect.top });
     }
     setFeePopupOpen(true);
+  };
+
+  const handleUnitsEdit = () => {
+    setIsEditingUnits(true);
+    setTimeout(() => unitsInputRef.current?.focus(), 0);
+  };
+
+  const handleUnitsSave = () => {
+    setIsEditingUnits(false);
+  };
+
+  const handleUnitsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTotalHousingUnits(value);
+  };
+
+  const handleUnitsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleUnitsSave();
+    } else if (e.key === 'Escape') {
+      setIsEditingUnits(false);
+      setTotalHousingUnits(config['Total Number of Housing Units'] || '');
+    }
   };
   
   return (
@@ -98,6 +131,45 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         
         {/* Quick Stats */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <span style={{ fontSize: '14px', color: '#374151' }}>Total Housing Units</span>
+          {isEditingUnits ? (
+            <input
+              ref={unitsInputRef}
+              type="number"
+              value={totalHousingUnits}
+              onChange={handleUnitsChange}
+              onBlur={handleUnitsSave}
+              onKeyDown={handleUnitsKeyDown}
+              style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#10b981',
+                border: '1px solid #10b981',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                width: '80px',
+                textAlign: 'right',
+              }}
+            />
+          ) : (
+            <span
+              onClick={handleUnitsEdit}
+              style={{
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#10b981',
+                cursor: 'pointer',
+                textDecoration: 'underline',
+                textDecorationStyle: 'dashed',
+                textUnderlineOffset: '3px',
+              }}
+              title="Click to edit Total Housing Units"
+            >
+              {totalHousingUnits}
+            </span>
+          )}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
           <span style={{ fontSize: '14px', color: '#374151' }}>Monthly Fee</span>
           <span
             ref={feeValueRef}
@@ -137,6 +209,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
           { label: 'Expenses This Year',      value: displayExpenses },
           { label: 'Funding Ratio',           value: displayFundingRatio },
           { label: 'Cumulative Contributions',value: displayCumContrib },
+          { label: 'Total Housing Units',    value: totalHousingUnits || '0' },
           { label: 'Starting Balance (Config)', value: `$${startingBalance.toLocaleString()}` },
         ].map((item, index) => (
           <div key={index} style={{ 

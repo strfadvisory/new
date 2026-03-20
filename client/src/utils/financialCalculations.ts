@@ -69,36 +69,53 @@ function calculateStdDev(values: number[]): number {
   return Math.sqrt(variance);
 }
 
-// Compute per-year annual contribution respecting custom range, gradual ramp, and growth cap
+// Compute per-year annual contribution respecting custom range, gradual ramp, and growth cap.
+//
+// Rules (in priority order):
+//   1. Custom range  → exact flat fee per unit for years [startYear, endYear], NO extra inflation.
+//   2. Gradual range → linearly ramp fees from the inflation-adjusted base AT the range-start year
+//                       up to base×(1+pctIncrease%) by the range-end year.
+//   3. Default       → base fee compounded by inflationRate each year (capped by maxAnnualPctIncrease).
 function computePerYearContribution(config: FinancialConfig, yearIndex: number): number {
   const year = config.currentYear + yearIndex;
-  let feePerUnit = config.monthlyFeePerUnit;
 
-  // Custom range: apply a flat override fee for years within the specified range
+  // ── 1. Custom range: user-set flat dollar amount, no additional compounding
   if (config.customRange?.enabled) {
     const { startYear, endYear, feePerUnit: customFee } = config.customRange;
     if (year >= startYear && year <= endYear) {
-      feePerUnit = customFee;
+      return customFee * config.totalUnits * 12;
     }
   }
 
-  // Gradual range: linearly ramp fee from base to base×(1+pctIncrease%) over the range
+  // ── 2. Gradual range: ramp starting from inflation-adjusted base AT range start
   if (config.gradualRange?.enabled) {
     const { startYear, endYear, pctIncrease } = config.gradualRange;
     if (year >= startYear && year <= endYear) {
+      const rangeStartIdx = Math.max(0, startYear - config.currentYear);
+      // Fee at the start of the gradual range (inflation-adjusted from year 0)
+      const growthRate =
+        config.maxAnnualPctIncrease != null
+          ? Math.min(config.inflationRate, config.maxAnnualPctIncrease / 100)
+          : config.inflationRate;
+      const baseFeeAtRangeStart =
+        config.monthlyFeePerUnit * config.totalUnits * 12 *
+        Math.pow(1 + growthRate, rangeStartIdx);
       const span = Math.max(1, endYear - startYear);
       const progress = (year - startYear) / span;
-      feePerUnit = feePerUnit * (1 + (pctIncrease / 100) * progress);
+      return baseFeeAtRangeStart * (1 + (pctIncrease / 100) * progress);
     }
   }
 
-  const annualBase = feePerUnit * config.totalUnits * 12;
-  // Cap annual growth by maxAnnualPctIncrease if the user has set it
+  // ── 3. Default: compound growth from year 0 (capped by maxAnnualPctIncrease)
   const growthRate =
     config.maxAnnualPctIncrease != null
       ? Math.min(config.inflationRate, config.maxAnnualPctIncrease / 100)
       : config.inflationRate;
-  return calculateCompoundGrowth(annualBase, growthRate, yearIndex);
+  return calculateCompoundGrowth(
+    config.monthlyFeePerUnit * config.totalUnits * 12,
+    growthRate,
+    yearIndex
+  );
 }
 
 // Main projection engine with enhanced calculation logic
@@ -106,11 +123,8 @@ export function calculateFinancialProjections(
   config: FinancialConfig,
   items: ReserveItem[]
 ): { projections: YearlyProjection[]; metrics: FinancialMetrics } {
-  
+
   const projections: YearlyProjection[] = [];
-  const monthlyFee = config.monthlyFeePerUnit * config.totalUnits;
-  const annualContribution = monthlyFee * 12;
-  
   let balance = config.startingBalance;
   let cumulativeContributions = 0;
   let cumulativeExpenses = 0;
@@ -209,13 +223,17 @@ export function calculateOptimalFee(
   // If safetyNet is set, ensure the fund never drops below it
   const effectiveTarget = config.safetyNet != null ? config.safetyNet : targetBalance;
   let low = 0;
-  // Guard: if current fee is 0 or very small, set a meaningful upper bound
+  // Upper bound: start at max(currentFee×10, 5000).
+  // If safetyNet is very large, bump ceiling further to guarantee convergence.
   let high = Math.max(config.monthlyFeePerUnit * 10, 5000);
-  // If safetyNet is large, upper bound needs to be higher
-  if (effectiveTarget > 0) high = Math.max(high, effectiveTarget / (config.totalUnits * 12) * 2);
+  if (effectiveTarget > 0) {
+    // A conservative ceiling: enough to accumulate the safetyNet within yearsToProject even ignoring expenses
+    const feeNeeded = effectiveTarget / (config.totalUnits * 12 * config.yearsToProject);
+    high = Math.max(high, feeNeeded * 4);
+  }
   let optimal = config.monthlyFeePerUnit;
 
-  // Binary search for optimal fee — 50 iterations gives precision of high/2^50
+  // Binary search for optimal fee — 50 iterations gives precision < $0.001 for any realistic range
   for (let iteration = 0; iteration < 50; iteration++) {
     const testFee = (low + high) / 2;
     const testConfig = { ...config, monthlyFeePerUnit: testFee };
