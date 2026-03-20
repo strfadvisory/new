@@ -100,6 +100,13 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
     }
   };
 
+  // Auto-select when only one company is available
+  useEffect(() => {
+    if (!loading && userCompanies.length === 1) {
+      handleCompanySwitch(userCompanies[0]._id);
+    }
+  }, [loading]);
+
   const handleCompanySwitch = async (companyId: string) => {
     try {
       const { switchCompany } = require('../services/userApi');

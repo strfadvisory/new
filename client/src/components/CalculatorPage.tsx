@@ -86,7 +86,11 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
             selectedYearData={selectedYearData}
             excelData={excelData}
             onFeeApply={setFeeOverride}
-            effectiveMonthlyFee={feeOverride?.monthlyFeePerUnit}
+            effectiveMonthlyFee={
+              feeOverride?.optimizeAll
+                ? (selectedYearData?.optimalFee ?? feeOverride?.monthlyFeePerUnit)
+                : feeOverride?.monthlyFeePerUnit
+            }
           />
         </div>
       )}

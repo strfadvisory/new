@@ -8,6 +8,12 @@ export interface FinancialConfig {
   investmentRate: number;   // Suggested Rate of Return on Investments (as decimal, e.g. 0.01 for 1%)
   currentYear: number;
   yearsToProject: number;
+  // Fee adjustment settings
+  safetyNet?: number;              // $ minimum balance floor (never let fund drop below this)
+  cashReserveThreshold?: number;   // $ alert threshold (warn when balance is below this)
+  maxAnnualPctIncrease?: number;   // cap on fee contribution growth % per year
+  customRange?: { enabled: boolean; startYear: number; endYear: number; feePerUnit: number };
+  gradualRange?: { enabled: boolean; startYear: number; endYear: number; pctIncrease: number };
 }
 
 export interface ReserveItem {
@@ -63,6 +69,38 @@ function calculateStdDev(values: number[]): number {
   return Math.sqrt(variance);
 }
 
+// Compute per-year annual contribution respecting custom range, gradual ramp, and growth cap
+function computePerYearContribution(config: FinancialConfig, yearIndex: number): number {
+  const year = config.currentYear + yearIndex;
+  let feePerUnit = config.monthlyFeePerUnit;
+
+  // Custom range: apply a flat override fee for years within the specified range
+  if (config.customRange?.enabled) {
+    const { startYear, endYear, feePerUnit: customFee } = config.customRange;
+    if (year >= startYear && year <= endYear) {
+      feePerUnit = customFee;
+    }
+  }
+
+  // Gradual range: linearly ramp fee from base to base×(1+pctIncrease%) over the range
+  if (config.gradualRange?.enabled) {
+    const { startYear, endYear, pctIncrease } = config.gradualRange;
+    if (year >= startYear && year <= endYear) {
+      const span = Math.max(1, endYear - startYear);
+      const progress = (year - startYear) / span;
+      feePerUnit = feePerUnit * (1 + (pctIncrease / 100) * progress);
+    }
+  }
+
+  const annualBase = feePerUnit * config.totalUnits * 12;
+  // Cap annual growth by maxAnnualPctIncrease if the user has set it
+  const growthRate =
+    config.maxAnnualPctIncrease != null
+      ? Math.min(config.inflationRate, config.maxAnnualPctIncrease / 100)
+      : config.inflationRate;
+  return calculateCompoundGrowth(annualBase, growthRate, yearIndex);
+}
+
 // Main projection engine with enhanced calculation logic
 export function calculateFinancialProjections(
   config: FinancialConfig,
@@ -99,8 +137,8 @@ export function calculateFinancialProjections(
     const year = config.currentYear + i;
     const openingBalance = balance;
     
-    // Apply inflation to contributions starting from year 1
-    const inflatedContribution = calculateCompoundGrowth(annualContribution, config.inflationRate, i);
+    // Per-year contribution: respects custom range, gradual range, and maxAnnualPctIncrease cap
+    const inflatedContribution = computePerYearContribution(config, i);
     
     // Calculate interest/investment return on positive opening balance only
     const interest = openingBalance > 0 ? openingBalance * config.investmentRate : 0;
@@ -162,33 +200,37 @@ export function calculateFinancialProjections(
   return { projections, metrics };
 }
 
-// Calculate optimal monthly fee to avoid deficit
+// Calculate optimal monthly fee to avoid deficit (or maintain safetyNet floor)
 export function calculateOptimalFee(
   config: FinancialConfig,
   items: ReserveItem[],
   targetBalance: number = 0
 ): number {
+  // If safetyNet is set, ensure the fund never drops below it
+  const effectiveTarget = config.safetyNet != null ? config.safetyNet : targetBalance;
   let low = 0;
   // Guard: if current fee is 0 or very small, set a meaningful upper bound
   let high = Math.max(config.monthlyFeePerUnit * 10, 5000);
+  // If safetyNet is large, upper bound needs to be higher
+  if (effectiveTarget > 0) high = Math.max(high, effectiveTarget / (config.totalUnits * 12) * 2);
   let optimal = config.monthlyFeePerUnit;
-  
-  // Binary search for optimal fee
-  for (let iteration = 0; iteration < 20; iteration++) {
+
+  // Binary search for optimal fee — 50 iterations gives precision of high/2^50
+  for (let iteration = 0; iteration < 50; iteration++) {
     const testFee = (low + high) / 2;
     const testConfig = { ...config, monthlyFeePerUnit: testFee };
     const { projections } = calculateFinancialProjections(testConfig, items);
-    
+
     const minBalance = Math.min(...projections.map(p => p.closingBalance));
-    
-    if (minBalance < targetBalance) {
+
+    if (minBalance < effectiveTarget) {
       low = testFee;
     } else {
       high = testFee;
       optimal = testFee;
     }
   }
-  
+
   return Math.ceil(optimal);
 }
 

@@ -156,6 +156,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         monthlyFee={monthlyFeePerUnit}
         initialPosition={feePopupPos}
         onApply={onFeeApply}
+        computedFee={effectiveMonthlyFee !== monthlyFeePerUnit ? effectiveMonthlyFee : undefined}
       />
     </div>
   );

@@ -390,7 +390,13 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
         : (config['Inflation Rate Used in the Report'] || 0) / 100,
       investmentRate: (config['Suggested Rate of Return on Investments'] || 0) / 100,
       currentYear: config['Beginning Fiscal Year of the Report'] || new Date().getFullYear(),
-      yearsToProject: config['Number of Years Covered in the Report'] || 30
+      yearsToProject: config['Number of Years Covered in the Report'] || 30,
+      // Fee adjustment settings — wired through from the popup
+      safetyNet:           feeOverride?.safetyNet,
+      cashReserveThreshold: feeOverride?.cashReserveThreshold,
+      maxAnnualPctIncrease: feeOverride?.maxPctIncrease,
+      customRange:         feeOverride?.customRange,
+      gradualRange:        feeOverride?.gradualRange,
     };
 
     const reserveItems: ReserveItem[] = items.map((item: any) => ({
@@ -430,6 +436,8 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
         year: proj.year,
         value: `${proj.closingBalance >= 0 ? '$' : '-$'}${Math.abs(proj.closingBalance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
         pos: isPositive,
+        // warning = positive but below the cash reserve threshold
+        warning: isPositive && activeConfig.cashReserveThreshold != null && proj.closingBalance < activeConfig.cashReserveThreshold,
         barPct: isPositive ? Math.max(1, Math.round(percentage)) : 1,
         negPct: !isPositive ? Math.max(1, Math.round(percentage)) : 1,
         projection: proj,

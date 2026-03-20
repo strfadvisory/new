@@ -3,10 +3,12 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 export interface FeeAdjustmentConfig {
   monthlyFeePerUnit: number;       // new monthly fee per unit (slider)
   optimizeAll?: boolean;           // use calculateOptimalFee to eliminate all deficits
-  inflationRate?: number;          // % e.g. 3.5
-  maxPctIncrease?: number;         // % cap
-  safetyNet?: number;              // $
-  cashReserveThreshold?: number;   // $
+  inflationRate?: number;          // % override e.g. 3.5
+  maxPctIncrease?: number;         // % cap on annual contribution growth
+  safetyNet?: number;              // $ minimum balance floor
+  cashReserveThreshold?: number;   // $ alert threshold
+  customRange?: { enabled: boolean; startYear: number; endYear: number; feePerUnit: number };
+  gradualRange?: { enabled: boolean; startYear: number; endYear: number; pctIncrease: number };
 }
 
 interface MonthlyFeePopupProps {
@@ -15,6 +17,7 @@ interface MonthlyFeePopupProps {
   monthlyFee: number;
   initialPosition?: { x: number; y: number };
   onApply?: (config: FeeAdjustmentConfig) => void;
+  computedFee?: number; // effective fee when optimizeAll is active (passed from parent)
 }
 
 // Pill toggle component
@@ -71,20 +74,24 @@ const SliderRow: React.FC<{
 const YearRangeInputs: React.FC<{
   startYear: string; endYear: string;
   onStartChange: (v: string) => void; onEndChange: (v: string) => void;
-}> = ({ startYear, endYear, onStartChange, onEndChange }) => (
-  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+  onBlur?: () => void;
+  disabled?: boolean;
+}> = ({ startYear, endYear, onStartChange, onEndChange, onBlur, disabled }) => (
+  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', opacity: disabled ? 0.4 : 1 }}>
     {[
       { placeholder: 'Start Year', value: startYear, onChange: onStartChange },
       { placeholder: 'End Year', value: endYear, onChange: onEndChange },
     ].map((f) => (
       <div key={f.placeholder} style={{ flex: 1, border: '1px solid #e6e6e6', borderRadius: '5px', height: '28px', overflow: 'hidden' }}>
         <input
-          type="text" placeholder={f.placeholder} value={f.value}
+          type="number" placeholder={f.placeholder} value={f.value}
           onChange={(e) => f.onChange(e.target.value)}
+          onBlur={onBlur}
+          disabled={disabled}
           style={{
             width: '100%', height: '100%', border: 'none', outline: 'none',
             padding: '0 10px', fontSize: '12px', background: 'transparent',
-            fontFamily: 'inherit', cursor: 'text', boxSizing: 'border-box',
+            fontFamily: 'inherit', cursor: disabled ? 'not-allowed' : 'text', boxSizing: 'border-box',
           }}
         />
       </div>
@@ -98,6 +105,7 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
   monthlyFee,
   initialPosition,
   onApply,
+  computedFee,
 }) => {
   const [activeTab, setActiveTab] = useState<'manual' | 'advanced'>('manual');
   const [settings, setSettings] = useState({
@@ -117,10 +125,11 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
 
   // ── Advanced tab state (must be declared BEFORE triggerApply so they're captured in the closure)
   const [optimizeAll, setOptimizeAll] = useState(false);
-  const [customRangeEnabled, setCustomRangeEnabled] = useState(true);
+  const [customRangeEnabled, setCustomRangeEnabled] = useState(false);
   const [customStartYear, setCustomStartYear] = useState('');
   const [customEndYear, setCustomEndYear] = useState('');
   const [customSlider, setCustomSlider] = useState(monthlyFee || 0);
+  const [gradualRangeEnabled, setGradualRangeEnabled] = useState(false);
   const [gradualStartYear, setGradualStartYear] = useState('');
   const [gradualEndYear, setGradualEndYear] = useState('');
   const [gradualSlider, setGradualSlider] = useState(20);
@@ -130,15 +139,40 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
   const triggerApply = useCallback((overrides?: { optimizeAll?: boolean }) => {
     if (!onApply) return;
     const effectiveOptimizeAll = overrides?.optimizeAll ?? optimizeAll;
+
+    // Parse and validate custom range years
+    const csY = parseInt(customStartYear);
+    const ceY = parseInt(customEndYear);
+    const hasValidCustom =
+      customRangeEnabled &&
+      !isNaN(csY) && !isNaN(ceY) &&
+      csY >= 2000 && ceY > csY;
+
+    // Parse and validate gradual range years
+    const gsY = parseInt(gradualStartYear);
+    const geY = parseInt(gradualEndYear);
+    const hasValidGradual =
+      gradualRangeEnabled &&
+      !isNaN(gsY) && !isNaN(geY) &&
+      gsY >= 2000 && geY > gsY;
+
     onApply({
       monthlyFeePerUnit: sliderValue,
       optimizeAll: effectiveOptimizeAll,
-      inflationRate:         settings.inflationRate         ? parseFloat(settings.inflationRate)         : undefined,
-      maxPctIncrease:        settings.maxMonthlyFees        ? parseFloat(settings.maxMonthlyFees)        : undefined,
-      safetyNet:             settings.safetyNet             ? parseFloat(settings.safetyNet)             : undefined,
-      cashReserveThreshold:  settings.cashReserveThreshold  ? parseFloat(settings.cashReserveThreshold) : undefined,
+      inflationRate:        settings.inflationRate        ? parseFloat(settings.inflationRate)        : undefined,
+      maxPctIncrease:       settings.maxMonthlyFees       ? parseFloat(settings.maxMonthlyFees)       : undefined,
+      safetyNet:            settings.safetyNet            ? parseFloat(settings.safetyNet)            : undefined,
+      cashReserveThreshold: settings.cashReserveThreshold ? parseFloat(settings.cashReserveThreshold) : undefined,
+      customRange: hasValidCustom
+        ? { enabled: true, startYear: csY, endYear: ceY, feePerUnit: customSlider }
+        : undefined,
+      gradualRange: hasValidGradual
+        ? { enabled: true, startYear: gsY, endYear: geY, pctIncrease: gradualSlider }
+        : undefined,
     });
-  }, [sliderValue, settings, onApply, optimizeAll]);
+  }, [sliderValue, settings, onApply, optimizeAll,
+      customRangeEnabled, customStartYear, customEndYear, customSlider,
+      gradualRangeEnabled, gradualStartYear, gradualEndYear, gradualSlider]);
 
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [initialized, setInitialized] = useState(false);
@@ -224,7 +258,25 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
       {/* Setting Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 17px 8px' }}>
         <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Setting</span>
-        <div style={{ width: '15px', height: '2px', background: '#000', borderRadius: '1px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Active indicator — green dot when any setting has a value */}
+          {(settings.inflationRate || settings.maxMonthlyFees || settings.safetyNet || settings.cashReserveThreshold) && (
+            <div style={{ width: '7px', height: '7px', background: '#12bf6c', borderRadius: '50%' }} title="Settings active" />
+          )}
+          {/* Reset button */}
+          {(settings.inflationRate || settings.maxMonthlyFees || settings.safetyNet || settings.cashReserveThreshold) && (
+            <button
+              onClick={() => {
+                setSettings({ maxMonthlyFees: '', inflationRate: '', safetyNet: '', cashReserveThreshold: '' });
+                setTimeout(() => triggerApply(), 0);
+              }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: '#888', padding: '0 2px', textDecoration: 'underline' }}
+            >
+              Reset
+            </button>
+          )}
+          <div style={{ width: '15px', height: '2px', background: '#000', borderRadius: '1px' }} />
+        </div>
       </div>
 
       {/* Input Fields */}
@@ -247,8 +299,12 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
               type="number"
               placeholder={field.label}
               value={settings[field.key as keyof typeof settings]}
-              onChange={(e) => setSettings((prev) => ({ ...prev, [field.key]: e.target.value }))}
-              onBlur={() => triggerApply()}
+              onChange={(e) => {
+                if (optimizeAll) setOptimizeAll(false);
+                setSettings((prev) => ({ ...prev, [field.key]: e.target.value }));
+              }}
+              onBlur={() => triggerApply(optimizeAll ? { optimizeAll: false } : undefined)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { (e.target as HTMLInputElement).blur(); } }}
               style={{
                 flex: 1, border: 'none', outline: 'none', padding: '0 8px',
                 fontSize: '14px', color: '#000', background: 'transparent',
@@ -300,7 +356,12 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
             <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Current Monthly Fees:</span>
             <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${sliderValue}</span>
           </div>
-          <SliderRow value={sliderValue} max={sliderMax} onChange={setSliderValue} onCommit={triggerApply} />
+          <SliderRow
+            value={sliderValue}
+            max={sliderMax}
+            onChange={(v) => { if (optimizeAll) setOptimizeAll(false); setSliderValue(v); }}
+            onCommit={() => triggerApply(optimizeAll ? { optimizeAll: false } : undefined)}
+          />
         </div>
       )}
 
@@ -318,7 +379,12 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
               <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Current Monthly Fees:</span>
               <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${sliderValue}</span>
             </div>
-            <SliderRow value={sliderValue} max={sliderMax} onChange={setSliderValue} onCommit={triggerApply} />
+            <SliderRow
+              value={sliderValue}
+              max={sliderMax}
+              onChange={(v) => { if (optimizeAll) setOptimizeAll(false); setSliderValue(v); }}
+              onCommit={() => triggerApply(optimizeAll ? { optimizeAll: false } : undefined)}
+            />
           </div>
 
           {/* ── Optimize All Monthly Fees ── */}
@@ -329,53 +395,70 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
                 value={optimizeAll}
                 onChange={(v) => {
                   setOptimizeAll(v);
-                  // Pass the new value directly — state update is async so closure would still see old value
                   triggerApply({ optimizeAll: v });
                 }}
               />
             </div>
-            <p style={{ fontSize: '12px', color: '#000', margin: 0, lineHeight: '1.5', fontWeight: '400' }}>
-              When this option is enabled, all previous and future deficits will also be optimized and any manual Monthly Fees will be overriden.
+            <p style={{ fontSize: '12px', color: '#888', margin: 0, lineHeight: '1.5', fontWeight: '400' }}>
+              Automatically finds the minimum fee that keeps the reserve fund above $0 (or your Safety Net) for all projected years.
             </p>
+            {optimizeAll && computedFee != null && (
+              <div style={{
+                marginTop: '10px', padding: '8px 10px', background: '#f0fdf4',
+                borderRadius: '6px', border: '1px solid #bbf7d0',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              }}>
+                <span style={{ fontSize: '12px', color: '#166534', fontWeight: '600' }}>Computed optimal fee:</span>
+                <span style={{ fontSize: '14px', color: '#166534', fontWeight: '700' }}>${computedFee.toLocaleString()}/unit</span>
+              </div>
+            )}
           </div>
 
           {/* ── Custom Range ── */}
           <div style={{ borderTop: '1px solid #e5e5e5', padding: '16px 17px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Custom Range</span>
-              <Toggle value={customRangeEnabled} onChange={setCustomRangeEnabled} />
+              <Toggle value={customRangeEnabled} onChange={(v) => { setCustomRangeEnabled(v); triggerApply(); }} />
             </div>
             <YearRangeInputs
               startYear={customStartYear} endYear={customEndYear}
               onStartChange={setCustomStartYear} onEndChange={setCustomEndYear}
+              onBlur={triggerApply}
+              disabled={!customRangeEnabled}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', fontWeight: '400', color: '#000' }}>Current Monthly Fees:</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', opacity: customRangeEnabled ? 1 : 0.4 }}>
+              <span style={{ fontSize: '14px', fontWeight: '400', color: '#000' }}>Fee per unit:</span>
               <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${customSlider}</span>
             </div>
-            <SliderRow value={customSlider} onChange={setCustomSlider} onCommit={triggerApply} />
+            <div style={{ opacity: customRangeEnabled ? 1 : 0.4, pointerEvents: customRangeEnabled ? 'auto' : 'none' }}>
+              <SliderRow
+                value={customSlider}
+                max={sliderMax}
+                onChange={setCustomSlider}
+                onCommit={triggerApply}
+              />
+            </div>
           </div>
 
           {/* ── Gradual Custom Range ── */}
           <div style={{ borderTop: '1px solid #e5e5e5', padding: '16px 17px 20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Gradual Custom Range</span>
-              <div style={{
-                background: '#12bf6c', borderRadius: '10px',
-                padding: '2px 8px', display: 'flex', alignItems: 'center',
-              }}>
-                <span style={{ fontSize: '14px', fontWeight: '700', color: '#fff', lineHeight: 'normal' }}>ON</span>
-              </div>
+              <Toggle value={gradualRangeEnabled} onChange={(v) => { setGradualRangeEnabled(v); triggerApply(); }} />
             </div>
             <YearRangeInputs
               startYear={gradualStartYear} endYear={gradualEndYear}
               onStartChange={setGradualStartYear} onEndChange={setGradualEndYear}
+              onBlur={triggerApply}
+              disabled={!gradualRangeEnabled}
             />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '14px', fontWeight: '400', color: '#000' }}>Current Monthly Fees:</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', opacity: gradualRangeEnabled ? 1 : 0.4 }}>
+              <span style={{ fontSize: '14px', fontWeight: '400', color: '#000' }}>Ramp up by:</span>
               <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>{gradualSlider}%</span>
             </div>
-            <SliderRow value={gradualSlider} onChange={setGradualSlider} onCommit={triggerApply} max={100} suffix="%" />
+            <div style={{ opacity: gradualRangeEnabled ? 1 : 0.4, pointerEvents: gradualRangeEnabled ? 'auto' : 'none' }}>
+              <SliderRow value={gradualSlider} onChange={setGradualSlider} onCommit={triggerApply} max={100} suffix="%" />
+            </div>
           </div>
 
         </div>
