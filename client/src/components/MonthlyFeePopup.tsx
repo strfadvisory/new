@@ -20,21 +20,30 @@ interface MonthlyFeePopupProps {
   computedFee?: number; // effective fee when optimizeAll is active (passed from parent)
 }
 
+// X icon close button
+const CloseIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1 1L11 11M11 1L1 11" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 // Pill toggle component
 const Toggle: React.FC<{ value: boolean; onChange: (v: boolean) => void }> = ({ value, onChange }) => (
   <div
     onClick={() => onChange(!value)}
     style={{
-      width: '26px', height: '14px', background: '#e8e8e8',
+      width: '26px', height: '14px', background: value ? '#12bf6c' : '#e8e8e8',
       borderRadius: '30px', position: 'relative', cursor: 'pointer', flexShrink: 0,
+      transition: 'background 0.3s ease',
     }}
   >
     <div style={{
-      position: 'absolute', top: 0,
-      left: value ? '12px' : '0',
-      width: '14px', height: '14px', borderRadius: '50%',
-      background: value ? '#12bf6c' : '#bbb',
-      transition: 'left 0.2s ease',
+      position: 'absolute', top: '1px',
+      left: value ? '13px' : '1px',
+      width: '12px', height: '12px', borderRadius: '50%',
+      background: '#fff',
+      transition: 'left 0.3s ease',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
     }} />
   </div>
 );
@@ -45,12 +54,12 @@ const SliderRow: React.FC<{
 }> = ({ value, onChange, onCommit, max = 200, suffix = '$' }) => {
   const pct = Math.min(100, Math.max(0, (value / max) * 100));
   return (
-    <div style={{ position: 'relative', height: '16px' }}>
+    <div style={{ position: 'relative', height: '20px', display: 'flex', alignItems: 'center' }}>
       <div style={{
         position: 'absolute', top: '50%', left: 0, right: 0,
         transform: 'translateY(-50%)', height: '3px', background: '#e5e5e5', borderRadius: '2px',
       }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: '#4CAF50', borderRadius: '2px' }} />
+        <div style={{ height: '100%', width: `${pct}%`, background: '#12bf6c', borderRadius: '2px', transition: 'width 0.1s ease' }} />
       </div>
       <input
         type="range" min={0} max={max} value={value}
@@ -63,8 +72,9 @@ const SliderRow: React.FC<{
         position: 'absolute', top: '50%', left: `${pct}%`,
         transform: 'translate(-50%, -50%)',
         width: '15px', height: '15px', borderRadius: '50%',
-        background: '#4CAF50', boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+        background: '#12bf6c', boxShadow: '0 2px 4px rgba(18, 191, 108, 0.3)',
         pointerEvents: 'none',
+        transition: 'left 0.1s ease',
       }} />
     </div>
   );
@@ -76,28 +86,47 @@ const YearRangeInputs: React.FC<{
   onStartChange: (v: string) => void; onEndChange: (v: string) => void;
   onBlur?: () => void;
   disabled?: boolean;
-}> = ({ startYear, endYear, onStartChange, onEndChange, onBlur, disabled }) => (
-  <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', opacity: disabled ? 0.4 : 1 }}>
-    {[
-      { placeholder: 'Start Year', value: startYear, onChange: onStartChange },
-      { placeholder: 'End Year', value: endYear, onChange: onEndChange },
-    ].map((f) => (
-      <div key={f.placeholder} style={{ flex: 1, border: '1px solid #e6e6e6', borderRadius: '5px', height: '28px', overflow: 'hidden' }}>
-        <input
-          type="number" placeholder={f.placeholder} value={f.value}
-          onChange={(e) => f.onChange(e.target.value)}
-          onBlur={onBlur}
-          disabled={disabled}
-          style={{
-            width: '100%', height: '100%', border: 'none', outline: 'none',
-            padding: '0 10px', fontSize: '12px', background: 'transparent',
-            fontFamily: 'inherit', cursor: disabled ? 'not-allowed' : 'text', boxSizing: 'border-box',
-          }}
-        />
-      </div>
-    ))}
-  </div>
-);
+}> = ({ startYear, endYear, onStartChange, onEndChange, onBlur, disabled }) => {
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.borderColor = '#e6e6e6';
+    onBlur?.();
+  };
+
+  return (
+    <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', opacity: disabled ? 0.5 : 1 }}>
+      {[
+        { placeholder: 'Start Year', value: startYear, onChange: onStartChange },
+        { placeholder: 'End Year', value: endYear, onChange: onEndChange },
+      ].map((f) => (
+        <div key={f.placeholder} style={{ flex: 1, position: 'relative' }}>
+          <input
+            type="number"
+            placeholder={f.placeholder}
+            value={f.value}
+            onChange={(e) => f.onChange(e.target.value)}
+            onFocus={(e) => { e.currentTarget.style.borderColor = '#12bf6c'; }}
+            onBlur={handleBlur}
+            disabled={disabled}
+            style={{
+              width: '100%',
+              height: '28px',
+              border: '1px solid #e6e6e6',
+              outline: 'none',
+              padding: '0 8px',
+              fontSize: '12px',
+              background: disabled ? '#f5f5f5' : 'transparent',
+              fontFamily: 'inherit',
+              cursor: disabled ? 'not-allowed' : 'text',
+              boxSizing: 'border-box',
+              borderRadius: '4px',
+              transition: 'border-color 0.2s ease',
+            }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
   isOpen,
@@ -108,6 +137,7 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
   computedFee,
 }) => {
   const [activeTab, setActiveTab] = useState<'manual' | 'advanced'>('manual');
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const [settings, setSettings] = useState({
     maxMonthlyFees: '',
     inflationRate: '',
@@ -222,10 +252,10 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
         left: position.x,
         top: position.y,
         width: '284px',
-        background: 'white',
+        background: '#fff',
         border: '1px solid #d9d9d9',
         borderRadius: '10px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
         zIndex: 2000,
         cursor: 'grab',
         userSelect: 'none',
@@ -233,107 +263,225 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
         maxHeight: '90vh',
         display: 'flex',
         flexDirection: 'column',
+        overflow: 'hidden',
       }}
     >
-      {/* Header — fixed, never scrolls */}
+      {/* ── HEADER (Fixed) ── */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '12px 16px', borderBottom: '1px solid #e5e5e5',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '12px 16px',
+        borderBottom: '1px solid #e5e5e5',
         flexShrink: 0,
+        background: '#fff',
       }}>
-        <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>Monthly Fee Adjustment</span>
+        <span style={{ fontSize: '16px', fontWeight: '700', color: '#000', letterSpacing: '-0.3px' }}>
+          Monthly Fee Adjustment
+        </span>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '4px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#666',
+            transition: 'color 0.2s ease',
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.color = '#333'}
+          onMouseLeave={(e) => e.currentTarget.style.color = '#666'}
         >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M1 1L11 11M11 1L1 11" stroke="#333" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
+          <CloseIcon />
         </button>
       </div>
 
-      {/* Scrollable body */}
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+      {/* ── SCROLLABLE BODY ── */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        minHeight: 0,
+        background: '#fff',
+      }}>
 
-      {/* Setting Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 17px 8px' }}>
-        <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Setting</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Active indicator — green dot when any setting has a value */}
-          {(settings.inflationRate || settings.maxMonthlyFees || settings.safetyNet || settings.cashReserveThreshold) && (
-            <div style={{ width: '7px', height: '7px', background: '#12bf6c', borderRadius: '50%' }} title="Settings active" />
-          )}
-          {/* Reset button */}
-          {(settings.inflationRate || settings.maxMonthlyFees || settings.safetyNet || settings.cashReserveThreshold) && (
-            <button
-              onClick={() => {
-                setSettings({ maxMonthlyFees: '', inflationRate: '', safetyNet: '', cashReserveThreshold: '' });
-                setTimeout(() => triggerApply(), 0);
-              }}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: '#888', padding: '0 2px', textDecoration: 'underline' }}
-            >
-              Reset
-            </button>
-          )}
-          <div style={{ width: '15px', height: '2px', background: '#000', borderRadius: '1px' }} />
+      {/* ── OPTIMIZE ALL MONTHLY FEES SECTION (Top Level) ── */}
+      <div style={{
+        padding: '14px 16px',
+        background: optimizeAll ? '#f0fdf4' : 'transparent',
+        transition: 'background 0.2s ease',
+        borderBottom: '1px solid #e5e5e5',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', gap: '8px' }}>
+          <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Optimize All Monthly Fees</span>
+          <Toggle
+            value={optimizeAll}
+            onChange={(v) => {
+              setOptimizeAll(v);
+              triggerApply({ optimizeAll: v });
+            }}
+          />
+        </div>
+        <p style={{
+          fontSize: '12px', color: '#666', margin: 0, lineHeight: '1.5',
+          fontWeight: 400,
+        }}>
+          When this option is enabled, all previous and future deficits will also be optimized and any manual Monthly Fees will be overriden.
+        </p>
+      </div>
+
+      {/* ── MANUAL SETTING SECTION ── */}
+      <div style={{
+        padding: '12px 16px 10px',
+        background: '#fff',
+        borderBottom: '1px solid #e5e5e5',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '10px',
+        }}>
+          <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Manual Setting</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Reset button */}
+            {(settings.inflationRate || settings.maxMonthlyFees || settings.safetyNet || settings.cashReserveThreshold) && (
+              <button
+                onClick={() => {
+                  setSettings({ maxMonthlyFees: '', inflationRate: '', safetyNet: '', cashReserveThreshold: '' });
+                  setTimeout(() => triggerApply(), 0);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '11px',
+                  color: '#999',
+                  padding: '0 4px',
+                  textDecoration: 'underline',
+                  fontWeight: '500',
+                }}
+              >
+                Reset
+              </button>
+            )}
+            {/* Collapse/Expand  icon */}
+            <div style={{
+              width: '14px',
+              height: '2px',
+              background: '#ccc',
+              borderRadius: '1px',
+            }} />
+          </div>
+        </div>
+
+        {/* Input Fields */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          {[
+            { key: 'maxMonthlyFees', label: 'Maximum % Monthly Fees', unit: '%' },
+            { key: 'inflationRate', label: 'Inflation Rate', unit: '%' },
+            { key: 'safetyNet', label: 'Safety Net ®', unit: '%' },
+            { key: 'cashReserveThreshold', label: 'Cash Reserve Threshold', unit: '%' },
+          ].map((field) => (
+            <div key={field.key} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%' }}>
+              <label style={{
+                fontSize: '13px',
+                fontWeight: '400',
+                color: '#000',
+                flex: 1,
+                whiteSpace: 'nowrap',
+                minWidth: '0',
+              }}>
+                {field.label}
+              </label>
+              <div 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  border: `1px solid ${focusedField === field.key ? '#12bf6c' : '#dedede'}`,
+                  borderRadius: '4px',
+                  height: '28px',
+                  minWidth: '60px',
+                  width: '60px',
+                  overflow: 'visible',
+                  background: '#fff',
+                  transition: 'border-color 0.2s ease',
+                  flexShrink: 0,
+                }}
+              >
+                <input
+                  type="number"
+          
+                  value={settings[field.key as keyof typeof settings]}
+                  onChange={(e) => {
+                    if (optimizeAll) setOptimizeAll(false);
+                    setSettings((prev) => ({ ...prev, [field.key]: e.target.value }));
+                  }}
+                  onFocus={() => setFocusedField(field.key)}
+                  onBlur={() => {
+                    setFocusedField(null);
+                    triggerApply(optimizeAll ? { optimizeAll: false } : undefined);
+                  }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { (e.target as HTMLInputElement).blur(); } }}
+                  style={{
+                    flex: 1,
+                    border: 'none',
+                    outline: 'none',
+                    padding: '0 4px 0 6px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    color: '#000',
+                    background: 'transparent',
+                    height: '100%',
+                    cursor: 'text',
+                    fontFamily: 'inherit',
+                    textAlign: 'center',
+                    minWidth: '0',
+                  }}
+                />
+                <span style={{
+                  fontSize: '12px',
+                  color: settings[field.key as keyof typeof settings] ? '#999' : '#ccc',
+                  fontWeight: '400',
+                  padding: '0 5px 0 2px',
+                  pointerEvents: 'none',
+                  flexShrink: 0,
+                  userSelect: 'none',
+                }}>
+                  %
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Input Fields */}
-      <div style={{ padding: '0 16px 12px' }}>
-        {[
-          { key: 'maxMonthlyFees',        label: 'Max Annual Fee Increase', unit: '%',
-            hint: 'Cap yearly fee growth rate (e.g. 5 = max 5%/yr)' },
-          { key: 'inflationRate',          label: 'Inflation Rate Override', unit: '%',
-            hint: 'Override study inflation for expense projections' },
-          { key: 'safetyNet',              label: 'Safety Net (min. balance)', unit: '$',
-            hint: 'Fund must stay above this amount at all times' },
-          { key: 'cashReserveThreshold',   label: 'Low-Balance Alert',        unit: '$',
-            hint: 'Highlight years where balance falls below this' },
-        ].map((field, idx) => (
-          <div key={field.key} style={{ marginBottom: idx < 3 ? '8px' : '0' }}>
-            <div
-              style={{
-                display: 'flex', alignItems: 'center',
-                border: `1px solid ${settings[field.key as keyof typeof settings] ? '#4CAF50' : '#dedede'}`,
-                borderRadius: '5px', height: '30px', overflow: 'hidden',
-              }}
-            >
-              <input
-                type="number"
-                placeholder={field.label}
-                value={settings[field.key as keyof typeof settings]}
-                onChange={(e) => {
-                  if (optimizeAll) setOptimizeAll(false);
-                  setSettings((prev) => ({ ...prev, [field.key]: e.target.value }));
-                }}
-                onBlur={() => triggerApply(optimizeAll ? { optimizeAll: false } : undefined)}
-                onKeyDown={(e) => { if (e.key === 'Enter') { (e.target as HTMLInputElement).blur(); } }}
-                style={{
-                  flex: 1, border: 'none', outline: 'none', padding: '0 8px',
-                  fontSize: '12px', color: '#000', background: 'transparent',
-                  height: '100%', cursor: 'text', fontFamily: 'inherit',
-                }}
-              />
-              <div style={{ width: '1px', height: '100%', background: '#dedede' }} />
-              <span style={{ padding: '0 8px', fontSize: '13px', color: '#666', flexShrink: 0 }}>{field.unit}</span>
-            </div>
-            {/* Tooltip hint */}
-            <div style={{ fontSize: '10px', color: '#aaa', padding: '2px 4px 0' }}>{field.hint}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div style={{ borderTop: '1px solid #e5e5e5', display: 'flex', padding: '0 16px' }}>
+      {/* ── TABS ── */}
+      <div style={{ borderTop: '1px solid #e5e5e5', display: 'flex', padding: '0 16px', background: '#fafafa' }}>
         <button
           onClick={() => setActiveTab('manual')}
           style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            padding: '12px 16px 10px', fontSize: '14px', fontWeight: '700',
-            color: activeTab === 'manual' ? '#000' : '#888',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '12px 0',
+            fontSize: '14px',
+            fontWeight: '700',
+            color: activeTab === 'manual' ? '#000' : '#999',
             borderBottom: activeTab === 'manual' ? '2px solid #000' : '2px solid transparent',
             marginBottom: '-1px',
+            flex: 1,
+            textAlign: 'center',
+            transition: 'color 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (activeTab !== 'manual') e.currentTarget.style.color = '#666';
+          }}
+          onMouseLeave={(e) => {
+            if (activeTab !== 'manual') e.currentTarget.style.color = '#999';
           }}
         >
           Manual Fees
@@ -341,11 +489,24 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
         <button
           onClick={() => setActiveTab('advanced')}
           style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            padding: '12px 16px 10px', fontSize: '14px', fontWeight: '700',
-            color: activeTab === 'advanced' ? '#000' : '#888',
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: '12px 0',
+            fontSize: '14px',
+            fontWeight: '700',
+            color: activeTab === 'advanced' ? '#000' : '#999',
             borderBottom: activeTab === 'advanced' ? '2px solid #000' : '2px solid transparent',
             marginBottom: '-1px',
+            flex: 1,
+            textAlign: 'center',
+            transition: 'color 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            if (activeTab !== 'advanced') e.currentTarget.style.color = '#666';
+          }}
+          onMouseLeave={(e) => {
+            if (activeTab !== 'advanced') e.currentTarget.style.color = '#999';
           }}
         >
           Advanced
@@ -358,78 +519,19 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
           ? Math.round(((sliderValue - monthlyFee) / monthlyFee) * 100)
           : 0;
         return (
-          <div style={{ padding: '16px 17px 20px', borderTop: '1px solid #e5e5e5' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#666' }}>Original:</span>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: '#555' }}>${monthlyFee.toLocaleString()}/unit</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#000' }}>Current:</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>${sliderValue.toLocaleString()}/unit</span>
-                {sliderValue !== monthlyFee && (
-                  <span style={{
-                    fontSize: '11px', fontWeight: '700', padding: '1px 6px', borderRadius: '8px',
-                    background: pctChange > 0 ? '#dcfce7' : '#fee2e2',
-                    color: pctChange > 0 ? '#166534' : '#991b1b',
-                  }}>
-                    {pctChange > 0 ? '+' : ''}{pctChange}%
-                  </span>
-                )}
+          <div style={{ padding: '14px 16px 20px', borderTop: '1px solid #e5e5e5' }}>
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#999' }}>Original Monthly Fees:</span>
+                <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${monthlyFee.toLocaleString()}</span>
               </div>
             </div>
-            <SliderRow
-              value={sliderValue}
-              max={sliderMax}
-              onChange={(v) => { if (optimizeAll) setOptimizeAll(false); setSliderValue(v); }}
-              onCommit={() => triggerApply(optimizeAll ? { optimizeAll: false } : undefined)}
-            />
-          </div>
-        );
-      })()}
 
-      {/* ─── ADVANCED TAB ─── */}
-      {activeTab === 'advanced' && (
-        <div style={{ borderTop: '1px solid #e5e5e5' }}>
-
-          {/* Original / Current + main slider */}
-          <div style={{ padding: '16px 17px 16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#666' }}>Original:</span>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: '#555' }}>${monthlyFee.toLocaleString()}/unit</span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <span style={{ fontSize: '13px', fontWeight: '600', color: '#000' }}>
-                {optimizeAll ? 'Optimized fee:' : 'Manual fee:'}
-              </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                {optimizeAll && computedFee != null ? (
-                  <span style={{ fontSize: '15px', fontWeight: '700', color: '#166534' }}>
-                    ${computedFee.toLocaleString()}/unit
-                  </span>
-                ) : (
-                  <span style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>
-                    ${sliderValue.toLocaleString()}/unit
-                  </span>
-                )}
-                {!optimizeAll && sliderValue !== monthlyFee && (() => {
-                  const pctChange = monthlyFee > 0
-                    ? Math.round(((sliderValue - monthlyFee) / monthlyFee) * 100)
-                    : 0;
-                  return (
-                    <span style={{
-                      fontSize: '11px', fontWeight: '700', padding: '1px 6px', borderRadius: '8px',
-                      background: pctChange > 0 ? '#dcfce7' : '#fee2e2',
-                      color: pctChange > 0 ? '#166534' : '#991b1b',
-                    }}>
-                      {pctChange > 0 ? '+' : ''}{pctChange}%
-                    </span>
-                  );
-                })()}
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#000' }}>Current Monthly Fees:</span>
+                <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${sliderValue.toLocaleString()}</span>
               </div>
-            </div>
-            {/* Slider: disabled (dimmed) when optimizeAll is on */}
-            <div style={{ opacity: optimizeAll ? 0.35 : 1, pointerEvents: optimizeAll ? 'none' : 'auto' }}>
               <SliderRow
                 value={sliderValue}
                 max={sliderMax}
@@ -437,18 +539,52 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
                 onCommit={() => triggerApply(optimizeAll ? { optimizeAll: false } : undefined)}
               />
             </div>
-            {optimizeAll && (
-              <div style={{ fontSize: '11px', color: '#888', marginTop: '8px', textAlign: 'center' }}>
-                Drag slider to override — this will turn off Auto-Optimize
+          </div>
+        );
+      })()}
+
+      {/* ─── ADVANCED TAB ─── */}
+      {activeTab === 'advanced' && (
+        <div>
+          {/* Original / Current + main slider */}
+          <div style={{ padding: '14px 16px' }}>
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#999' }}>Original Monthly Fees:</span>
+                <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${monthlyFee.toLocaleString()}</span>
               </div>
-            )}
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#000' }}>
+                  {optimizeAll ? 'Optimized fee:' : 'Current Monthly Fees:'}
+                </span>
+                <span style={{
+                  fontSize: '16px', fontWeight: '700',
+                  color: optimizeAll && computedFee != null ? '#166534' : '#000'
+                }}>
+                  {optimizeAll && computedFee != null
+                    ? `$${computedFee.toLocaleString()}`
+                    : `$${sliderValue.toLocaleString()}`}
+                </span>
+              </div>
+              {/* Slider: disabled (dimmed) when optimizeAll is on */}
+              <div style={{ opacity: optimizeAll ? 0.35 : 1, pointerEvents: optimizeAll ? 'none' : 'auto' }}>
+                <SliderRow
+                  value={sliderValue}
+                  max={sliderMax}
+                  onChange={(v) => { if (optimizeAll) setOptimizeAll(false); setSliderValue(v); }}
+                  onCommit={() => triggerApply(optimizeAll ? { optimizeAll: false } : undefined)}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* ── Optimize All Monthly Fees ── */}
+          {/* ── Auto-Optimize ── */}
           <div style={{
-            borderTop: '1px solid #e5e5e5', padding: '14px 17px',
+            borderTop: '1px solid #e5e5e5', padding: '14px 16px',
             background: optimizeAll ? '#f0fdf4' : 'transparent',
-            transition: 'background 0.2s',
+            transition: 'background 0.2s ease',
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Auto-Optimize</span>
@@ -460,31 +596,30 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
                 }}
               />
             </div>
-            <p style={{ fontSize: '11px', color: '#777', margin: 0, lineHeight: '1.55' }}>
+            <p style={{ fontSize: '12px', color: '#666', margin: 0, lineHeight: '1.5' }}>
               Finds the minimum fee that keeps the reserve fund above $0
               {settings.safetyNet ? ` (Safety Net: $${Number(settings.safetyNet).toLocaleString()})` : ''}
               {' '}for every projected year.
             </p>
             {optimizeAll && (
               <div style={{
-                marginTop: '10px', padding: '7px 10px',
+                marginTop: '10px', padding: '8px 10px',
                 background: '#dcfce7', borderRadius: '6px', border: '1px solid #86efac',
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               }}>
                 <span style={{ fontSize: '11px', color: '#166534', fontWeight: '600' }}>Computed optimal fee</span>
-                <span style={{ fontSize: '14px', color: '#166534', fontWeight: '700' }}>
-                  {computedFee != null ? `$${computedFee.toLocaleString()}/unit` : 'Computing…'}
+                <span style={{ fontSize: '13px', color: '#166534', fontWeight: '700' }}>
+                  {computedFee != null ? `$${computedFee.toLocaleString()}` : 'Computing…'}
                 </span>
               </div>
             )}
           </div>
 
           {/* ── Custom Range ── */}
-          <div style={{ borderTop: '1px solid #e5e5e5', padding: '14px 17px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div>
+          <div style={{ borderTop: '1px solid #e5e5e5', padding: '14px 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }}>
+              <div style={{ flex: 1 }}>
                 <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Custom Range</span>
-                <div style={{ fontSize: '10px', color: '#aaa', marginTop: '1px' }}>Flat fee override for specific years</div>
               </div>
               <Toggle value={customRangeEnabled} onChange={(v) => { setCustomRangeEnabled(v); triggerApply(); }} />
             </div>
@@ -497,12 +632,12 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
             {customRangeEnabled && customStartYear && customEndYear &&
               parseInt(customEndYear) <= parseInt(customStartYear) && (
               <div style={{ fontSize: '11px', color: '#dc2626', padding: '0 0 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>&#9888;</span> End year must be after start year
+                <span>⚠</span> End year must be after start year
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', opacity: customRangeEnabled ? 1 : 0.4 }}>
-              <span style={{ fontSize: '13px', color: '#333' }}>Fee per unit:</span>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>${customSlider.toLocaleString()}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', opacity: customRangeEnabled ? 1 : 0.4 }}>
+              <span style={{ fontSize: '12px', color: '#000', fontWeight: '600' }}>Current Monthly Fees:</span>
+              <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>${customSlider.toLocaleString()}</span>
             </div>
             <div style={{ opacity: customRangeEnabled ? 1 : 0.4, pointerEvents: customRangeEnabled ? 'auto' : 'none' }}>
               <SliderRow
@@ -514,14 +649,28 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
             </div>
           </div>
 
-          {/* ── Gradual Increase ── */}
-          <div style={{ borderTop: '1px solid #e5e5e5', padding: '14px 17px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div>
-                <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Gradual Increase</span>
-                <div style={{ fontSize: '10px', color: '#aaa', marginTop: '1px' }}>Linearly ramp fee up over a year range</div>
+          {/* ── Gradual Custom Range ── */}
+          <div style={{ borderTop: '1px solid #e5e5e5', padding: '14px 16px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }}>
+              <div style={{ flex: 1 }}>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Gradual Custom Range</span>
               </div>
-              <Toggle value={gradualRangeEnabled} onChange={(v) => { setGradualRangeEnabled(v); triggerApply(); }} />
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                {gradualRangeEnabled && (
+                  <div style={{
+                    background: '#12bf6c',
+                    color: '#fff',
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    fontSize: '11px',
+                    fontWeight: '700',
+                    marginRight: '6px',
+                  }}>
+                    ON
+                  </div>
+                )}
+                <Toggle value={gradualRangeEnabled} onChange={(v) => { setGradualRangeEnabled(v); triggerApply(); }} />
+              </div>
             </div>
             <YearRangeInputs
               startYear={gradualStartYear} endYear={gradualEndYear}
@@ -532,12 +681,12 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
             {gradualRangeEnabled && gradualStartYear && gradualEndYear &&
               parseInt(gradualEndYear) <= parseInt(gradualStartYear) && (
               <div style={{ fontSize: '11px', color: '#dc2626', padding: '0 0 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span>&#9888;</span> End year must be after start year
+                <span>⚠</span> End year must be after start year
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', opacity: gradualRangeEnabled ? 1 : 0.4 }}>
-              <span style={{ fontSize: '13px', color: '#333' }}>Total ramp-up:</span>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: '#000' }}>+{gradualSlider}%</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', opacity: gradualRangeEnabled ? 1 : 0.4 }}>
+              <span style={{ fontSize: '12px', color: '#000', fontWeight: '600' }}>Current Monthly Fees:</span>
+              <span style={{ fontSize: '16px', fontWeight: '700', color: '#000' }}>+{gradualSlider}%</span>
             </div>
             <div style={{ opacity: gradualRangeEnabled ? 1 : 0.4, pointerEvents: gradualRangeEnabled ? 'auto' : 'none' }}>
               <SliderRow value={gradualSlider} onChange={setGradualSlider} onCommit={triggerApply} max={100} suffix="%" />

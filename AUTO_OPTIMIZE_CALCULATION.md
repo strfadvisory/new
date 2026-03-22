@@ -318,11 +318,11 @@ healthScore =
 RESULT: 0-100 score (higher is better)
 ```
 
----
+--- {cm:2026-03-21}
 
-## Summary of Variables
+## Summary of Variables {cm:2026-03-21}
 
-| Variable | Type | Example | Purpose |
+| Variable | Type | Example | Purpose | {cm:2026-03-21}
 |----------|------|---------|---------|
 | `monthlyFeePerUnit` | $ | 68.42 | Fee per unit per month |
 | `totalUnits` | # | 200 | Number of apartments/condos |
