@@ -3,6 +3,7 @@ import FundGraph from './FundGraph';
 import LeftPanel from './LeftPanel';
 import { viewModeEmitter } from '../utils/eventEmitter';
 import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
+import type { YearPriorityConfig } from './YearPriorityPopup';
 
 interface CalculatorPageProps {
   association?: string;
@@ -113,6 +114,32 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
     setTotalHousingUnits(units);
   };
 
+  const handleYearPriorityApply = (config: YearPriorityConfig) => {
+    console.log('[CalculatorPage] Year priority applied by LeftPanel:', {
+      year: config.selectedYear,
+      itemCount: config.priorities.length,
+      filterType: config.filterType,
+    });
+
+    // Update the centralized state
+    setYearPriorityConfigs(prev => ({
+      ...prev,
+      [config.selectedYear]: config,
+    }));
+
+    // Trigger recalculation by dispatching event
+    if (selectedYearData && selectedYearData.year === config.selectedYear) {
+      console.log('[CalculatorPage] Broadcasting priority update to FundGraph...');
+      window.dispatchEvent(new CustomEvent('yearPrioritiesChanged', { 
+        detail: { 
+          year: config.selectedYear, 
+          priorities: config.priorities,
+          budgetAllocation: config.budgetAllocation,
+        } 
+      }));
+    }
+  };
+
   return (
     <div style={{
       width: '100%',
@@ -142,6 +169,8 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
             }
             totalHousingUnits={totalHousingUnits}
             onHousingUnitsChange={handleHousingUnitsChange}
+            yearPriorityConfigs={yearPriorityConfigs}
+            onYearPriorityApply={handleYearPriorityApply}
           />
         </div>
       )}

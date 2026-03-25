@@ -121,6 +121,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   const [splitItemId, setSplitItemId] = useState<string | null>(null);
   const [budgetAllocation, setBudgetAllocation] = useState<Record<string, number>>({});
   const [shouldApply, setShouldApply] = useState(false);
+  const [lastLoadedYear, setLastLoadedYear] = useState<number | undefined>(undefined);
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const popupRef = useRef<HTMLDivElement>(null);
@@ -138,17 +139,21 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     } : null,
   });
 
-  // Load real data when year or financial data changes
+  // Load real data ONLY when year changes, not on every prop update
   useEffect(() => {
     console.log('[YearPriorityPopup] useEffect triggered:', {
       isOpen,
       year,
       yearIndex,
+      lastLoadedYear,
       reserveItemsCount: reserveItems?.length || 0,
       hasConfig: !!financialConfig,
     });
     
-    if (isOpen && reserveItems && financialConfig && yearIndex !== undefined) {
+    // Only load if: popup is open AND we have data AND year has actually changed
+    if (isOpen && reserveItems && financialConfig && yearIndex !== undefined && yearIndex !== lastLoadedYear) {
+      console.log('[YearPriorityPopup] Year changed from', lastLoadedYear, 'to', yearIndex, '- reloading priorities');
+      
       // Run full diagnostic on first popup open
       if (yearIndex === 0) {
         console.log('[YearPriorityPopup] ====== RUNNING FULL DIAGNOSTIC FLOW ======');
@@ -176,7 +181,8 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
       
       console.log('[YearPriorityPopup] Setting priorities state to:', priorityItems.length, 'items');
       setPriorities(priorityItems);
-    } else {
+      setLastLoadedYear(yearIndex);
+    } else if (isOpen && (yearIndex === undefined || !reserveItems || !financialConfig)) {
       console.log('[YearPriorityPopup] Conditions not met for loading data:', {
         isOpenCheck: !!isOpen,
         hasItemsCheck: !!reserveItems,
@@ -184,7 +190,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
         yearIndexConstraint: yearIndex !== undefined,
       });
     }
-  }, [isOpen, yearIndex, reserveItems, financialConfig]);
+  }, [isOpen, yearIndex]);
 
   // Set initial position once when opened
   useEffect(() => {

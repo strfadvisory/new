@@ -14,9 +14,11 @@ interface LeftPanelProps {
   effectiveMonthlyFee?: number;
   totalHousingUnits?: number | null;
   onHousingUnitsChange?: (units: number | null) => void;
+  yearPriorityConfigs?: Record<number, any>;
+  onYearPriorityApply?: (config: YearPriorityConfig) => void;
 }
 
-const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYearData, excelData, onFeeApply, effectiveMonthlyFee, totalHousingUnits: propTotalUnits, onHousingUnitsChange }) => {
+const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYearData, excelData, onFeeApply, effectiveMonthlyFee, totalHousingUnits: propTotalUnits, onHousingUnitsChange, yearPriorityConfigs: propYearPriorityConfigs = {}, onYearPriorityApply }) => {
   console.log('[LeftPanel.tsx] Rendering with new design');
 
   const [feePopupOpen, setFeePopupOpen] = useState(false);
@@ -25,7 +27,6 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const [yearPriorityPopupPos, setYearPriorityPopupPos] = useState<{ x: number; y: number } | undefined>();
   const [popupYearBeingEdited, setPopupYearBeingEdited] = useState<number | null>(null);
   const [isEditingUnits, setIsEditingUnits] = useState(false);
-  const [yearPriorityConfigs, setYearPriorityConfigs] = useState<Record<number, YearPriorityConfig>>({});
   const [calculatedYearPriorityTotal, setCalculatedYearPriorityTotal] = useState<number>(0);
   const feeValueRef = useRef<HTMLSpanElement>(null);
   const yearPriorityValueRef = useRef<HTMLSpanElement>(null);
@@ -145,11 +146,17 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
     setYearPriorityPopupOpen(true);
   };
 
-  const handleYearPriorityApply = (config: YearPriorityConfig) => {
+  const handleLocalYearPriorityApply = (config: YearPriorityConfig) => {
     // Calculate total from priorities
     const totalCost = Math.round(config.priorities.reduce((sum, p) => sum + p.inflatedCost, 0));
     
-    // Save the priority configuration for this year
+    // Update the displayed total for the YEAR BEING EDITED (not the currently displayed year)
+    // This ensures updates work even if user navigates to a different year while popup is open
+    if (popupYearBeingEdited !== null && config.selectedYear === popupYearBeingEdited) {
+      console.log('[LeftPanel] Updating calculated year priority total to:', totalCost, 'for year:', popupYearBeingEdited);
+      setCalculatedYearPriorityTotal(totalCost);
+    }
+
     console.log('[LeftPanel] Year Priority config updated:', { 
       year: config.selectedYear, 
       itemCount: config.priorities.length, 
@@ -158,21 +165,13 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
       budgetAllocated: Object.keys(config.budgetAllocation || {}).length,
     });
 
-    // Store the configuration keyed by year
-    setYearPriorityConfigs((prev) => ({
-      ...prev,
-      [config.selectedYear]: config,
-    }));
-
-    // Update the displayed total for the YEAR BEING EDITED (not the currently displayed year)
-    // This ensures updates work even if user navigates to a different year while popup is open
-    if (popupYearBeingEdited !== null && config.selectedYear === popupYearBeingEdited) {
-      console.log('[LeftPanel] Updating calculated year priority total to:', totalCost, 'for year:', popupYearBeingEdited);
-      setCalculatedYearPriorityTotal(totalCost);
+    // Call parent callback to update central state
+    console.log('[LeftPanel] Calling parent onYearPriorityApply callback');
+    if (onYearPriorityApply) {
+      onYearPriorityApply(config);
     }
 
     // Broadcast change to ensure graph and list update
-    // This will trigger a recalculation in the parent component
     console.log('[LeftPanel] Broadcasting priority update to parent components');
     window.dispatchEvent(new CustomEvent('yearPriorityUpdated', { 
       detail: { 
@@ -200,9 +199,9 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
 
     // When popup is open, check if we have a saved config for the locked year
     if (popupYearBeingEdited !== null) {
-      const savedConfig = yearPriorityConfigs[popupYearBeingEdited];
+      const savedConfig = propYearPriorityConfigs[popupYearBeingEdited];
       if (savedConfig) {
-        const totalCost = Math.round(savedConfig.priorities.reduce((sum, p) => sum + p.inflatedCost, 0));
+        const totalCost = Math.round(savedConfig.priorities.reduce((sum: number, p: PriorityItem) => sum + p.inflatedCost, 0));
         setCalculatedYearPriorityTotal(totalCost);
         console.log('[LeftPanel] Loaded saved config for locked year', popupYearBeingEdited, 'with total:', totalCost);
       } else {
@@ -215,7 +214,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         console.log('[LeftPanel] Initialized from projection for locked year', popupYearBeingEdited, 'with total:', initialTotal);
       }
     }
-  }, [yearPriorityPopupOpen, popupYearBeingEdited, proj, yearPriorityConfigs, configStartYear]);
+  }, [yearPriorityPopupOpen, popupYearBeingEdited, proj, propYearPriorityConfigs, configStartYear]);
 
   const handleUnitsSave = () => {
     setIsEditingUnits(false);
@@ -409,7 +408,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         reserveItems={reserveItems}
         financialConfig={financialConfig}
         initialPosition={yearPriorityPopupPos}
-        onApply={handleYearPriorityApply}
+        onApply={handleLocalYearPriorityApply}
       />
     </div>
   );

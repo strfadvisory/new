@@ -349,6 +349,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
   const [sel2, setSel2] = useState<string | null>(null);
   const [calcOpenRow, setCalcOpenRow] = useState<number | null>(null);
   const listTableScrollRef = useRef<HTMLDivElement>(null);
+  const prevExcelDataRef = useRef<any>(null);
 
   // Unique key derived from excelData identity — used to trigger scroll-reset in sub-graphs
   const dataResetKey = excelData?.timestamp ?? excelData?.studyId ?? excelData;
@@ -485,17 +486,22 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     return { cashflowData: generatedCashflowData, feeData: generatedFeeData };
   }, [excelData, feeOverride, totalHousingUnits, yearPriorityConfigs]);
 
-  // Auto-select the first year whenever cashflowData is recalculated (new study loaded).
-  // This keeps LeftPanel in sync with the graph without requiring a manual click.
-  useEffect(() => {
-    if (cashflowData.length > 0 && onYearSelect) {
-      setSel1('f0');
-      setSel2('c0');
-      onYearSelect(cashflowData[0]);
+  // Auto-select the first year ONLY when a new study is loaded (excelData changes).
+  // Don't auto-select when yearPriorityConfigs changes - user's current selection should persist.
+  React.useEffect(() => {
+    // Check if excelData changed (comparing by reference via prevExcelDataRef)
+    if (excelData !== prevExcelDataRef.current) {
+      prevExcelDataRef.current = excelData;
+      
+      // Only auto-select if we have data and a callback
+      if (cashflowData.length > 0 && onYearSelect) {
+        console.log('[FundGraph] Auto-selecting first year for new study');
+        setSel1('f0');
+        setSel2('c0');
+        onYearSelect(cashflowData[0]);
+      }
     }
-  // cashflowData reference only changes when excelData/feeOverride changes (useMemo)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cashflowData]);
+  }, [excelData, cashflowData, onYearSelect]);
 
   // Listen for year priority changes and log (graph auto-recalculates via useMemo dependency)
   React.useEffect(() => {
