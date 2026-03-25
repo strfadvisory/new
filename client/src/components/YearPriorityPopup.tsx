@@ -117,8 +117,8 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<number>(0);
-  const [splitModalOpen, setSplitModalOpen] = useState(false);
-  const [splitItemId, setSplitItemId] = useState<string | null>(null);
+  const [splitInlineId, setSplitInlineId] = useState<string | null>(null);
+  const [splitAmount, setSplitAmount] = useState<number>(0);
   const [budgetAllocation, setBudgetAllocation] = useState<Record<string, number>>({});
   const [shouldApply, setShouldApply] = useState(false);
   const [lastLoadedYear, setLastLoadedYear] = useState<number | undefined>(undefined);
@@ -316,44 +316,54 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     setShouldApply(true);
   };
 
-  const handleOpenSplitModal = (id: string) => {
-    setSplitItemId(id);
-    setSplitModalOpen(true);
+  const handleOpenSplitInline = (id: string) => {
+    const item = priorities.find((p) => p.id === id);
+    if (item) {
+      setSplitInlineId(id);
+      setSplitAmount(Math.round(item.inflatedCost / 2));
+    }
   };
 
-  const handleCloseSplitModal = () => {
-    setSplitModalOpen(false);
-    setSplitItemId(null);
+  const handleCloseSplitInline = () => {
+    setSplitInlineId(null);
+    setSplitAmount(0);
   };
 
-  const handleSplitItem = (proportion: number) => {
-    if (!splitItemId || proportion <= 0 || proportion >= 100) {
-      alert('Enter a valid split percentage (0-100)');
+  const handleConfirmSplit = () => {
+    if (!splitInlineId) return;
+    
+    const originalItem = priorities.find((p) => p.id === splitInlineId);
+    if (!originalItem) return;
+
+    // Validate amount
+    if (splitAmount <= 0) {
+      alert('Split amount must be greater than 0');
       return;
     }
     
-    const originalItem = priorities.find((p) => p.id === splitItemId);
-    if (!originalItem) return;
+    if (splitAmount >= originalItem.inflatedCost) {
+      alert(`Split amount must be less than parent cost (${Math.round(originalItem.inflatedCost)})`);
+      return;
+    }
 
-    const splitCost = originalItem.inflatedCost * (proportion / 100);
-    const remainingCost = originalItem.inflatedCost - splitCost;
+    console.log('[YearPriorityPopup] Splitting item:', { id: splitInlineId, childAmount: splitAmount, parentAmount: originalItem.inflatedCost - splitAmount });
 
-    console.log('[YearPriorityPopup] Splitting item:', { id: splitItemId, proportion, splitCost, remainingCost });
-
-    const newId = `${splitItemId}-split-${Date.now()}`;
+    const newId = `${splitInlineId}-split-${Date.now()}`;
+    const parentAmount = originalItem.inflatedCost - splitAmount;
+    
     const newItems = priorities.map((p) =>
-      p.id === splitItemId ? { ...p, inflatedCost: remainingCost, isSplit: true } : p
+      p.id === splitInlineId ? { ...p, inflatedCost: parentAmount, isSplit: true } : p
     );
     
     newItems.push({
       ...originalItem,
       id: newId,
-      inflatedCost: splitCost,
+      inflatedCost: splitAmount,
       isSplit: true,
     });
 
     setPriorities(newItems);
-    handleCloseSplitModal();
+    handleCloseSplitInline();
     setShouldApply(true);
   };
 
@@ -375,122 +385,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     filterType,
   });
 
-  // Split Modal Component
-  const SplitModal = () => {
-    const [splitPercent, setSplitPercent] = useState(50);
-    const item = priorities.find((p) => p.id === splitItemId);
-    
-    if (!item) return null;
 
-    const part1 = item.inflatedCost * (splitPercent / 100);
-    const part2 = item.inflatedCost - part1;
-
-    return (
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0,0,0,0.3)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 3000,
-      }}>
-        <div style={{
-          background: '#fff',
-          borderRadius: '10px',
-          padding: '24px',
-          width: '90%',
-          maxWidth: '380px',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
-        }}>
-          <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: '#000' }}>
-            Split: {item.itemName}
-          </div>
-          <div style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>
-            Original Cost: ${Math.round(item.inflatedCost).toLocaleString()}
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ fontSize: '12px', fontWeight: '600', color: '#000', display: 'block', marginBottom: '8px' }}>
-              Split Percentage: {splitPercent}%
-            </label>
-            <input
-              type="range"
-              min="1"
-              max="99"
-              value={splitPercent}
-              onChange={(e) => setSplitPercent(Number(e.target.value))}
-              style={{ width: '100%', cursor: 'pointer' }}
-            />
-          </div>
-
-          <div style={{
-            padding: '12px',
-            background: '#f7f7f7',
-            borderRadius: '6px',
-            marginBottom: '20px',
-            fontSize: '12px',
-          }}>
-            <div style={{ marginBottom: '8px' }}>
-              <span style={{ color: '#666' }}>Part 1:</span>
-              <span style={{ fontWeight: '700', color: '#12bf6c', marginLeft: '8px' }}>
-                ${Math.round(part1).toLocaleString()}
-              </span>
-            </div>
-            <div>
-              <span style={{ color: '#666' }}>Part 2:</span>
-              <span style={{ fontWeight: '700', color: '#12bf6c', marginLeft: '8px' }}>
-                ${Math.round(part2).toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button
-              onClick={handleCloseSplitModal}
-              style={{
-                flex: 1,
-                padding: '10px',
-                border: '1px solid #dedede',
-                borderRadius: '6px',
-                background: '#fff',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: '600',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#f7f7f7'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => handleSplitItem(splitPercent)}
-              style={{
-                flex: 1,
-                padding: '10px',
-                border: 'none',
-                borderRadius: '6px',
-                background: '#12bf6c',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontWeight: '600',
-                transition: 'all 0.2s ease',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#0da85c'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#12bf6c'}
-            >
-              Split Now
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <>
@@ -649,14 +544,14 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
             </div>
           ) : (
             filteredPriorities.map((item, index) => (
-              <div
-                key={item.id}
-                draggable
-                onDragStart={() => handleDragStart(item.id)}
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(item.id)}
-                style={{
-                  display: 'flex',
+              <React.Fragment key={item.id}>
+                <div
+                  draggable
+                  onDragStart={() => handleDragStart(item.id)}
+                  onDragOver={handleDragOver}
+                  onDrop={() => handleDrop(item.id)}
+                  style={{
+                    display: 'flex',
                   alignItems: 'center',
                   padding: '12px 12px',
                   borderBottom: index < filteredPriorities.length - 1 ? '1px solid #e5e5e5' : 'none',
@@ -764,7 +659,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
                   <button
-                    onClick={() => handleOpenSplitModal(item.id)}
+                    onClick={() => handleOpenSplitInline(item.id)}
                     style={{
                       padding: '4px 8px',
                       border: '1px solid #c3c3c3',
@@ -811,12 +706,102 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                   </button>
                 </div>
               </div>
+
+              {/* Inline Split UI */}
+              {splitInlineId === item.id && (
+                <div style={{
+                  background: '#f9fafb',
+                  border: '1px solid #e5e5e5',
+                  borderRadius: '6px',
+                  padding: '12px',
+                  marginLeft: '26px',
+                  marginRight: '12px',
+                  marginTop: '8px',
+                  marginBottom: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#000' }}>
+                    {item.itemName}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="number"
+                      value={splitAmount}
+                      onChange={(e) => {
+                        const val = Math.min(Number(e.target.value), item.inflatedCost - 1);
+                        setSplitAmount(Math.max(0, val));
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '6px 8px',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '4px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                      }}
+                      min="0"
+                      max={item.inflatedCost - 1}
+                      placeholder="Enter amount"
+                    />
+
+                    <button
+                      onClick={handleConfirmSplit}
+                      style={{
+                        padding: '6px 12px',
+                        background: '#12bf6c',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#0da85c'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#12bf6c'}
+                    >
+                      ✓
+                    </button>
+
+                    <button
+                      onClick={handleCloseSplitInline}
+                      style={{
+                        padding: '6px 8px',
+                        background: '#e5e5e5',
+                        color: '#666',
+                        border: 'none',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#d9d9d9'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#e5e5e5'}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div style={{ fontSize: '11px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Child amount:</span>
+                    <span style={{ fontWeight: '600', color: '#12bf6c' }}>${Math.round(splitAmount).toLocaleString()}</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Parent remaining:</span>
+                    <span style={{ fontWeight: '600', color: '#666' }}>${Math.round(item.inflatedCost - splitAmount).toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
             ))
           )}
         </div>
       </div>
     </div>
-    {splitModalOpen && <SplitModal />}
     </>
   );
 };

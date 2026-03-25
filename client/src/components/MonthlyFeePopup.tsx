@@ -580,41 +580,6 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
             </div>
           </div>
 
-          {/* ── Auto-Optimize ── */}
-          <div style={{
-            borderTop: '1px solid #e5e5e5', padding: '14px 16px',
-            background: optimizeAll ? '#f0fdf4' : 'transparent',
-            transition: 'background 0.2s ease',
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Auto-Optimize</span>
-              <Toggle
-                value={optimizeAll}
-                onChange={(v) => {
-                  setOptimizeAll(v);
-                  triggerApply({ optimizeAll: v });
-                }}
-              />
-            </div>
-            <p style={{ fontSize: '12px', color: '#666', margin: 0, lineHeight: '1.5' }}>
-              Finds the minimum fee that keeps the reserve fund above $0
-              {settings.safetyNet ? ` (Safety Net: $${Number(settings.safetyNet).toLocaleString()})` : ''}
-              {' '}for every projected year.
-            </p>
-            {optimizeAll && (
-              <div style={{
-                marginTop: '10px', padding: '8px 10px',
-                background: '#dcfce7', borderRadius: '6px', border: '1px solid #86efac',
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              }}>
-                <span style={{ fontSize: '11px', color: '#166534', fontWeight: '600' }}>Computed optimal fee</span>
-                <span style={{ fontSize: '13px', color: '#166534', fontWeight: '700' }}>
-                  {computedFee != null ? `$${computedFee.toLocaleString()}` : 'Computing…'}
-                </span>
-              </div>
-            )}
-          </div>
-
           {/* ── Custom Range ── */}
           <div style={{ borderTop: '1px solid #e5e5e5', padding: '14px 16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }}>
