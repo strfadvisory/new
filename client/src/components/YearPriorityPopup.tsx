@@ -274,7 +274,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
             {priorityCount} Priorities
           </span>
           <div style={{ fontSize: '14px', fontWeight: '700', color: '#000', marginTop: '2px' }}>
-            ${totalAmount.toLocaleString()}
+            ${Math.round(totalAmount).toLocaleString()}
           </div>
         </div>
         <button
@@ -307,13 +307,13 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
           <div>
             <div style={{ fontSize: '12px', color: '#999', fontWeight: '400' }}>SIRs Items</div>
             <div style={{ fontSize: '14px', fontWeight: '700', color: '#000', marginTop: '4px' }}>
-              ${sirsAmount.toLocaleString()}
+              ${Math.round(sirsAmount).toLocaleString()}
             </div>
           </div>
           <div>
             <div style={{ fontSize: '12px', color: '#999', fontWeight: '400' }}>Non SIRs Items</div>
             <div style={{ fontSize: '14px', fontWeight: '700', color: '#000', marginTop: '4px' }}>
-              ${nonSirsAmount.toLocaleString()}
+              ${Math.round(nonSirsAmount).toLocaleString()}
             </div>
           </div>
         </div>
@@ -432,7 +432,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                     color: '#12bf6c',
                     marginTop: '2px',
                   }}>
-                    ${item.inflatedCost.toLocaleString()}
+                    ${Math.round(item.inflatedCost).toLocaleString()}
                   </div>
                 </div>
 
