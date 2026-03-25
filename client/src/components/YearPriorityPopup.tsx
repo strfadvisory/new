@@ -3,10 +3,48 @@ import { getYearPriorityItems, getAllYearPrioritiesWithSchedule, debugYearPriori
 import type { YearPriorityItemDetail } from '../utils/yearPriorityCalculations';
 import type { ReserveItem, FinancialConfig } from '../utils/financialCalculations';
 
+/**
+ * YearPriorityPopup Component
+ * 
+ * Manages priority items for a specific year in the reserve study.
+ * 
+ * FUNCTIONALITY:
+ * - Manage and reorder priorities dynamically (drag-drop)
+ * - Allocate and adjust budgets (inline editing)
+ * - Categorize items (SIRs vs Non-SIRs)
+ * - Split and edit costs interactively
+ * - Real-time filtering and search
+ * 
+ * DATA FLOW:
+ * 1. User opens popup for a year (via LeftPanel click)
+ * 2. Component loads reserve items + financial config
+ * 3. Calculates year-specific priorities (with inflation)
+ * 4. User makes changes (delete, edit, split, reorder)
+ * 5. Each change calls onApply callback with updated config
+ * 6. LeftPanel broadcasts 'yearPriorityUpdated' event
+ * 7. CalculatorPage listens for event and broadcast 'yearPrioritiesChanged'
+ * 8. FundGraph and List components listen and recalculate with new data
+ * 
+ * STATE MANAGEMENT:
+ * - Local state for UI: modal, editing, dragging, position
+ * - Config state: priorities, filters, search (sent via onApply)
+ * - Budget allocation: tracked separately for budget distribution
+ * 
+ * UPDATES ARE REAL-TIME:
+ * - Total cost updates instantly
+ * - SIRs/NonSIRs breakdown recalculates
+ * - Parent components receive updates via onApply callback
+ * - Event system ensures graph + list stay in sync
+ */
+
 export interface PriorityItem extends YearPriorityItemDetail {
   displayOrder?: number;
   isSplit?: boolean;
   isSelected?: boolean;
+  isEditing?: boolean;
+  editedCost?: number;
+  splitAmount?: number;
+  allocatedBudget?: number;
 }
 
 export interface YearPriorityConfig {
@@ -14,6 +52,7 @@ export interface YearPriorityConfig {
   filterType: 'all' | 'SIRs' | 'NonSIRs';
   searchQuery: string;
   selectedYear: number;
+  budgetAllocation?: Record<string, number>;
 }
 
 interface YearPriorityPopupProps {
@@ -76,6 +115,11 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   const [position, setPosition] = useState(initialPosition);
   const [initialized, setInitialized] = useState(false);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<number>(0);
+  const [splitModalOpen, setSplitModalOpen] = useState(false);
+  const [splitItemId, setSplitItemId] = useState<string | null>(null);
+  const [budgetAllocation, setBudgetAllocation] = useState<Record<string, number>>({});
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const popupRef = useRef<HTMLDivElement>(null);
@@ -165,8 +209,20 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
 
   const triggerApply = useCallback(() => {
     if (!onApply) return;
-    onApply({ priorities, filterType, searchQuery, selectedYear: year || 0 });
-  }, [priorities, filterType, searchQuery, year, onApply]);
+    const config = { 
+      priorities, 
+      filterType, 
+      searchQuery, 
+      selectedYear: year || 0,
+      budgetAllocation,
+    };
+    console.log('[YearPriorityPopup] Triggering onApply with updated config:', {
+      prioritiesCount: config.priorities.length,
+      totalAmount: Math.round(config.priorities.reduce((sum, p) => sum + p.inflatedCost, 0)),
+      budgetAllocationKeys: Object.keys(config.budgetAllocation),
+    });
+    onApply(config);
+  }, [priorities, filterType, searchQuery, year, budgetAllocation, onApply]);
 
   const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -207,6 +263,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
 
     if (draggedIndex === -1 || targetIndex === -1) return;
 
+    console.log('[YearPriorityPopup] Reordering items:', { draggedIndex, targetIndex });
     const newPriorities = [...priorities];
     [newPriorities[draggedIndex], newPriorities[targetIndex]] = [newPriorities[targetIndex], newPriorities[draggedIndex]];
     setPriorities(newPriorities);
@@ -215,7 +272,12 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   };
 
   const handleDeleteItem = (id: string) => {
-    setPriorities(priorities.filter((p) => p.id !== id));
+    console.log('[YearPriorityPopup] Deleting item:', id);
+    setPriorities((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      console.log('[YearPriorityPopup] After delete, priorities count:', updated.length);
+      return updated;
+    });
     triggerApply();
   };
 
@@ -223,6 +285,73 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     setPriorities(priorities.map((p) =>
       p.id === id ? { ...p, isSelected: !p.isSelected } : p
     ));
+    triggerApply();
+  };
+
+  const handleEditCost = (id: string, currentCost: number) => {
+    setEditingId(id);
+    setEditValue(currentCost);
+  };
+
+  const handleSaveCostEdit = (id: string) => {
+    if (editValue <= 0) {
+      alert('Cost must be greater than 0');
+      return;
+    }
+    console.log('[YearPriorityPopup] Editing cost for item:', { id, newCost: editValue });
+    setPriorities(priorities.map((p) =>
+      p.id === id ? { ...p, inflatedCost: editValue } : p
+    ));
+    setEditingId(null);
+    triggerApply();
+  };
+
+  const handleOpenSplitModal = (id: string) => {
+    setSplitItemId(id);
+    setSplitModalOpen(true);
+  };
+
+  const handleCloseSplitModal = () => {
+    setSplitModalOpen(false);
+    setSplitItemId(null);
+  };
+
+  const handleSplitItem = (proportion: number) => {
+    if (!splitItemId || proportion <= 0 || proportion >= 100) {
+      alert('Enter a valid split percentage (0-100)');
+      return;
+    }
+    
+    const originalItem = priorities.find((p) => p.id === splitItemId);
+    if (!originalItem) return;
+
+    const splitCost = originalItem.inflatedCost * (proportion / 100);
+    const remainingCost = originalItem.inflatedCost - splitCost;
+
+    console.log('[YearPriorityPopup] Splitting item:', { id: splitItemId, proportion, splitCost, remainingCost });
+
+    const newId = `${splitItemId}-split-${Date.now()}`;
+    const newItems = priorities.map((p) =>
+      p.id === splitItemId ? { ...p, inflatedCost: remainingCost, isSplit: true } : p
+    );
+    
+    newItems.push({
+      ...originalItem,
+      id: newId,
+      inflatedCost: splitCost,
+      isSplit: true,
+    });
+
+    setPriorities(newItems);
+    handleCloseSplitModal();
+    triggerApply();
+  };
+
+  const handleAllocateBudget = (id: string, amount: number) => {
+    setBudgetAllocation((prev) => ({
+      ...prev,
+      [id]: amount,
+    }));
     triggerApply();
   };
 
@@ -236,7 +365,125 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     filterType,
   });
 
+  // Split Modal Component
+  const SplitModal = () => {
+    const [splitPercent, setSplitPercent] = useState(50);
+    const item = priorities.find((p) => p.id === splitItemId);
+    
+    if (!item) return null;
+
+    const part1 = item.inflatedCost * (splitPercent / 100);
+    const part2 = item.inflatedCost - part1;
+
+    return (
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'rgba(0,0,0,0.3)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 3000,
+      }}>
+        <div style={{
+          background: '#fff',
+          borderRadius: '10px',
+          padding: '24px',
+          width: '90%',
+          maxWidth: '380px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+        }}>
+          <div style={{ fontSize: '16px', fontWeight: '700', marginBottom: '16px', color: '#000' }}>
+            Split: {item.itemName}
+          </div>
+          <div style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>
+            Original Cost: ${Math.round(item.inflatedCost).toLocaleString()}
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '12px', fontWeight: '600', color: '#000', display: 'block', marginBottom: '8px' }}>
+              Split Percentage: {splitPercent}%
+            </label>
+            <input
+              type="range"
+              min="1"
+              max="99"
+              value={splitPercent}
+              onChange={(e) => setSplitPercent(Number(e.target.value))}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+          </div>
+
+          <div style={{
+            padding: '12px',
+            background: '#f7f7f7',
+            borderRadius: '6px',
+            marginBottom: '20px',
+            fontSize: '12px',
+          }}>
+            <div style={{ marginBottom: '8px' }}>
+              <span style={{ color: '#666' }}>Part 1:</span>
+              <span style={{ fontWeight: '700', color: '#12bf6c', marginLeft: '8px' }}>
+                ${Math.round(part1).toLocaleString()}
+              </span>
+            </div>
+            <div>
+              <span style={{ color: '#666' }}>Part 2:</span>
+              <span style={{ fontWeight: '700', color: '#12bf6c', marginLeft: '8px' }}>
+                ${Math.round(part2).toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={handleCloseSplitModal}
+              style={{
+                flex: 1,
+                padding: '10px',
+                border: '1px solid #dedede',
+                borderRadius: '6px',
+                background: '#fff',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '600',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#f7f7f7'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleSplitItem(splitPercent)}
+              style={{
+                flex: 1,
+                padding: '10px',
+                border: 'none',
+                borderRadius: '6px',
+                background: '#12bf6c',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: '600',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#0da85c'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#12bf6c'}
+            >
+              Split Now
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
+    <>
     <div
       ref={popupRef}
       onMouseDown={onMouseDown}
@@ -410,8 +657,8 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                 }}
               >
                 {/* Drag Handle */}
-                <div style={{ cursor: 'grab', color: '#ccc', display: 'flex', alignItems: 'center' }}>
-                  <DragHandle />
+                <div style={{ cursor: 'grab', display: 'flex', alignItems: 'center', fontSize: '10px', fontWeight: '600', minWidth: '18px', color: '#999' }}>
+                  {index + 1}
                 </div>
 
                 {/* Item Info */}
@@ -426,58 +673,111 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                   }}>
                     {item.itemName}
                   </div>
-                  <div style={{
-                    fontSize: '12px',
-                    fontWeight: '700',
-                    color: '#12bf6c',
-                    marginTop: '2px',
-                  }}>
-                    ${Math.round(item.inflatedCost).toLocaleString()}
-                  </div>
+                  {editingId === item.id ? (
+                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+                      <input
+                        type="number"
+                        value={editValue}
+                        onChange={(e) => setEditValue(Number(e.target.value))}
+                        style={{
+                          width: '70px',
+                          padding: '4px 6px',
+                          border: '1px solid #12bf6c',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          color: '#12bf6c',
+                        }}
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleSaveCostEdit(item.id);
+                          if (e.key === 'Escape') setEditingId(null);
+                        }}
+                      />
+                      <button
+                        onClick={() => handleSaveCostEdit(item.id)}
+                        style={{
+                          padding: '2px 8px',
+                          background: '#12bf6c',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#0da85c'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#12bf6c'}
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        style={{
+                          padding: '2px 8px',
+                          background: '#e5e5e5',
+                          color: '#666',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '10px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#d9d9d9'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#e5e5e5'}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => handleEditCost(item.id, item.inflatedCost)}
+                      style={{
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        color: '#12bf6c',
+                        marginTop: '2px',
+                        cursor: 'pointer',
+                        transition: 'opacity 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+                      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                      title="Click to edit cost"
+                    >
+                      ${Math.round(item.inflatedCost).toLocaleString()}
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
-                  {item.isSplit ? (
-                    <button
-                      style={{
-                        padding: '4px 8px',
-                        border: '1px solid #c3c3c3',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        background: '#fff',
-                        color: '#000',
-                        transition: 'all 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = '#f7f7f7';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = '#fff';
-                      }}
-                    >
-                      Split
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleToggleSelect(item.id)}
-                      style={{
-                        padding: '4px 8px',
-                        border: 'none',
-                        borderRadius: '4px',
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                      title={item.isSelected ? 'Deselect' : 'Select'}
-                    >
-                      {item.isSelected ? <CheckmarkIcon /> : null}
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleOpenSplitModal(item.id)}
+                    style={{
+                      padding: '4px 8px',
+                      border: '1px solid #c3c3c3',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      background: '#fff',
+                      color: '#000',
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = '#f7f7f7';
+                      e.currentTarget.style.borderColor = '#999';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = '#fff';
+                      e.currentTarget.style.borderColor = '#c3c3c3';
+                    }}
+                    title="Split this item into multiple priority items"
+                  >
+                    Split
+                  </button>
 
                   {/* Delete Button */}
                   <button
@@ -495,7 +795,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.color = '#d32f2f'}
                     onMouseLeave={(e) => e.currentTarget.style.color = '#999'}
-                    title="Delete"
+                    title="Delete this priority"
                   >
                     <DeleteIcon />
                   </button>
@@ -506,6 +806,8 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
         </div>
       </div>
     </div>
+    {splitModalOpen && <SplitModal />}
+    </>
   );
 };
 

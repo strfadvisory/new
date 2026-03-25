@@ -57,6 +57,40 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
       viewModeEmitter.off('viewModeChange', handleViewModeChange);
     };
   }, []);
+
+  // Listen for priority updates and trigger recalculation
+  React.useEffect(() => {
+    const handlePriorityUpdate = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { year, priorities, budgetAllocation } = customEvent.detail;
+      
+      console.log('[CalculatorPage] Year priority updated event received:', {
+        year,
+        prioritiesCount: priorities.length,
+        budgetAllocationCount: Object.keys(budgetAllocation || {}).length,
+      });
+
+      // Trigger recalculation by simulating a year select with the new data
+      // This will cause FundGraph to recalculate with the updated priorities
+      if (selectedYearData && selectedYearData.year === year) {
+        console.log('[CalculatorPage] Broadcasting priority update to FundGraph...');
+        // Dispatch event to FundGraph or trigger a state update
+        window.dispatchEvent(new CustomEvent('yearPrioritiesChanged', { 
+          detail: { 
+            year, 
+            priorities,
+            budgetAllocation,
+          } 
+        }));
+      }
+    };
+
+    window.addEventListener('yearPriorityUpdated', handlePriorityUpdate);
+
+    return () => {
+      window.removeEventListener('yearPriorityUpdated', handlePriorityUpdate);
+    };
+  }, [selectedYearData]);
  
   const toggleLeftPanel = () => {
     setIsLeftPanelCollapsed(!isLeftPanelCollapsed);

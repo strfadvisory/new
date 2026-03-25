@@ -24,6 +24,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const [yearPriorityPopupOpen, setYearPriorityPopupOpen] = useState(false);
   const [yearPriorityPopupPos, setYearPriorityPopupPos] = useState<{ x: number; y: number } | undefined>();
   const [isEditingUnits, setIsEditingUnits] = useState(false);
+  const [yearPriorityConfigs, setYearPriorityConfigs] = useState<Record<number, YearPriorityConfig>>({});
   const feeValueRef = useRef<HTMLSpanElement>(null);
   const yearPriorityValueRef = useRef<HTMLSpanElement>(null);
   const unitsInputRef = useRef<HTMLInputElement>(null);
@@ -139,13 +140,31 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   };
 
   const handleYearPriorityApply = (config: YearPriorityConfig) => {
-    // Track priority reordering and filter state for this year
-    // The actual data is recalculated from reserve items when popup opens
-    console.log('Year Priority config updated:', { 
+    // Save the priority configuration for this year
+    console.log('[LeftPanel] Year Priority config updated:', { 
       year: config.selectedYear, 
       itemCount: config.priorities.length, 
-      filterType: config.filterType 
+      filterType: config.filterType,
+      totalCost: Math.round(config.priorities.reduce((sum, p) => sum + p.inflatedCost, 0)),
+      budgetAllocated: Object.keys(config.budgetAllocation || {}).length,
     });
+
+    // Store the configuration keyed by year
+    setYearPriorityConfigs((prev) => ({
+      ...prev,
+      [config.selectedYear]: config,
+    }));
+
+    // Broadcast change to ensure graph and list update
+    // This will trigger a recalculation in the parent component
+    console.log('[LeftPanel] Broadcasting priority update to parent components');
+    window.dispatchEvent(new CustomEvent('yearPriorityUpdated', { 
+      detail: { 
+        year: config.selectedYear, 
+        priorities: config.priorities,
+        budgetAllocation: config.budgetAllocation,
+      } 
+    }));
   };
 
   const handleUnitsEdit = () => {
