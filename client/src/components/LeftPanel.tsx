@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import MonthlyFeePopup from './MonthlyFeePopup';
 import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
+import YearPriorityPopup from './YearPriorityPopup';
+import type { PriorityItem, YearPriorityConfig } from './YearPriorityPopup';
+import type { FinancialConfig, ReserveItem } from '../utils/financialCalculations';
 
 interface LeftPanelProps {
   isCollapsed: boolean;
@@ -18,8 +21,11 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
 
   const [feePopupOpen, setFeePopupOpen] = useState(false);
   const [feePopupPos, setFeePopupPos] = useState<{ x: number; y: number } | undefined>();
+  const [yearPriorityPopupOpen, setYearPriorityPopupOpen] = useState(false);
+  const [yearPriorityPopupPos, setYearPriorityPopupPos] = useState<{ x: number; y: number } | undefined>();
   const [isEditingUnits, setIsEditingUnits] = useState(false);
   const feeValueRef = useRef<HTMLSpanElement>(null);
+  const yearPriorityValueRef = useRef<HTMLSpanElement>(null);
   const unitsInputRef = useRef<HTMLInputElement>(null);
 
   // Full projection record for the selected year (attached by FundGraph)
@@ -50,12 +56,96 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const displayFundingRatio   = proj ? `${proj.fundingRatio.toFixed(1)}%` : 'N/A';
   const displayCumContrib     = proj ? `$${Math.round(proj.cumulativeContributions).toLocaleString()}` : 'N/A';
 
+  // Calculate yearIndex for financial calculations (0-based index from config start year)
+  const yearIndex = proj ? proj.year - configStartYear : 0;
+  
+  // Get reserve items from excelData - handle nested structure like FundGraph does
+  const actualData = excelData?.data?.data || excelData?.data || {};
+  const items = actualData.items || [];
+  
+  console.log('[LeftPanel] DETAILED DEBUG - Year Priority Data Flow:', {
+    hasExcelData: !!excelData,
+    hasProjection: !!proj,
+    selectedYear: year,
+    configStartYear,
+    projYear: proj?.year,
+    calculatedYearIndex: yearIndex,
+    itemsCount: items?.length || 0,
+    firstItem: items?.[0] ? {
+      itemName: items[0].itemName,
+      expectedLife: items[0].expectedLife,
+      remainingLife: items[0].remainingLife,
+      replacementCost: items[0].replacementCost,
+      sirsType: items[0].sirsType,
+    } : 'NO ITEMS',
+    configObjectKeys: Object.keys(config).slice(0, 10),
+  });
+  
+  // Build financialConfig exactly like FundGraph does
+  const financialConfig: FinancialConfig = {
+    startingBalance: config['Beginning Reserve Funds (Dollar Amount)'] || 0,
+    monthlyFeePerUnit: config['Average Monthly Fee per Unit'] || 0,
+    totalUnits: displayUnits,
+    inflationRate: (config['Inflation Rate Used in the Report'] || 0) / 100,
+    investmentRate: (config['Suggested Rate of Return on Investments'] || 0) / 100,
+    currentYear: configStartYear,
+    yearsToProject: config['Number of Years Covered in the Report'] || 30,
+    safetyNet: config['Safety Net'] || 0,
+    cashReserveThreshold: config['Cash Reserve Threshold'],
+    maxAnnualPctIncrease: config['Max Annual Pct Increase'],
+  };
+  
+  console.log('[LeftPanel] Built FinancialConfig:', {
+    currentYear: financialConfig.currentYear,
+    yearsToProject: financialConfig.yearsToProject,
+    inflationRate: financialConfig.inflationRate,
+    totalUnits: financialConfig.totalUnits,
+  });
+  
+  // Map items to ReserveItem format
+  const reserveItems: ReserveItem[] = items.map((item: any) => ({
+    itemName: item.itemName,
+    expectedLife: item.expectedLife,
+    remainingLife: item.remainingLife,
+    replacementCost: item.replacementCost,
+    sirsType: item.sirsType,
+  }));
+
   const handleFeeClick = () => {
     if (feeValueRef.current) {
       const rect = feeValueRef.current.getBoundingClientRect();
       setFeePopupPos({ x: rect.right + 8, y: rect.top });
     }
     setFeePopupOpen(true);
+  };
+
+  const handleYearPriorityClick = () => {
+    console.log('[LeftPanel] handleYearPriorityClick triggered');
+    console.log('[LeftPanel] Current state:', {
+      hasSelectedYearData: !!selectedYearData,
+      selectedYear: selectedYearData?.year,
+      projYear: proj?.year,
+      hasExcelData: !!excelData,
+      configStartYear,
+      yearIndex,
+      itemsCount: items.length,
+    });
+    
+    if (yearPriorityValueRef.current) {
+      const rect = yearPriorityValueRef.current.getBoundingClientRect();
+      setYearPriorityPopupPos({ x: rect.right + 8, y: rect.top });
+    }
+    setYearPriorityPopupOpen(true);
+  };
+
+  const handleYearPriorityApply = (config: YearPriorityConfig) => {
+    // Track priority reordering and filter state for this year
+    // The actual data is recalculated from reserve items when popup opens
+    console.log('Year Priority config updated:', { 
+      year: config.selectedYear, 
+      itemCount: config.priorities.length, 
+      filterType: config.filterType 
+    });
   };
 
   const handleUnitsEdit = () => {
@@ -187,7 +277,22 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
           <span style={{ fontSize: '14px', color: '#374151' }}>Year Priority</span>
-          <span style={{ fontSize: '14px', fontWeight: '500', color: '#10b981' }}>{value}</span>
+          <span
+            ref={yearPriorityValueRef}
+            onClick={handleYearPriorityClick}
+            style={{
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#10b981',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              textDecorationStyle: 'dashed',
+              textUnderlineOffset: '3px',
+            }}
+            title="Click to manage priorities"
+          >
+            {displayExpenses}
+          </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: '14px', color: '#374151' }}>Loans & Assessments</span>
@@ -227,6 +332,16 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         initialPosition={feePopupPos}
         onApply={onFeeApply}
         computedFee={effectiveMonthlyFee !== monthlyFeePerUnit ? effectiveMonthlyFee : undefined}
+      />
+      <YearPriorityPopup
+        isOpen={yearPriorityPopupOpen}
+        onClose={() => setYearPriorityPopupOpen(false)}
+        year={year}
+        yearIndex={yearIndex}
+        reserveItems={reserveItems}
+        financialConfig={financialConfig}
+        initialPosition={yearPriorityPopupPos}
+        onApply={handleYearPriorityApply}
       />
     </div>
   );
