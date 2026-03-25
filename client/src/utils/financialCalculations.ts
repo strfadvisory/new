@@ -118,10 +118,71 @@ function computePerYearContribution(config: FinancialConfig, yearIndex: number):
   );
 }
 
+/**
+ * Build expensesByYear map, preferring yearPriorityConfigs when available
+ * 
+ * Logic:
+ * 1. For each year, check if yearPriorityConfigs[year] exists
+ * 2. If yes: use prioritized expenses from config
+ * 3. If no: calculate from original items (original behavior)
+ */
+export function buildExpensesByYear(
+  items: ReserveItem[],
+  config: FinancialConfig,
+  yearPriorityConfigs?: Record<number, any>
+): Map<number, number> {
+  const expensesByYear = new Map<number, number>();
+
+  for (let yearIndex = 0; yearIndex < config.yearsToProject; yearIndex++) {
+    const calendarYear = config.currentYear + yearIndex;
+    
+    // Check if year has prioritized config (user edits)
+    const yearConfig = yearPriorityConfigs?.[calendarYear];
+    
+    if (yearConfig?.priorities) {
+      // Use prioritized expenses
+      const totalPrioritized = yearConfig.priorities.reduce(
+        (sum: number, p: any) => sum + p.inflatedCost,
+        0
+      );
+      expensesByYear.set(yearIndex, totalPrioritized);
+      
+      console.log('[buildExpensesByYear] Year', calendarYear, 
+        'using prioritized expenses:', totalPrioritized);
+    } else {
+      // Calculate from original items (existing logic)
+      let yearExpense = 0;
+      items.forEach(item => {
+        if (!item.expectedLife || item.expectedLife <= 0) return;
+
+        let currentReplacementYear = item.remainingLife;
+        while (currentReplacementYear < config.yearsToProject) {
+          if (currentReplacementYear === yearIndex) {
+            const inflatedCost = calculateCompoundGrowth(
+              item.replacementCost,
+              config.inflationRate,
+              yearIndex
+            );
+            yearExpense += inflatedCost;
+          }
+          currentReplacementYear += item.expectedLife;
+        }
+      });
+      
+      if (yearExpense > 0) {
+        expensesByYear.set(yearIndex, yearExpense);
+      }
+    }
+  }
+
+  return expensesByYear;
+}
+
 // Main projection engine with enhanced calculation logic
 export function calculateFinancialProjections(
   config: FinancialConfig,
-  items: ReserveItem[]
+  items: ReserveItem[],
+  yearPriorityConfigs?: Record<number, any>
 ): { projections: YearlyProjection[]; metrics: FinancialMetrics } {
 
   const projections: YearlyProjection[] = [];
@@ -130,21 +191,11 @@ export function calculateFinancialProjections(
   let cumulativeExpenses = 0;
   
   // Group expenses by year with inflation — recurring every expectedLife years
-  const expensesByYear = new Map<number, number>();
-  items.forEach(item => {
-    // Guard: skip items with no expected life (would cause infinite loop)
-    if (!item.expectedLife || item.expectedLife <= 0) return;
-
-    // First replacement at remainingLife, then every expectedLife years after that
-    let yearIndex = item.remainingLife;
-    while (yearIndex < config.yearsToProject) {
-      const inflatedCost = calculateCompoundGrowth(item.replacementCost, config.inflationRate, yearIndex);
-      expensesByYear.set(yearIndex, (expensesByYear.get(yearIndex) || 0) + inflatedCost);
-      yearIndex += item.expectedLife;
-    }
-  });
+  // Uses buildExpensesByYear helper which checks yearPriorityConfigs first
+  const expensesByYear = buildExpensesByYear(items, config, yearPriorityConfigs);
   
   console.log('[FinancialCalculations] Expenses by year:', Object.fromEntries(expensesByYear));
+  console.log('[FinancialCalculations] Using yearPriorityConfigs:', !!yearPriorityConfigs, Object.keys(yearPriorityConfigs || {}).length, 'years');
   
   // Project each year with enhanced logic
   for (let i = 0; i < config.yearsToProject; i++) {

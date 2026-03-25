@@ -11,6 +11,7 @@ interface FundGraphProps {
   viewMode?: 'graph' | 'list';
   feeOverride?: FeeAdjustmentConfig | null;
   totalHousingUnits?: number | null;
+  yearPriorityConfigs?: Record<number, any>;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -343,7 +344,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
 // ─────────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────────
-const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph', feeOverride, totalHousingUnits }) => {
+const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph', feeOverride, totalHousingUnits, yearPriorityConfigs = {} }) => {
   const [sel1, setSel1] = useState<string | null>(null);
   const [sel2, setSel2] = useState<string | null>(null);
   const [calcOpenRow, setCalcOpenRow] = useState<number | null>(null);
@@ -422,8 +423,9 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     console.log('[FundGraph.tsx] Financial Config:', activeConfig);
     console.log('[FundGraph.tsx] Reserve Items:', reserveItems.length);
     console.log('[FundGraph.tsx] Optimize All:', feeOverride?.optimizeAll, '| Effective fee:', activeConfig.monthlyFeePerUnit);
+    console.log('[FundGraph.tsx] Using yearPriorityConfigs:', Object.keys(yearPriorityConfigs || {}).length, 'years');
     
-    const { projections, metrics } = calculateFinancialProjections(activeConfig, reserveItems);
+    const { projections, metrics } = calculateFinancialProjections(activeConfig, reserveItems, yearPriorityConfigs);
     const healthScore = calculateHealthScore(projections);
     // optimalFee already computed above — no second binary search needed
     
@@ -481,7 +483,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     console.log('[FundGraph.tsx] Generated fee data synchronized:', generatedFeeData.slice(0, 3));
     
     return { cashflowData: generatedCashflowData, feeData: generatedFeeData };
-  }, [excelData, feeOverride, totalHousingUnits]);
+  }, [excelData, feeOverride, totalHousingUnits, yearPriorityConfigs]);
 
   // Auto-select the first year whenever cashflowData is recalculated (new study loaded).
   // This keeps LeftPanel in sync with the graph without requiring a manual click.
@@ -494,6 +496,30 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
   // cashflowData reference only changes when excelData/feeOverride changes (useMemo)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cashflowData]);
+
+  // Listen for year priority changes and log (graph auto-recalculates via useMemo dependency)
+  React.useEffect(() => {
+    const handleYearPrioritiesChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { year, priorities, budgetAllocation } = customEvent.detail;
+      
+      console.log('[FundGraph] yearPrioritiesChanged event received:', {
+        year,
+        prioritiesCount: priorities.length,
+        budgetAllocationCount: Object.keys(budgetAllocation || {}).length,
+      });
+
+      // Note: yearPriorityConfigs is passed as prop, so FundGraph
+      // will automatically recalculate when parent passes updated value
+      // This listener is just for visibility
+    };
+
+    window.addEventListener('yearPrioritiesChanged', handleYearPrioritiesChanged);
+
+    return () => {
+      window.removeEventListener('yearPrioritiesChanged', handleYearPrioritiesChanged);
+    };
+  }, []);
 
   const d2 = sel2 !== null ? cashflowData[parseInt(sel2.replace("c",""))] : null;
 

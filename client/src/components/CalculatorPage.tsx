@@ -37,6 +37,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
   const [viewMode, setViewMode] = useState<'graph' | 'list'>(propViewMode);
   const [feeOverride, setFeeOverride] = useState<FeeAdjustmentConfig | null>(null);
   const [totalHousingUnits, setTotalHousingUnits] = useState<number | null>(null);
+  const [yearPriorityConfigs, setYearPriorityConfigs] = useState<Record<number, any>>({});
 
   // Reset fee override and housing units when a new study is loaded
   React.useEffect(() => {
@@ -69,6 +70,12 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
         prioritiesCount: priorities.length,
         budgetAllocationCount: Object.keys(budgetAllocation || {}).length,
       });
+
+      // Store the priority config for this year
+      setYearPriorityConfigs(prev => ({
+        ...prev,
+        [year]: { priorities, budgetAllocation, selectedYear: year }
+      }));
 
       // Trigger recalculation by simulating a year select with the new data
       // This will cause FundGraph to recalculate with the updated priorities
@@ -182,6 +189,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
           viewMode={viewMode}
           feeOverride={feeOverride}
           totalHousingUnits={totalHousingUnits}
+          yearPriorityConfigs={yearPriorityConfigs}
         />
       </div>
     </div>
