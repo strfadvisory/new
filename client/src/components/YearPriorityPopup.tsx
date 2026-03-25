@@ -120,6 +120,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   const [splitModalOpen, setSplitModalOpen] = useState(false);
   const [splitItemId, setSplitItemId] = useState<string | null>(null);
   const [budgetAllocation, setBudgetAllocation] = useState<Record<string, number>>({});
+  const [shouldApply, setShouldApply] = useState(false);
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const popupRef = useRef<HTMLDivElement>(null);
@@ -194,6 +195,26 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     if (!isOpen) setInitialized(false);
   }, [isOpen, initialPosition, initialized]);
 
+  // Trigger apply callback whenever priorities change (after async state update)
+  useEffect(() => {
+    if (shouldApply && priorities.length >= 0) {
+      if (!onApply) return;
+      const config = { 
+        priorities, 
+        filterType, 
+        searchQuery, 
+        selectedYear: year || 0,
+        budgetAllocation,
+      };
+      console.log('[YearPriorityPopup] Applying update with CURRENT priorities:', {
+        prioritiesCount: config.priorities.length,
+        totalAmount: Math.round(config.priorities.reduce((sum, p) => sum + p.inflatedCost, 0)),
+      });
+      onApply(config);
+      setShouldApply(false);
+    }
+  }, [priorities, shouldApply, filterType, searchQuery, year, budgetAllocation, onApply]);
+
   // Filter and search priorities
   const filteredPriorities = priorities.filter((p) => {
     if (filterType !== 'all' && p.sirsTypeLabel !== filterType) return false;
@@ -206,23 +227,6 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   const sirsAmount = priorities.filter((p) => p.sirsTypeLabel === 'SIRs').reduce((sum, p) => sum + p.inflatedCost, 0);
   const nonSirsAmount = priorities.filter((p) => p.sirsTypeLabel === 'NonSIRs').reduce((sum, p) => sum + p.inflatedCost, 0);
   const priorityCount = priorities.length;
-
-  const triggerApply = useCallback(() => {
-    if (!onApply) return;
-    const config = { 
-      priorities, 
-      filterType, 
-      searchQuery, 
-      selectedYear: year || 0,
-      budgetAllocation,
-    };
-    console.log('[YearPriorityPopup] Triggering onApply with updated config:', {
-      prioritiesCount: config.priorities.length,
-      totalAmount: Math.round(config.priorities.reduce((sum, p) => sum + p.inflatedCost, 0)),
-      budgetAllocationKeys: Object.keys(config.budgetAllocation),
-    });
-    onApply(config);
-  }, [priorities, filterType, searchQuery, year, budgetAllocation, onApply]);
 
   const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -268,7 +272,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     [newPriorities[draggedIndex], newPriorities[targetIndex]] = [newPriorities[targetIndex], newPriorities[draggedIndex]];
     setPriorities(newPriorities);
     setDraggedItem(null);
-    triggerApply();
+    setShouldApply(true);
   };
 
   const handleDeleteItem = (id: string) => {
@@ -278,14 +282,14 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
       console.log('[YearPriorityPopup] After delete, priorities count:', updated.length);
       return updated;
     });
-    triggerApply();
+    setShouldApply(true);
   };
 
   const handleToggleSelect = (id: string) => {
     setPriorities(priorities.map((p) =>
       p.id === id ? { ...p, isSelected: !p.isSelected } : p
     ));
-    triggerApply();
+    setShouldApply(true);
   };
 
   const handleEditCost = (id: string, currentCost: number) => {
@@ -303,7 +307,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
       p.id === id ? { ...p, inflatedCost: editValue } : p
     ));
     setEditingId(null);
-    triggerApply();
+    setShouldApply(true);
   };
 
   const handleOpenSplitModal = (id: string) => {
@@ -344,7 +348,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
 
     setPriorities(newItems);
     handleCloseSplitModal();
-    triggerApply();
+    setShouldApply(true);
   };
 
   const handleAllocateBudget = (id: string, amount: number) => {
@@ -352,7 +356,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
       ...prev,
       [id]: amount,
     }));
-    triggerApply();
+    setShouldApply(true);
   };
 
   if (!isOpen) return null;
