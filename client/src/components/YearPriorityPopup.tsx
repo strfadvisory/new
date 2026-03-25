@@ -110,108 +110,10 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   const [splitAmount, setSplitAmount] = useState<number>(0);
   const [budgetAllocation, setBudgetAllocation] = useState<Record<string, number>>({});
   const [shouldApply, setShouldApply] = useState(false);
-  const [lastLoadedYear, setLastLoadedYear] = useState<number | undefined>(undefined);
+  const [forceUpdateKey, setForceUpdateKey] = useState(0);
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const popupRef = useRef<HTMLDivElement>(null);
-
-  console.log('[YearPriorityPopup] Props received:', {
-    isOpen,
-    year,
-    yearIndex,
-    reserveItemsCount: reserveItems?.length || 0,
-    financialConfigKeys: financialConfig ? Object.keys(financialConfig).slice(0, 6) : null,
-    financialConfigValues: financialConfig ? {
-      currentYear: financialConfig.currentYear,
-      yearsToProject: financialConfig.yearsToProject,
-      inflationRate: financialConfig.inflationRate,
-    } : null,
-  });
-
-  // Load real data ONLY when year changes, not on every prop update
-  useEffect(() => {
-    console.log('[YearPriorityPopup] useEffect triggered:', {
-      isOpen,
-      year,
-      yearIndex,
-      lastLoadedYear,
-      reserveItemsCount: reserveItems?.length || 0,
-      hasConfig: !!financialConfig,
-    });
-    
-    // Only load if: popup is open AND year has actually changed
-    if (isOpen && yearIndex !== undefined && yearIndex !== lastLoadedYear) {
-      console.log('[YearPriorityPopup] Year changed from', lastLoadedYear, 'to', yearIndex, '- reloading priorities');
-
-      const savedConfig = yearPriorityConfig;
-      if (savedConfig && savedConfig.priorities && savedConfig.priorities.length > 0) {
-        console.log('[YearPriorityPopup] Loaded saved year priority config for year', yearIndex, 'with', savedConfig.priorities.length, 'items');
-        setPriorities(savedConfig.priorities);
-      } else if (reserveItems && financialConfig) {
-        const yearItems = getYearPriorityItems(reserveItems, financialConfig, yearIndex);
-        const activePriorities: PriorityItem[] = yearItems.map((item, idx) => ({
-          ...item,
-          displayOrder: idx,
-        }));
-
-        if (activePriorities.length > 0) {
-          console.log('[YearPriorityPopup] Calculated and set year priorities from data for year', yearIndex, '->', activePriorities.length, 'items');
-          setPriorities(activePriorities);
-        } else {
-          console.log('[YearPriorityPopup] Calculated no year priorities for year', yearIndex, '-> not showing items');
-          setPriorities([]);
-        }
-      } else {
-        console.log('[YearPriorityPopup] No saved priorities, no reserve data, and/or no financial config for year', yearIndex, '- showing empty popup');
-        setPriorities([]);
-      }
-
-      // Diagnostic remains for first year if we have data
-      if (yearIndex === 0 && reserveItems && financialConfig) {
-        console.log('[YearPriorityPopup] ====== RUNNING FULL DIAGNOSTIC FLOW ======');
-        debugYearPriorityFlow(reserveItems, financialConfig);
-        console.log('[YearPriorityPopup] ====== DIAGNOSTIC COMPLETE ======');
-      }
-
-      setLastLoadedYear(yearIndex);
-    } else if (isOpen && yearIndex === undefined) {
-      console.log('[YearPriorityPopup] Conditions not met for loading data:', {
-        isOpenCheck: !!isOpen,
-        hasItemsCheck: !!reserveItems,
-        hasConfigCheck: !!financialConfig,
-        yearIndexConstraint: yearIndex !== undefined,
-      });
-    }
-  }, [isOpen, yearIndex]);
-
-  // Set initial position once when opened
-  useEffect(() => {
-    if (isOpen && !initialized) {
-      setPosition(initialPosition ?? { x: window.innerWidth / 2 - 142, y: window.innerHeight / 2 - 300 });
-      setInitialized(true);
-    }
-    if (!isOpen) setInitialized(false);
-  }, [isOpen, initialPosition, initialized]);
-
-  // Trigger apply callback whenever priorities change (after async state update)
-  useEffect(() => {
-    if (shouldApply && priorities.length >= 0) {
-      if (!onApply) return;
-      const config = { 
-        priorities, 
-        filterType, 
-        searchQuery, 
-        selectedYear: year || 0,
-        budgetAllocation,
-      };
-      console.log('[YearPriorityPopup] Applying update with CURRENT priorities:', {
-        prioritiesCount: config.priorities.length,
-        totalAmount: Math.round(config.priorities.reduce((sum, p) => sum + p.inflatedCost, 0)),
-      });
-      onApply(config);
-      setShouldApply(false);
-    }
-  }, [priorities, shouldApply, filterType, searchQuery, year, budgetAllocation, onApply]);
 
   // Filter and search priorities
   const filteredPriorities = priorities.filter((p) => {
@@ -224,7 +126,140 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   const totalAmount = priorities.reduce((sum, p) => sum + p.inflatedCost, 0);
   const sirsAmount = priorities.filter((p) => p.sirsTypeLabel === 'SIRs').reduce((sum, p) => sum + p.inflatedCost, 0);
   const nonSirsAmount = priorities.filter((p) => p.sirsTypeLabel === 'NonSIRs').reduce((sum, p) => sum + p.inflatedCost, 0);
-  const priorityCount = priorities.length;
+
+  console.log('[YearPriorityPopup] Rendering:', {
+    year,
+    itemCount: priorities.length,
+    filteredCount: filteredPriorities.length,
+  });
+
+  // Sync with parent state changes immediately
+  useEffect(() => {
+    if (isOpen && yearPriorityConfig) {
+      console.log('[YearPriorityPopup] *** SYNCING WITH PARENT STATE ***');
+      console.log('[YearPriorityPopup] Parent config priorities:', yearPriorityConfig.priorities?.length || 0);
+      
+      if (yearPriorityConfig.priorities) {
+        setPriorities([...yearPriorityConfig.priorities]);
+        console.log('[YearPriorityPopup] Synced priorities:', yearPriorityConfig.priorities.length);
+      }
+    }
+  }, [yearPriorityConfig, isOpen]);
+
+  // Load real data when popup opens or config changes
+  useEffect(() => {
+    if (!isOpen || yearIndex === undefined) return;
+
+    console.log('[YearPriorityPopup] Loading data for year', yearIndex);
+
+    const savedConfig = yearPriorityConfig;
+    
+    // ALWAYS reload data when config changes - no caching
+    if (savedConfig && savedConfig.priorities && savedConfig.priorities.length > 0) {
+      console.log('[YearPriorityPopup] ✅ Loading', savedConfig.priorities.length, 'items from saved config');
+      setPriorities([...savedConfig.priorities]); // Create new array to force re-render
+      setFilterType(savedConfig.filterType || 'all');
+      setSearchQuery(savedConfig.searchQuery || '');
+      setBudgetAllocation(savedConfig.budgetAllocation || {});
+    } 
+    // Calculate from reserve items (scheduled items for this year)
+    else if (reserveItems && financialConfig) {
+      console.log('[YearPriorityPopup] ⚙️ Calculating from reserve items');
+      const yearItems = getYearPriorityItems(reserveItems, financialConfig, yearIndex);
+      const activePriorities: PriorityItem[] = yearItems.map((item, idx) => ({
+        ...item,
+        displayOrder: idx,
+      }));
+
+      if (activePriorities.length > 0) {
+        console.log('[YearPriorityPopup] Calculated', activePriorities.length, 'scheduled items');
+        setPriorities([...activePriorities]); // Create new array
+      } else {
+        console.log('[YearPriorityPopup] No scheduled items for year', yearIndex);
+        setPriorities([]);
+      }
+      
+      // Reset filters when loading calculated items
+      setFilterType('all');
+      setSearchQuery('');
+      setBudgetAllocation({});
+    } else {
+      console.log('[YearPriorityPopup] ❌ No data available');
+      setPriorities([]);
+    }
+  }, [isOpen, yearIndex, yearPriorityConfig, reserveItems, financialConfig]);
+
+  // Set initial position once when opened
+  useEffect(() => {
+    if (isOpen && !initialized) {
+      setPosition(initialPosition ?? { x: window.innerWidth / 2 - 142, y: window.innerHeight / 2 - 300 });
+      setInitialized(true);
+    }
+    if (!isOpen) setInitialized(false);
+  }, [isOpen, initialPosition, initialized]);
+
+  // Listen for successful drops and remove items from this popup
+  useEffect(() => {
+    const handleItemDropped = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { sourceYear, targetYear, itemId } = customEvent.detail;
+      
+      console.log('[YearPriorityPopup] itemDroppedToYear event received:', {
+        sourceYear,
+        targetYear, 
+        itemId,
+        currentPopupYear: year,
+        isOpen
+      });
+      
+      // If this popup is showing the source year, remove the item immediately
+      if (year === sourceYear && isOpen) {
+        console.log('[YearPriorityPopup] *** IMMEDIATE REMOVAL *** Item:', itemId, 'from year:', sourceYear);
+        
+        setPriorities(prev => {
+          const itemToRemove = prev.find(p => p.id === itemId);
+          const updated = prev.filter(p => p.id !== itemId);
+          
+          console.log('[YearPriorityPopup] Removing item:', {
+            itemName: itemToRemove?.itemName,
+            itemCost: itemToRemove?.inflatedCost,
+            before: prev.length,
+            after: updated.length,
+            removed: prev.length - updated.length
+          });
+          
+          return updated;
+        });
+        
+        // Trigger apply to update parent state immediately
+        setShouldApply(true);
+        
+        // Force immediate re-render
+        setForceUpdateKey(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('itemDroppedToYear', handleItemDropped);
+    
+    return () => {
+      window.removeEventListener('itemDroppedToYear', handleItemDropped);
+    };
+  }, [year, isOpen]);
+
+  // Trigger apply callback whenever priorities change (after async state update)
+  useEffect(() => {
+    if (shouldApply && onApply) {
+      const config = { 
+        priorities, 
+        filterType, 
+        searchQuery, 
+        selectedYear: year || 0,
+        budgetAllocation,
+      };
+      onApply(config);
+      setShouldApply(false);
+    }
+  }, [priorities, shouldApply, filterType, searchQuery, year, budgetAllocation, onApply]);
 
   const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -275,9 +310,22 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
 
   const handleDeleteItem = (id: string) => {
     console.log('[YearPriorityPopup] Deleting item:', id);
+    const itemToDelete = priorities.find(p => p.id === id);
+    if (itemToDelete) {
+      console.log('[YearPriorityPopup] Item details:', {
+        id: itemToDelete.id,
+        itemName: itemToDelete.itemName,
+        cost: Math.round(itemToDelete.inflatedCost),
+      });
+    }
+    
     setPriorities((prev) => {
       const updated = prev.filter((p) => p.id !== id);
-      console.log('[YearPriorityPopup] After delete, priorities count:', updated.length);
+      console.log('[YearPriorityPopup] After delete:', {
+        previousCount: prev.length,
+        newCount: updated.length,
+        removed: prev.length - updated.length,
+      });
       return updated;
     });
     setShouldApply(true);
@@ -371,16 +419,6 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   };
 
   if (!isOpen) return null;
-
-  console.log('[YearPriorityPopup] RENDERING with:', {
-    prioritiesCount: priorities.length,
-    prioritiesData: priorities.map(p => ({ id: p.id, itemName: p.itemName, cost: Math.round(p.inflatedCost) })),
-    totalAmount: Math.round(totalAmount),
-    filteredCount: filteredPriorities.length,
-    filterType,
-  });
-
-
 
   return (
     <>
@@ -530,6 +568,21 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
         minHeight: 0,
         background: '#fff',
       }}>
+        {/* Instruction text */}
+        {filteredPriorities.some(p => p.sirsType === 0) && (
+          <div style={{
+            padding: '8px 16px',
+            background: '#f0f8ff',
+            borderBottom: '1px solid #e5e5e5',
+            fontSize: '11px',
+            color: '#2563eb',
+            fontStyle: 'italic',
+            textAlign: 'center'
+          }}>
+            💡 Drag items with grip handles to future year bars in the graph below
+          </div>
+        )}
+        
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           {filteredPriorities.length === 0 ? (
             <div style={{
@@ -559,25 +612,55 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                     };
                     console.log('[YearPriorityPopup] Drag started:', dragPayload);
                     e.dataTransfer.setData('application/json', JSON.stringify(dragPayload));
-                    e.dataTransfer.effectAllowed = 'copy';
+                    e.dataTransfer.effectAllowed = 'move';
                     handleDragStart(item.id);
+                  }}
+                  onDragEnd={() => {
+                    console.log('[YearPriorityPopup] Drag ended for item:', item.id);
+                    setDraggedItem(null);
                   }}
                   onDragOver={handleDragOver}
                   onDrop={() => handleDrop(item.id)}
                   style={{
                     display: 'flex',
-                  alignItems: 'center',
-                  padding: '12px 12px',
-                  borderBottom: index < filteredPriorities.length - 1 ? '1px solid #e5e5e5' : 'none',
-                  gap: '8px',
-                  opacity: draggedItem === item.id ? 0.6 : 1,
-                  cursor: draggedItem === item.id ? 'grabbing' : 'grab',
-                  transition: 'opacity 0.2s ease',
-                }}
+                    alignItems: 'center',
+                    padding: '12px 12px',
+                    borderBottom: index < filteredPriorities.length - 1 ? '1px solid #e5e5e5' : 'none',
+                    gap: '8px',
+                    opacity: draggedItem === item.id ? 0.5 : 1,
+                    cursor: item.sirsType === 0 ? (draggedItem === item.id ? 'grabbing' : 'grab') : 'default',
+                    transition: 'opacity 0.2s ease, background-color 0.2s ease',
+                    backgroundColor: draggedItem === item.id ? '#f0f8ff' : 'transparent',
+                    border: draggedItem === item.id ? '1px dashed #2196f3' : '1px solid transparent',
+                    borderRadius: draggedItem === item.id ? '4px' : '0',
+                  }}
+                  title={item.sirsType === 0 ? `Drag "${item.itemName}" to a future year in the graph below` : `"${item.itemName}" cannot be moved (SIRs=${item.sirsType})`}
               >
                 {/* Drag Handle */}
-                <div style={{ cursor: 'grab', display: 'flex', alignItems: 'center', fontSize: '10px', fontWeight: '600', minWidth: '18px', color: '#999' }}>
+                <div style={{ 
+                  cursor: item.sirsType === 0 ? 'grab' : 'default', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  fontSize: '10px', 
+                  fontWeight: '600', 
+                  minWidth: '18px', 
+                  color: item.sirsType === 0 ? '#999' : '#ccc',
+                  position: 'relative'
+                }}>
                   {index + 1}
+                  {item.sirsType === 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      right: '-6px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '4px',
+                      height: '12px',
+                      background: 'linear-gradient(to bottom, #ddd 0%, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%, #ddd 100%)',
+                      backgroundSize: '100% 3px',
+                      opacity: 0.6
+                    }} />
+                  )}
                 </div>
 
                 {/* Item Info */}

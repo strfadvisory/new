@@ -20,6 +20,18 @@ interface LeftPanelProps {
 
 const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYearData, excelData, onFeeApply, effectiveMonthlyFee, totalHousingUnits: propTotalUnits, onHousingUnitsChange, yearPriorityConfigs: propYearPriorityConfigs = {}, onYearPriorityApply }) => {
   console.log('[LeftPanel.tsx] Rendering with new design');
+  
+  // DEBUG: Log received configs
+  React.useEffect(() => {
+    console.log('[LeftPanel] 🔍 Received propYearPriorityConfigs:', {
+      years: Object.keys(propYearPriorityConfigs),
+      configs: Object.entries(propYearPriorityConfigs).map(([year, config]) => ({
+        year,
+        itemCount: config.priorities?.length || 0,
+        items: config.priorities?.map((p: any) => ({ id: p.id, name: p.itemName })) || []
+      }))
+    });
+  }, [propYearPriorityConfigs]);
 
   const [feePopupOpen, setFeePopupOpen] = useState(false);
   const [feePopupPos, setFeePopupPos] = useState<{ x: number; y: number } | undefined>();
@@ -124,7 +136,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   };
 
   const handleYearPriorityClick = () => {
-    console.log('[LeftPanel] handleYearPriorityClick triggered');
+    console.log('[LeftPanel] 👆 handleYearPriorityClick triggered');
     console.log('[LeftPanel] Current state:', {
       hasSelectedYearData: !!selectedYearData,
       selectedYear: selectedYearData?.year,
@@ -133,6 +145,15 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
       configStartYear,
       yearIndex,
       itemsCount: items.length,
+    });
+    
+    console.log('[LeftPanel] 🔑 Config lookup:', {
+      year,
+      popupYearBeingEdited,
+      lookupKey: popupYearBeingEdited ?? year,
+      hasConfigForYear: !!(propYearPriorityConfigs[year]),
+      configForYear: propYearPriorityConfigs[year],
+      allConfigYears: Object.keys(propYearPriorityConfigs),
     });
     
     // IMPORTANT: Lock the popup to this specific year so edits apply correctly
@@ -397,6 +418,11 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         computedFee={effectiveMonthlyFee !== monthlyFeePerUnit ? effectiveMonthlyFee : undefined}
       />
       <YearPriorityPopup
+        key={`${popupYearBeingEdited || year}-${JSON.stringify((() => {
+          const lookupYear = popupYearBeingEdited ?? year;
+          const config = propYearPriorityConfigs[lookupYear];
+          return config?.priorities?.map((p: any) => p.id).join(',') || 'empty';
+        })())}`}
         isOpen={yearPriorityPopupOpen}
         onClose={() => {
           console.log('[LeftPanel] Closing Year Priority popup');
@@ -405,7 +431,17 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         }}
         year={year}
         yearIndex={yearIndex}
-        yearPriorityConfig={propYearPriorityConfigs[popupYearBeingEdited ?? year]}
+        yearPriorityConfig={(() => {
+          const lookupYear = popupYearBeingEdited ?? year;
+          const config = propYearPriorityConfigs[lookupYear];
+          console.log('[LeftPanel] 📦 Passing config to popup:', {
+            lookupYear,
+            hasConfig: !!config,
+            itemCount: config?.priorities?.length || 0,
+            items: config?.priorities?.map((p: any) => ({ id: p.id, name: p.itemName })) || []
+          });
+          return config;
+        })()}
         reserveItems={reserveItems}
         financialConfig={financialConfig}
         initialPosition={yearPriorityPopupPos}

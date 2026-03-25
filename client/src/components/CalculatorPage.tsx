@@ -40,6 +40,19 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
   const [totalHousingUnits, setTotalHousingUnits] = useState<number | null>(null);
   const [yearPriorityConfigs, setYearPriorityConfigs] = useState<Record<number, any>>({});
 
+  // DEBUG: Expose state to window for debugging
+  React.useEffect(() => {
+    (window as any).__yearPriorityConfigs = yearPriorityConfigs;
+    console.log('[CalculatorPage] 🔍 CURRENT yearPriorityConfigs:', {
+      years: Object.keys(yearPriorityConfigs),
+      configs: Object.entries(yearPriorityConfigs).map(([year, config]) => ({
+        year,
+        itemCount: config.priorities?.length || 0,
+        items: config.priorities?.map((p: any) => ({ id: p.id, name: p.itemName })) || []
+      }))
+    });
+  }, [yearPriorityConfigs]);
+
   // Reset fee override and housing units when a new study is loaded
   React.useEffect(() => {
     setFeeOverride(null);
@@ -141,19 +154,41 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
   };
 
   const handleYearPriorityUpdate = (config: YearPriorityConfig) => {
-    console.log('[CalculatorPage] Year priority updated via drag-drop:', {
+    console.log('[CalculatorPage] *** CRITICAL UPDATE *** Year priority updated via drag-drop:', {
       year: config.selectedYear,
       itemCount: config.priorities.length,
+      totalCost: Math.round(config.priorities.reduce((sum, p) => sum + p.inflatedCost, 0)),
+      itemIds: config.priorities.map(p => p.id),
     });
 
-    // Update the centralized state
-    setYearPriorityConfigs(prev => ({
-      ...prev,
-      [config.selectedYear]: config,
-    }));
+    // IMMEDIATELY update the centralized state
+    setYearPriorityConfigs(prev => {
+      const updated = {
+        ...prev,
+        [config.selectedYear]: { ...config },
+      };
+      console.log('[CalculatorPage] *** STATE UPDATED *** New configs:', {
+        totalYears: Object.keys(updated).length,
+        updatedYear: config.selectedYear,
+        itemsInYear: config.priorities.length,
+        allYears: Object.keys(updated).map(year => ({
+          year,
+          items: updated[parseInt(year)].priorities.length
+        }))
+      });
+      return updated;
+    });
 
-    // Dispatch the event to trigger recalculation
-    window.dispatchEvent(new CustomEvent('yearPriorityUpdated', { detail: config }));
+    // Force immediate re-render by dispatching event
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('yearPriorityUpdated', { 
+        detail: { 
+          year: config.selectedYear,
+          priorities: config.priorities,
+          budgetAllocation: config.budgetAllocation,
+        } 
+      }));
+    }, 0);
   };
 
   const currentYear = excelData?.data?.data?.config?.['Beginning Fiscal Year of the Report'] || new Date().getFullYear();

@@ -191,43 +191,85 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey, onYearP
   const handleDrop = (e: React.DragEvent, targetYear: number) => {
     e.preventDefault();
     setDragOverIndex(null);
+    
     try {
       const draggedData = JSON.parse(e.dataTransfer.getData('application/json'));
       const sourceYear = draggedData.sourceYear;
       const draggedItem = draggedData.item;
 
-      // Get the true configured start year from the dataset config
-      let datasetStartYear = undefined;
-      if (window && (window as any).excelData && (window as any).excelData.data) {
-        const actualData = (window as any).excelData.data.data || (window as any).excelData.data;
-        const config = actualData.config || {};
-        datasetStartYear = config['Beginning Fiscal Year of the Report'] ? Number(config['Beginning Fiscal Year of the Report']) : undefined;
-      }
-      // Fallback to prop or system year if not found
-      const baseYear = datasetStartYear ?? currentYear ?? new Date().getFullYear();
+      console.log('[FundGraph] ========== DROP OPERATION START ==========');
+      console.log('[FundGraph] Drop initiated:', {
+        sourceYear,
+        targetYear,
+        draggedItemId: draggedItem?.id,
+        draggedItemName: draggedItem?.itemName,
+        draggedItemCost: draggedItem?.inflatedCost,
+        sirsType: draggedItem?.sirsType,
+      });
 
       if (draggedItem?.sirsType !== 0) {
         alert('Only items with SIRs=0 can be moved.');
         return;
       }
 
-      // Only allow drops to years strictly after the source year (priority popup year)
+      // Only allow drops to years strictly after the source year
       if (targetYear <= sourceYear) {
         alert(`Cannot drop on current or past years. Drop year (${targetYear}) must be after the source year (${sourceYear}).`);
         return;
       }
       
-      // ALLOW: Same year, future years, any valid target
-      console.log('[FundGraph] Dropping item:', {
-        sourceYear,
-        targetYear,
-        isSameYear: targetYear === sourceYear,
-        isFutureYear: targetYear > sourceYear,
-      });
-      
       const isCopy = e.ctrlKey;
+      console.log('[FundGraph] Drop mode:', isCopy ? 'COPY' : 'MOVE');
       
-      // Get or create target config
+      // CRITICAL: Dispatch event IMMEDIATELY to remove from popup UI
+      if (!isCopy) {
+        console.log('[FundGraph] *** DISPATCHING itemDroppedToYear EVENT ***');
+        window.dispatchEvent(new CustomEvent('itemDroppedToYear', {
+          detail: {
+            sourceYear,
+            targetYear,
+            itemId: draggedItem.id,
+          }
+        }));
+        console.log('[FundGraph] *** EVENT DISPATCHED ***');
+      }
+      
+      // STEP 1: Remove from source year config (if exists) - MUST happen first
+      let sourceConfigUpdated = false;
+      if (!isCopy) {
+        const sourceConfig = (yearPriorityConfigs || {})[sourceYear];
+        console.log('[FundGraph] *** SOURCE REMOVAL *** Before:', {
+          year: sourceYear,
+          hasConfig: !!sourceConfig,
+          prioritiesCount: sourceConfig?.priorities?.length || 0,
+          itemToRemove: draggedItem.id,
+        });
+        
+        if (sourceConfig && sourceConfig.priorities) {
+          const originalLength = sourceConfig.priorities.length;
+          const updatedPriorities = sourceConfig.priorities.filter(
+            (p: any) => p.id !== draggedItem.id
+          );
+          
+          if (updatedPriorities.length < originalLength) {
+            const updatedSourceConfig = {
+              ...sourceConfig,
+              priorities: updatedPriorities,
+              selectedYear: sourceYear,
+              filterType: sourceConfig.filterType || 'all',
+              searchQuery: sourceConfig.searchQuery || '',
+            };
+            
+            console.log('[FundGraph] *** REMOVING FROM SOURCE ***', sourceYear, 'New count:', updatedPriorities.length);
+            if (onYearPriorityUpdate) {
+              onYearPriorityUpdate(updatedSourceConfig);
+              sourceConfigUpdated = true;
+            }
+          }
+        }
+      }
+      
+      // STEP 2: Add to target year - MUST happen after source removal
       const targetConfig = (yearPriorityConfigs || {})[targetYear] || {
         priorities: [],
         filterType: 'all',
@@ -236,35 +278,87 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey, onYearP
         budgetAllocation: {},
       };
       
+      // Create new item with unique ID for target year
       const newItem = {
-        ...draggedData.item,
-        id: `${draggedData.item.id}-${Date.now()}`,
+        ...draggedItem,
+        id: isCopy ? `${draggedItem.id}-copy-${Date.now()}` : draggedItem.id,
+        year: targetYear,
+        inflatedCost: draggedItem.inflatedCost,
+        originalCost: draggedItem.originalCost || draggedItem.replacementCost,
       };
       
-      targetConfig.priorities = [...targetConfig.priorities, newItem];
+      const updatedTargetConfig = {
+        ...targetConfig,
+        priorities: [...targetConfig.priorities, newItem],
+        selectedYear: targetYear,
+        filterType: targetConfig.filterType || 'all',
+        searchQuery: targetConfig.searchQuery || '',
+        budgetAllocation: targetConfig.budgetAllocation || {},
+      };
       
-      // Call update for target year
+      console.log('[FundGraph] *** ADDING TO TARGET ***', targetYear, 'New count:', updatedTargetConfig.priorities.length);
+      console.log('[FundGraph] Target items:', updatedTargetConfig.priorities.map((p: any) => ({ id: p.id, name: p.itemName })));
+      
       if (onYearPriorityUpdate) {
-        console.log('[FundGraph] Updating target year', targetYear, 'with', targetConfig.priorities.length, 'items');
-        onYearPriorityUpdate(targetConfig);
+        // Small delay to ensure source update completes first
+        setTimeout(() => {
+          onYearPriorityUpdate(updatedTargetConfig);
+        }, sourceConfigUpdated ? 100 : 0);
       }
       
-      // If not copy (Ctrl held), remove from source year
-      if (!isCopy && sourceYear !== targetYear) {
-        const sourceConfig = (yearPriorityConfigs || {})[sourceYear];
-        if (sourceConfig) {
-          const originalLength = sourceConfig.priorities.length;
-          sourceConfig.priorities = sourceConfig.priorities.filter(
-            (p: any) => p.id !== draggedData.item.id
-          );
-          if (sourceConfig.priorities.length < originalLength && onYearPriorityUpdate) {
-            console.log('[FundGraph] Removed item from source year', sourceYear);
-            onYearPriorityUpdate(sourceConfig);
+      // Show success message
+      const itemName = draggedItem.itemName.length > 20 
+        ? draggedItem.itemName.substring(0, 20) + '...' 
+        : draggedItem.itemName;
+      
+      // Create and show a temporary success notification
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #10b981;
+        color: white;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s ease-out;
+      `;
+      notification.innerHTML = `✓ "${itemName}" moved to ${targetYear}`;
+      
+      // Add animation keyframes if not already added
+      if (!document.querySelector('#dragDropAnimations')) {
+        const style = document.createElement('style');
+        style.id = 'dragDropAnimations';
+        style.textContent = `
+          @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
           }
-        }
+        `;
+        document.head.appendChild(style);
       }
       
-      console.log('[FundGraph] Drop completed successfully');
+      document.body.appendChild(notification);
+      
+      // Remove notification after 3 seconds
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.style.animation = 'slideIn 0.3s ease-out reverse';
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 300);
+        }
+      }, 3000);
+      
+      console.log(`✓ Item "${draggedItem.itemName}" moved from ${sourceYear} to ${targetYear}`);
+      
+      console.log('[FundGraph] ========== DROP OPERATION COMPLETE ==========');
     } catch (error) {
       console.error('[FundGraph] Drop error:', error);
       alert('Error processing drag-drop. Please try again.');
@@ -310,14 +404,51 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey, onYearP
                   width: COL_W, flexShrink:0, cursor:"pointer",
                   borderRadius:10, paddingTop:8, paddingBottom:8,
                   background: dragOverIndex === i ? '#fff3cd' : active ? G2_ACTIVE : "transparent",
-                  border: dragOverIndex === i ? '2px dashed #ff9800' : '1px solid transparent',
+                  border: dragOverIndex === i ? '2px dashed #ff9800' : '2px solid transparent',
                   display:"flex", flexDirection:"column", alignItems:"center",
                   transition:"background 0.15s ease, border 0.15s ease",
-                  boxShadow: dragOverIndex === i ? '0 0 8px rgba(255, 152, 0, 0.3)' : 'none',
+                  boxShadow: dragOverIndex === i ? '0 0 12px rgba(255, 152, 0, 0.4)' : 'none',
+                  position: 'relative',
                 }}
-                onMouseEnter={e => { if (!isDragging.current) e.currentTarget.style.background = dragOverIndex === i ? '#fff3cd' : active ? G2_ACTIVE : G2_HOVER; }}
-                onMouseLeave={e => { if (!isDragging.current) e.currentTarget.style.background = dragOverIndex === i ? '#fff3cd' : active ? G2_ACTIVE : "transparent"; }}
+                onMouseEnter={e => { 
+                  if (!isDragging.current) {
+                    e.currentTarget.style.background = dragOverIndex === i ? '#fff3cd' : active ? G2_ACTIVE : G2_HOVER;
+                    // Show drop hint on hover
+                    if (!active && !dragOverIndex) {
+                      e.currentTarget.style.border = '1px dashed #ccc';
+                    }
+                  }
+                }}
+                onMouseLeave={e => { 
+                  if (!isDragging.current) {
+                    e.currentTarget.style.background = dragOverIndex === i ? '#fff3cd' : active ? G2_ACTIVE : "transparent";
+                    if (!active && !dragOverIndex) {
+                      e.currentTarget.style.border = '2px solid transparent';
+                    }
+                  }
+                }}
               >
+
+                {/* Drop indicator overlay */}
+                {dragOverIndex === i && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    background: 'rgba(255, 152, 0, 0.9)',
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    fontWeight: '600',
+                    pointerEvents: 'none',
+                    zIndex: 10,
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Drop here
+                  </div>
+                )}
 
                 {/* ── POSITIVE BAR ZONE (12rem, bars grow from bottom) ── */}
                 <div style={{
