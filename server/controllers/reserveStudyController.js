@@ -358,8 +358,31 @@ function parseReserveStudyFromBuffer(buffer) {
     
     // Parse items with robust error handling
     const items = [];
-    let itemsStartRow = headerIndex + 2; // Skip header and potential subheader
-    
+
+    // Determine the correct start row for item data:
+    // - Prefer headerIndex + 1 if the row looks like a valid item row
+    // - Otherwise fall back to headerIndex + 2 (legacy behavior for templates with subheaders)
+    const candidateRow1 = data[headerIndex + 1];
+    const candidateRow2 = data[headerIndex + 2];
+
+    const isValidDataRow = (row) => {
+      if (!row || !row[0]) return false;
+      const firstCell = row[0].toString().trim().toLowerCase();
+      if (!firstCell || firstCell === 'total' || firstCell === 'sum' || firstCell.includes('header') || firstCell.includes('item name')) {
+        return false;
+      }
+      const expectedLife = parseFloat(row[1]);
+      const replacementCost = parseFloat(row[3]);
+      return Number.isFinite(expectedLife) && expectedLife > 0 && Number.isFinite(replacementCost) && replacementCost > 0;
+    };
+
+    let itemsStartRow = headerIndex + 2;
+    if (isValidDataRow(candidateRow1)) {
+      itemsStartRow = headerIndex + 1;
+    } else if (isValidDataRow(candidateRow2)) {
+      itemsStartRow = headerIndex + 2;
+    }
+
     try {
       for (let i = itemsStartRow; i < data.length; i++) {
         const row = data[i];

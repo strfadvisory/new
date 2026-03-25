@@ -12,6 +12,8 @@ interface FundGraphProps {
   feeOverride?: FeeAdjustmentConfig | null;
   totalHousingUnits?: number | null;
   yearPriorityConfigs?: Record<number, any>;
+  onYearPriorityUpdate?: (config: any) => void;
+  currentYear?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -145,11 +147,12 @@ function Graph1({ sel, onSel, onYearSelect, feeData, resetKey }: { sel: string |
 //   negative-line-t-odd:  bottom:0, height:41.6px → extends UP (odd)
 //   negative-line-b:      top:0,    height:40px → extends DOWN
 // ─────────────────────────────────────────────────────────────────
-function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void; cashflowData?: any[]; resetKey?: any }) {
+function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey, onYearPriorityUpdate, currentYear, yearPriorityConfigs }: { sel: string | null; onSel: (value: string | null) => void; onYearSelect?: (yearData: any) => void; cashflowData?: any[]; resetKey?: any; onYearPriorityUpdate?: (config: any) => void; currentYear?: number; yearPriorityConfigs?: Record<number, any> }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const startX = useRef(0);
   const scrollStart = useRef(0);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // ── Reset to first year when data changes
   useEffect(() => {
@@ -176,11 +179,104 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
     if (scrollRef.current) scrollRef.current.style.cursor = 'grab';
   };
 
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetYear: number) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+    try {
+      const draggedData = JSON.parse(e.dataTransfer.getData('application/json'));
+      const sourceYear = draggedData.sourceYear;
+      const draggedItem = draggedData.item;
+
+      // Get the true configured start year from the dataset config
+      let datasetStartYear = undefined;
+      if (window && (window as any).excelData && (window as any).excelData.data) {
+        const actualData = (window as any).excelData.data.data || (window as any).excelData.data;
+        const config = actualData.config || {};
+        datasetStartYear = config['Beginning Fiscal Year of the Report'] ? Number(config['Beginning Fiscal Year of the Report']) : undefined;
+      }
+      // Fallback to prop or system year if not found
+      const baseYear = datasetStartYear ?? currentYear ?? new Date().getFullYear();
+
+      if (draggedItem?.sirsType !== 0) {
+        alert('Only items with SIRs=0 can be moved.');
+        return;
+      }
+
+      // Only allow drops to years strictly after the source year (priority popup year)
+      if (targetYear <= sourceYear) {
+        alert(`Cannot drop on current or past years. Drop year (${targetYear}) must be after the source year (${sourceYear}).`);
+        return;
+      }
+      
+      // ALLOW: Same year, future years, any valid target
+      console.log('[FundGraph] Dropping item:', {
+        sourceYear,
+        targetYear,
+        isSameYear: targetYear === sourceYear,
+        isFutureYear: targetYear > sourceYear,
+      });
+      
+      const isCopy = e.ctrlKey;
+      
+      // Get or create target config
+      const targetConfig = (yearPriorityConfigs || {})[targetYear] || {
+        priorities: [],
+        filterType: 'all',
+        searchQuery: '',
+        selectedYear: targetYear,
+        budgetAllocation: {},
+      };
+      
+      const newItem = {
+        ...draggedData.item,
+        id: `${draggedData.item.id}-${Date.now()}`,
+      };
+      
+      targetConfig.priorities = [...targetConfig.priorities, newItem];
+      
+      // Call update for target year
+      if (onYearPriorityUpdate) {
+        console.log('[FundGraph] Updating target year', targetYear, 'with', targetConfig.priorities.length, 'items');
+        onYearPriorityUpdate(targetConfig);
+      }
+      
+      // If not copy (Ctrl held), remove from source year
+      if (!isCopy && sourceYear !== targetYear) {
+        const sourceConfig = (yearPriorityConfigs || {})[sourceYear];
+        if (sourceConfig) {
+          const originalLength = sourceConfig.priorities.length;
+          sourceConfig.priorities = sourceConfig.priorities.filter(
+            (p: any) => p.id !== draggedData.item.id
+          );
+          if (sourceConfig.priorities.length < originalLength && onYearPriorityUpdate) {
+            console.log('[FundGraph] Removed item from source year', sourceYear);
+            onYearPriorityUpdate(sourceConfig);
+          }
+        }
+      }
+      
+      console.log('[FundGraph] Drop completed successfully');
+    } catch (error) {
+      console.error('[FundGraph] Drop error:', error);
+      alert('Error processing drag-drop. Please try again.');
+    }
+  };
+
   return (
     <div style={{ background:"#fff" }}>
       <div style={{ display:"flex", alignItems:"center", padding:"12px 16px 4px", gap:8, borderTop:"1px solid #f0f0f0" }}>
         <span style={{ fontWeight:700, fontSize:15, color:"#111", minWidth:190 }}>Cashflow Simulator</span>
-        <span style={{ color:"#bbb", fontSize:16, cursor:"pointer", letterSpacing:3 }}>•••</span>
+        <span style={{ color:"#bbb", fontSize:11, fontStyle: 'italic' }}>Drag items from the popup to any year bar below</span>
+        <span style={{ color:"#bbb", fontSize:16, cursor:"pointer", letterSpacing:3, marginLeft: 'auto' }}>•••</span>
         <div style={{ flex:1, display:"flex", justifyContent:"center" }}>
           <span style={{ fontWeight:700, fontSize:15, color:"#111" }}>How to clear deficit</span>
         </div>
@@ -207,15 +303,20 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
                     onYearSelect(d);
                   }
                 }}
+                onDragOver={(e) => handleDragOver(e, i)}
+                onDrop={(e) => handleDrop(e, d.year)}
+                onDragLeave={handleDragLeave}
                 style={{
                   width: COL_W, flexShrink:0, cursor:"pointer",
                   borderRadius:10, paddingTop:8, paddingBottom:8,
-                  background: active ? G2_ACTIVE : "transparent",
+                  background: dragOverIndex === i ? '#fff3cd' : active ? G2_ACTIVE : "transparent",
+                  border: dragOverIndex === i ? '2px dashed #ff9800' : '1px solid transparent',
                   display:"flex", flexDirection:"column", alignItems:"center",
-                  transition:"background 0.15s ease",
+                  transition:"background 0.15s ease, border 0.15s ease",
+                  boxShadow: dragOverIndex === i ? '0 0 8px rgba(255, 152, 0, 0.3)' : 'none',
                 }}
-                onMouseEnter={e => { if (!isDragging.current) e.currentTarget.style.background = active ? G2_ACTIVE : G2_HOVER; }}
-                onMouseLeave={e => { if (!isDragging.current) e.currentTarget.style.background = active ? G2_ACTIVE : "transparent"; }}
+                onMouseEnter={e => { if (!isDragging.current) e.currentTarget.style.background = dragOverIndex === i ? '#fff3cd' : active ? G2_ACTIVE : G2_HOVER; }}
+                onMouseLeave={e => { if (!isDragging.current) e.currentTarget.style.background = dragOverIndex === i ? '#fff3cd' : active ? G2_ACTIVE : "transparent"; }}
               >
 
                 {/* ── POSITIVE BAR ZONE (12rem, bars grow from bottom) ── */}
@@ -344,7 +445,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey }: { sel
 // ─────────────────────────────────────────────────────────────────
 // APP
 // ─────────────────────────────────────────────────────────────────
-const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph', feeOverride, totalHousingUnits, yearPriorityConfigs = {} }) => {
+const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYearSelect, excelData, viewMode = 'graph', feeOverride, totalHousingUnits, yearPriorityConfigs = {}, onYearPriorityUpdate, currentYear }) => {
   const [sel1, setSel1] = useState<string | null>(null);
   const [sel2, setSel2] = useState<string | null>(null);
   const [calcOpenRow, setCalcOpenRow] = useState<number | null>(null);
@@ -407,10 +508,10 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
 
     const reserveItems: ReserveItem[] = items.map((item: any) => ({
       itemName: item.itemName,
-      expectedLife: item.expectedLife,
-      remainingLife: item.remainingLife,
-      replacementCost: item.replacementCost,
-      sirsType: item.sirsType
+      expectedLife: Number(item.expectedLife) || 0,
+      remainingLife: Number(item.remainingLife) || 0,
+      replacementCost: Number(item.replacementCost) || 0,
+      sirsType: Number(item.sirsType) || 0
     }));
 
     // ── OPTIMIZE ALL: compute the minimum fee that keeps balance ≥ safetyNet (or 0) across all years
@@ -723,7 +824,7 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
           if (onYearSelect) {
             onYearSelect(yearData);
           }
-        }} cashflowData={cashflowData} />
+        }} cashflowData={cashflowData} onYearPriorityUpdate={onYearPriorityUpdate} currentYear={currentYear} yearPriorityConfigs={yearPriorityConfigs} />
 
         {/* <div style={{ padding:"8px 16px 14px", borderTop:"1px solid #f0f0f0", display:"flex", gap:20, alignItems:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>

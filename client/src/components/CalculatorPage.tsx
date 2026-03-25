@@ -140,6 +140,24 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
     }
   };
 
+  const handleYearPriorityUpdate = (config: YearPriorityConfig) => {
+    console.log('[CalculatorPage] Year priority updated via drag-drop:', {
+      year: config.selectedYear,
+      itemCount: config.priorities.length,
+    });
+
+    // Update the centralized state
+    setYearPriorityConfigs(prev => ({
+      ...prev,
+      [config.selectedYear]: config,
+    }));
+
+    // Dispatch the event to trigger recalculation
+    window.dispatchEvent(new CustomEvent('yearPriorityUpdated', { detail: config }));
+  };
+
+  const currentYear = excelData?.data?.data?.config?.['Beginning Fiscal Year of the Report'] || new Date().getFullYear();
+
   return (
     <div style={{
       width: '100%',
@@ -219,6 +237,8 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
           feeOverride={feeOverride}
           totalHousingUnits={totalHousingUnits}
           yearPriorityConfigs={yearPriorityConfigs}
+          onYearPriorityUpdate={handleYearPriorityUpdate}
+          currentYear={currentYear}
         />
       </div>
     </div>

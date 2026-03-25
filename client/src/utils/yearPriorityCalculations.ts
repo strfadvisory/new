@@ -95,45 +95,61 @@ export function getYearPriorityItems(
 }
 
 /**
- * Get ALL items with their next scheduled replacement year
- * Useful for the dropdown showing all priorities
+ * Get ALL items with inflated costs for a specific year (for priority management)
+ * Unlike getYearPriorityItems, this returns all items regardless of schedule
  */
-export function getAllYearPrioritiesWithSchedule(
+export function getAllItemsForYear(
   items: ReserveItem[],
-  config: FinancialConfig
+  config: FinancialConfig,
+  yearIndex: number
 ): YearPriorityItemDetail[] {
-  const allPriorities: YearPriorityItemDetail[] = [];
+  console.log('[yearPriorityCalculations] getAllItemsForYear called with:', {
+    itemCount: items.length,
+    yearIndex,
+    configCurrentYear: config.currentYear,
+  });
+
+  const allItems: YearPriorityItemDetail[] = [];
 
   items.forEach((item, idx) => {
-    if (!item.expectedLife || item.expectedLife <= 0) return;
-
-    // First replacement
-    if (item.remainingLife < config.yearsToProject) {
-      const inflatedCost = item.replacementCost * Math.pow(1 + config.inflationRate, item.remainingLife);
-      allPriorities.push({
-        ...item,
-        id: `item-${idx}`,
-        year: config.currentYear + item.remainingLife,
-        inflatedCost,
-        originalCost: item.replacementCost,
-        sirsTypeLabel: item.sirsType === 1 ? 'SIRs' : 'NonSIRs',
-        isScheduled: true,
-        nextReplacement: item.remainingLife,
-      });
+    if (!item.expectedLife || item.expectedLife <= 0) {
+      console.log(`[yearPriorityCalculations] Item ${idx} skipped: invalid expectedLife`);
+      return;
     }
+
+    // Calculate inflated cost for this specific year
+    const inflatedCost = item.replacementCost * Math.pow(1 + config.inflationRate, yearIndex);
+    const calendarYear = config.currentYear + yearIndex;
+
+    // Calculate next scheduled replacement (for reference)
+    let nextReplacement = item.remainingLife;
+    while (nextReplacement < yearIndex) {
+      nextReplacement += item.expectedLife;
+    }
+
+    const detail: YearPriorityItemDetail = {
+      ...item,
+      id: `item-${idx}`,
+      year: calendarYear,
+      inflatedCost,
+      originalCost: item.replacementCost,
+      sirsTypeLabel: item.sirsType === 1 ? 'SIRs' : 'NonSIRs',
+      isScheduled: item.remainingLife === yearIndex || (item.remainingLife <= yearIndex && (yearIndex - item.remainingLife) % item.expectedLife === 0),
+      nextReplacement,
+    };
+
+    console.log(`[yearPriorityCalculations] Adding item ${idx} for year ${calendarYear}:`, {
+      itemName: item.itemName,
+      inflatedCost: Math.round(inflatedCost),
+      isScheduled: detail.isScheduled,
+      nextReplacement,
+    });
+
+    allItems.push(detail);
   });
 
-  // Sort by year and then by sirsType
-  return allPriorities.sort((a, b) => {
-    if (a.nextReplacement !== b.nextReplacement) {
-      return a.nextReplacement - b.nextReplacement;
-    }
-    // SIRs before NonSIRs
-    if (a.sirsType !== b.sirsType) {
-      return (a.sirsType as number) - (b.sirsType as number);
-    }
-    return a.itemName.localeCompare(b.itemName);
-  });
+  console.log('[yearPriorityCalculations] Returning all items for yearIndex', yearIndex, ':', allItems.length, 'items');
+  return allItems;
 }
 
 /**

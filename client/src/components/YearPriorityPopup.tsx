@@ -1,40 +1,27 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { getYearPriorityItems, getAllYearPrioritiesWithSchedule, debugYearPriorityFlow } from '../utils/yearPriorityCalculations';
+import { getYearPriorityItems, debugYearPriorityFlow } from '../utils/yearPriorityCalculations';
 import type { YearPriorityItemDetail } from '../utils/yearPriorityCalculations';
 import type { ReserveItem, FinancialConfig } from '../utils/financialCalculations';
 
 /**
  * YearPriorityPopup Component
  * 
- * Manages priority items for a specific year in the reserve study.
+ * Shows ALL reserve items that can be dragged to future years for prioritization.
  * 
  * FUNCTIONALITY:
- * - Manage and reorder priorities dynamically (drag-drop)
- * - Allocate and adjust budgets (inline editing)
- * - Categorize items (SIRs vs Non-SIRs)
- * - Split and edit costs interactively
- * - Real-time filtering and search
+ * - Display all reserve items with inflated costs for the selected year
+ * - Allow dragging any item to future year bars in the graph
+ * - Edit and split item costs inline
+ * - Filter and search through all items
  * 
  * DATA FLOW:
  * 1. User opens popup for a year (via LeftPanel click)
- * 2. Component loads reserve items + financial config
- * 3. Calculates year-specific priorities (with inflation)
- * 4. User makes changes (delete, edit, split, reorder)
- * 5. Each change calls onApply callback with updated config
- * 6. LeftPanel broadcasts 'yearPriorityUpdated' event
- * 7. CalculatorPage listens for event and broadcast 'yearPrioritiesChanged'
- * 8. FundGraph and List components listen and recalculate with new data
- * 
- * STATE MANAGEMENT:
- * - Local state for UI: modal, editing, dragging, position
- * - Config state: priorities, filters, search (sent via onApply)
- * - Budget allocation: tracked separately for budget distribution
- * 
- * UPDATES ARE REAL-TIME:
- * - Total cost updates instantly
- * - SIRs/NonSIRs breakdown recalculates
- * - Parent components receive updates via onApply callback
- * - Event system ensures graph + list stay in sync
+ * 2. Component loads ALL reserve items with year-specific inflation
+ * 3. User can drag any item to future year bars for prioritization
+ * 4. Each drag creates/updates year-specific priority configurations
+ * 5. LeftPanel broadcasts 'yearPriorityUpdated' event
+ * 6. CalculatorPage listens and updates yearPriorityConfigs
+ * 7. FundGraph recalculates with new priority data
  */
 
 export interface PriorityItem extends YearPriorityItemDetail {
@@ -60,6 +47,7 @@ interface YearPriorityPopupProps {
   onClose: () => void;
   year?: number;
   yearIndex?: number;
+  yearPriorityConfig?: YearPriorityConfig;
   reserveItems?: ReserveItem[];
   financialConfig?: FinancialConfig;
   initialPosition?: { x: number; y: number };
@@ -104,6 +92,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   onClose,
   year,
   yearIndex,
+  yearPriorityConfig,
   reserveItems,
   financialConfig,
   initialPosition = { x: 0, y: 0 },
@@ -150,39 +139,42 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
       hasConfig: !!financialConfig,
     });
     
-    // Only load if: popup is open AND we have data AND year has actually changed
-    if (isOpen && reserveItems && financialConfig && yearIndex !== undefined && yearIndex !== lastLoadedYear) {
+    // Only load if: popup is open AND year has actually changed
+    if (isOpen && yearIndex !== undefined && yearIndex !== lastLoadedYear) {
       console.log('[YearPriorityPopup] Year changed from', lastLoadedYear, 'to', yearIndex, '- reloading priorities');
-      
-      // Run full diagnostic on first popup open
-      if (yearIndex === 0) {
+
+      const savedConfig = yearPriorityConfig;
+      if (savedConfig && savedConfig.priorities && savedConfig.priorities.length > 0) {
+        console.log('[YearPriorityPopup] Loaded saved year priority config for year', yearIndex, 'with', savedConfig.priorities.length, 'items');
+        setPriorities(savedConfig.priorities);
+      } else if (reserveItems && financialConfig) {
+        const yearItems = getYearPriorityItems(reserveItems, financialConfig, yearIndex);
+        const activePriorities: PriorityItem[] = yearItems.map((item, idx) => ({
+          ...item,
+          displayOrder: idx,
+        }));
+
+        if (activePriorities.length > 0) {
+          console.log('[YearPriorityPopup] Calculated and set year priorities from data for year', yearIndex, '->', activePriorities.length, 'items');
+          setPriorities(activePriorities);
+        } else {
+          console.log('[YearPriorityPopup] Calculated no year priorities for year', yearIndex, '-> not showing items');
+          setPriorities([]);
+        }
+      } else {
+        console.log('[YearPriorityPopup] No saved priorities, no reserve data, and/or no financial config for year', yearIndex, '- showing empty popup');
+        setPriorities([]);
+      }
+
+      // Diagnostic remains for first year if we have data
+      if (yearIndex === 0 && reserveItems && financialConfig) {
         console.log('[YearPriorityPopup] ====== RUNNING FULL DIAGNOSTIC FLOW ======');
         debugYearPriorityFlow(reserveItems, financialConfig);
         console.log('[YearPriorityPopup] ====== DIAGNOSTIC COMPLETE ======');
       }
-      
-      console.log('[YearPriorityPopup] CALLING getYearPriorityItems with:', {
-        yearIndex,
-        configYearsToProject: financialConfig.yearsToProject,
-        itemsCount: reserveItems.length,
-      });
-      
-      const yearItems = getYearPriorityItems(reserveItems, financialConfig, yearIndex);
-      
-      console.log('[YearPriorityPopup] getYearPriorityItems returned:', {
-        count: yearItems.length,
-        items: yearItems.map(i => ({ itemName: i.itemName, inflatedCost: Math.round(i.inflatedCost) })),
-      });
-      
-      const priorityItems: PriorityItem[] = yearItems.map((item, index) => ({
-        ...item,
-        displayOrder: index,
-      }));
-      
-      console.log('[YearPriorityPopup] Setting priorities state to:', priorityItems.length, 'items');
-      setPriorities(priorityItems);
+
       setLastLoadedYear(yearIndex);
-    } else if (isOpen && (yearIndex === undefined || !reserveItems || !financialConfig)) {
+    } else if (isOpen && yearIndex === undefined) {
       console.log('[YearPriorityPopup] Conditions not met for loading data:', {
         isOpenCheck: !!isOpen,
         hasItemsCheck: !!reserveItems,
@@ -318,10 +310,13 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
 
   const handleOpenSplitInline = (id: string) => {
     const item = priorities.find((p) => p.id === id);
-    if (item) {
-      setSplitInlineId(id);
-      setSplitAmount(Math.round(item.inflatedCost / 2));
+    if (!item) return;
+    if (item.sirsType !== 0) {
+      alert('Only SIRs=0 items can be split.');
+      return;
     }
+    setSplitInlineId(id);
+    setSplitAmount(Math.round(item.inflatedCost / 2));
   };
 
   const handleCloseSplitInline = () => {
@@ -391,7 +386,6 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     <>
     <div
       ref={popupRef}
-      onMouseDown={onMouseDown}
       style={{
         position: 'fixed',
         left: position.x,
@@ -402,7 +396,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
         borderRadius: '10px',
         boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
         zIndex: 2000,
-        cursor: 'grab',
+        cursor: 'default',
         userSelect: 'none',
         fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
         maxHeight: '90vh',
@@ -412,18 +406,22 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
       }}
     >
       {/* ── HEADER (Fixed) ── */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '12px 16px',
-        borderBottom: '1px solid #e5e5e5',
-        flexShrink: 0,
-        background: '#fff',
-      }}>
+      <div
+        onMouseDown={onMouseDown}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px',
+          borderBottom: '1px solid #e5e5e5',
+          flexShrink: 0,
+          background: '#fff',
+          cursor: 'grab',
+        }}
+      >
         <div>
           <span style={{ fontSize: '16px', fontWeight: '700', color: '#000', letterSpacing: '-0.3px' }}>
-            {priorityCount} Priorities
+            Priority ({year ?? 'N/A'})
           </span>
           <div style={{ fontSize: '14px', fontWeight: '700', color: '#000', marginTop: '2px' }}>
             ${Math.round(totalAmount).toLocaleString()}
@@ -546,8 +544,24 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
             filteredPriorities.map((item, index) => (
               <React.Fragment key={item.id}>
                 <div
-                  draggable
-                  onDragStart={() => handleDragStart(item.id)}
+                  draggable={item.sirsType === 0}
+                  onDragStart={(e) => {
+                    if (item.sirsType !== 0) {
+                      e.preventDefault();
+                      alert('Only SIRs=0 items can be moved.');
+                      return;
+                    }
+                    const dragPayload = {
+                      item,
+                      sourceYear: year,
+                      itemName: item.itemName,
+                      cost: item.inflatedCost,
+                    };
+                    console.log('[YearPriorityPopup] Drag started:', dragPayload);
+                    e.dataTransfer.setData('application/json', JSON.stringify(dragPayload));
+                    e.dataTransfer.effectAllowed = 'copy';
+                    handleDragStart(item.id);
+                  }}
                   onDragOver={handleDragOver}
                   onDrop={() => handleDrop(item.id)}
                   style={{
@@ -660,15 +674,16 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
                   <button
                     onClick={() => handleOpenSplitInline(item.id)}
+                    disabled={item.sirsType !== 0}
                     style={{
                       padding: '4px 8px',
                       border: '1px solid #c3c3c3',
                       borderRadius: '4px',
                       fontSize: '11px',
                       fontWeight: '600',
-                      cursor: 'pointer',
-                      background: '#fff',
-                      color: '#000',
+                      cursor: item.sirsType === 0 ? 'pointer' : 'not-allowed',
+                      background: item.sirsType === 0 ? '#fff' : '#f3f3f3',
+                      color: item.sirsType === 0 ? '#000' : '#999',
                       transition: 'all 0.2s ease',
                     }}
                     onMouseEnter={(e) => {

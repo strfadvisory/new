@@ -109,10 +109,10 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   // Map items to ReserveItem format
   const reserveItems: ReserveItem[] = items.map((item: any) => ({
     itemName: item.itemName,
-    expectedLife: item.expectedLife,
-    remainingLife: item.remainingLife,
-    replacementCost: item.replacementCost,
-    sirsType: item.sirsType,
+    expectedLife: Number(item.expectedLife) || 0,
+    remainingLife: Number(item.remainingLife) || 0,
+    replacementCost: Number(item.replacementCost) || 0,
+    sirsType: Number(item.sirsType) || 0,
   }));
 
   const handleFeeClick = () => {
@@ -405,6 +405,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         }}
         year={year}
         yearIndex={yearIndex}
+        yearPriorityConfig={propYearPriorityConfigs[popupYearBeingEdited ?? year]}
         reserveItems={reserveItems}
         financialConfig={financialConfig}
         initialPosition={yearPriorityPopupPos}
