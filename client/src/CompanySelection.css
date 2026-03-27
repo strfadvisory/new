@@ -24,7 +24,7 @@
 .company-selection-container {
   display: flex;
   min-height: 100vh;
-  background-color: #f8fafc;
+  background-color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -57,7 +57,7 @@
   margin-bottom: 24px;
 }
 
-.company-item {
+/* .company-item {
   display: flex;
   align-items: center;
   padding: 16px;
@@ -70,7 +70,7 @@
 
 .company-item:hover {
   background-color: #0E519B0D;
-}
+} */
 
 .company-icon {
   width: 64px;
@@ -279,4 +279,116 @@
   font-size: 12px;
   color: rgba(255, 255, 255, 0.8);
   letter-spacing: 0.3px;
+}
+
+.companySelectionNamediv{
+  max-width: 628px;
+  background: white;
+  border:1px solid #DFDFDF;
+  margin: 0 auto;
+  border-radius: 8px;
+}
+
+.companySelectionNamediv .company-header{
+    padding: 30px 30px 0px 30px;
+}
+
+.companySelectionNamediv .company-header h2{
+  font-size: 20px;
+  font-weight: 700;
+  color: #312C57;
+  margin: 0 0 8px 0;
+  font-family: 'Google Sans';
+}
+
+.companySelectionNamediv .company-header p{
+  font-size: 16px;
+  color: #312C57;
+  font-family: 'Google Sans';
+  line-height: 20px;
+  font-weight: 400;
+}
+
+.companySelectionNamediv  .company-header{
+ border-bottom: 1px solid #DFDFDF;
+padding-bottom: 30px;
+}
+
+.company-list {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 22px;
+  padding-bottom: 0;
+  /* max-height: 500px;
+  overflow-y: auto; */
+}
+.company-list .company-item{
+  max-width: 261px;
+  padding: 16px 20px;
+  display: flex;
+  border: 1px solid #0079FF;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid #DFDFDF;
+  border-radius: 10px;
+  background-color: #fff;
+  margin: 10px 13px;
+  
+  }
+.company-item:last-child{
+   border: 1px solid #DFDFDF;
+}
+
+.company-list .company-item:hover{
+  border: 1px solid #0079FF;
+  box-shadow: 0px 4px 12px 0px #0079FF40;
+  background-color: #fff;
+}
+
+.company-list .company-item .company-icon{
+background: #0079FF1F;
+width: 75px;
+height: 75px;
+border-radius: 50%;
+}
+
+.company-list .company-item h3{
+  font-size: 16px;
+  color: #312C57;
+  font-weight: 700;
+  font-family: 'Google Sans';
+    margin-bottom: 8px;
+}
+
+.company-list .company-item p{
+  font-size: 16px;
+  color: #312C57;
+  font-weight: 400;
+  font-family: 'Google Sans';
+  line-height: 20px;
+}
+
+.company-not-listed{
+  font-size: 16px;
+   padding: 20px;
+    color: #312C57;
+    font-family: 'Google Sans';
+    font-weight: 700;
+    line-height: 20px;
+    cursor: pointer;
+ display: flex;
+ justify-content: center;
+ border-top: 1px solid #DFDFDF;
+margin-top: 0;
+}
+
+.company-not-listed:hover{
+color: #312C57;
+}
+
+.company-not-listed span span{
+  text-decoration: underline;
 }

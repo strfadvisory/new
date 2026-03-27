@@ -313,28 +313,37 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
       <AuthSidebar />
       
       <div className="profile-content">
-        <Breadcrumb items={[
+        {/* <Breadcrumb items={[
           { label: 'Select Company', onClick: () => {
             updateSignupState({ formData, selectedCountry, agreeToTerms });
             onNavigate?.('/signup');
           }},
           { label: 'Create Profile', active: true }
-        ]} />
+        ]} /> */}
         
-        <div className="profile-form" style={{maxWidth: '800px', margin: '0 auto'}}>
+        <div className="profile-form mt-5">
           <div className="form-card" style={{position:'relative' , maxHeight: 'none', marginBottom: '40px'}}>
-            <h2 className="form-title">Create your profile</h2>
-            <p className="form-description">Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
-            
+              <div className="profile-form-header">
+                <div className="row m-0">
+                <div className="col-md-9">
+                  <h2 className="profile-form-title">Create your profile</h2>
+                  <p className="profile-form-description">Set up a new organizational entity to manage Users, modules, and operations efficiently.</p>
+                </div>
+                <div className="col-md-3 d-flex justify-content-end">
+                    <div className='profile-image'></div>
+                </div>
+              </div>
+              </div>
             <form onSubmit={handleSubmit} className="form-body">
-              <div className="row g-4">
+              <div className="row">
                 <div className="col-md-12">
                   <div className="form-group">
+                    <label htmlFor="firstName">First name *</label>
                     <input
                       type="text"
                       className="form-input"
                       name="firstName"
-                      placeholder="First name *"
+                      placeholder="Enter your first name"
                       value={formData.firstName}
                       onChange={handleInputChange}
                       required
@@ -344,11 +353,12 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                 </div>
                 <div className="col-md-12">
                   <div className="form-group">
+                    <label htmlFor="lastName">Last name *</label>
                     <input
                       type="text"
                       className="form-input"
                       name="lastName"
-                      placeholder="Last Name *"
+                      placeholder="Enter your last name"
                       value={formData.lastName}
                       onChange={handleInputChange}
                       required
@@ -359,11 +369,12 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
               </div>
             
               <div className="form-group">
+                <label htmlFor="email">Email Address *</label>
                 <input
                   type="email"
                   className={`form-input ${emailValidation.valid === false ? 'is-invalid' : emailValidation.valid === true ? 'is-valid' : ''}`}
                   name="email"
-                  placeholder="Email Address *"
+                  placeholder="Enter your email address"
                   value={formData.email}
                   onChange={handleInputChange}
                   onBlur={handleEmailBlur}
@@ -382,7 +393,8 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                   <div className="valid-feedback">{emailValidation.message}</div>
                 )}
               </div>
-            
+              <div className="form-group">
+                <label htmlFor="designation">Designation *</label>
               <DesignationInput
                 value={formData.designation}
                 onChange={(value) => {
@@ -395,8 +407,9 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                 }}
                 required
               />
-            
+              </div>
               <div className="form-group">
+                <label htmlFor="phone">Phone Number *</label>
                 <div className="phone-input">
                   <span className="country-code" onClick={() => document.getElementById('country-select')?.click()}>
                     <img src={`https://flagcdn.com/w20/${currentCountry.flag}.png`} alt={currentCountry.name} />
@@ -448,7 +461,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
                   <input
                     type="tel"
                     name="phone"
-                    placeholder="Phone *"
+                    placeholder="Enter your phone number"
                     value={formData.phone}
                     onChange={handleInputChange}
                     required
@@ -478,6 +491,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
               </div>
             
               <div className="form-group">
+                <label htmlFor="password">Password *</label>
                 <div className="password-input">
                   <input
                     type={showPassword ? "text" : "password"}

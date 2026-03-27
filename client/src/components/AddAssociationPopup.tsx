@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { API_ENDPOINTS } from '../api/config';
 import apiClient from '../api/client';
-import '../pages/AssociationControl.css';
+// import '../pages/AssociationControl.css';
 
 interface AddAssociationPopupProps {
   isOpen: boolean;

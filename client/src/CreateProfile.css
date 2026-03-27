@@ -76,6 +76,8 @@
   width: 100%;
   max-width: none;
   margin-top: 50px;
+  margin: 0 auto;
+  max-width: 628px;
 }
 
 /* FORM DESIGN SYSTEM - APPLIED ONLY TO FORM CARD */
@@ -134,7 +136,7 @@
 
 /* Form Groups - Only inside form card */
 .form-card .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 21px;
 }
 
 .form-card .form-group label {
@@ -303,15 +305,18 @@
   appearance: none;
   -webkit-appearance: none;
   -moz-appearance: none;
-  border: 2px solid #C7C7C7;
+  border: 1px solid #C7C7C7;
   border-radius: 4px;
   background: white;
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
   flex-shrink: 0;
+  padding: 0;
 }
-
+.form-card .checkbox-group label{
+  margin-bottom: 0 !important;
+}
 .form-card .checkbox-group input[type="checkbox"]:hover {
   border-color: #1f4f8f;
 }
@@ -380,9 +385,9 @@
 
 /* Button System - Only inside form card */
 .form-card .primary-button {
-  height: 48px;
-  border-radius: 8px;
-  background: #1f4f8f;
+  height: 63px;
+  border-radius: 10px;
+  background: #0E519B;
   color: white;
   font-weight: 600;
   font-size: 15px;
@@ -394,7 +399,7 @@
 }
 
 .form-card .primary-button:hover {
-  background: #173f74;
+box-shadow: 0px 0px 0px 4px #24A4F21A;
 }
 
 .form-card .primary-button:disabled {
@@ -413,8 +418,7 @@
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  width: 100%;
-  margin-bottom: 16px;
+  width: 100%; 
 }
 
 .form-card .secondary-button:hover {
@@ -426,8 +430,7 @@
 .secondary-action {
   text-align: center;
   margin: 0;
-  padding: 16px 20px;
-  border-top: 1px solid #C7C7C7;
+  padding: 16px 20px; 
   font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 700;
   font-style: normal;
@@ -440,12 +443,12 @@
 .secondary-link {
   font-size: 16px;
   text-align: center;
-  color: #1f4f8f;
+  font-family: 'Google Sans';
+  color: #0E519B;
   cursor: pointer;
   background: none;
   border: none;
   text-decoration: none;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-weight: 700;
 }
 
@@ -477,4 +480,92 @@
 
 .form-group label {
   font-size: 16px;
+}
+
+.profile-form .form-card{border: 1px solid #DFDFDF}
+
+.profile-form-header {
+  padding: 25px 25px 0px 25px;
+  border-bottom: 1px solid #DFDFDF
+}
+
+.profile-form-header h2 {
+ border-bottom: none;
+ font-size: 20px; 
+ color: #312C57;
+ font-weight: 700;
+line-height: 24px;
+font-family: 'Google Sans';
+}
+
+.profile-form-header p{
+ font-family: 'Google Sans';
+font-weight: 400;
+font-style: Regular;
+font-size: 16px; 
+line-height: 20px; 
+}
+.profile-image {
+ background: #0079FF1F;
+ border-radius: 50%;
+width: 73px;
+height: 73px;
+}
+
+.profile-form .form-card  form{
+    padding: 33px;
+    padding-bottom: 0;
+}
+
+.profile-form .form-card  form label{
+font-family: 'Google Sans';
+font-weight: 400;
+font-style: Regular;
+font-size: 16px;
+line-height: 24px; 
+color: #312C57;
+margin-bottom: 5px;
+}
+
+.profile-form .form-card  form input:not([type="checkbox"]),.profile-form .form-card  form select{
+  border: 1px solid #B2B2B2;
+  border-radius: 10px;
+  padding: 14px 16px;
+  background-color: #fff;
+  font-size: 16px;
+  font-weight: 400;
+  font-style: Regular;
+  line-height: 24px;
+  color: #312C57;
+height:auto;
+}
+
+
+.profile-form .form-card  form input:not([type="checkbox"]):focus{
+border-color: #0079FF;
+box-shadow: 0px 0px 7px 0px #0079FF66;
+}
+
+.form-card .phone-input {
+    border: 1px solid #B2B2B2 !important;
+    background-color: #fff !important;
+}
+
+.form-card .phone-input .country-code {
+  border-right: none;
+  background-color: transparent;
+}
+
+.form-card .phone-input input {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.form-card .phone-input input:focus{
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.profile-form .form-card .form-note .primary-button{
+  
 }

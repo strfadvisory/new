@@ -51,31 +51,40 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
     <div className="login-container">
       <AuthSidebar /> 
       <div className="login-form-container login-form-container-new">
-        <div className="form-card" style={{ position:'relative' ,  transform :'none' , left:'0', top:'0' }}>
-          <h2 className="form-title">Access your Account</h2> 
-          <p className="form-description">Enter your credentials to access your account and manage your organization.</p>
+        <div className="form-card-new">
+          <div className="row m-0 align-items-center">
+              <div className="col-9 ps-0">
+                <h2 className="login-title">Sign in to Your Account</h2> 
+                <p className="login-description">Enter your credentials to securely access your account and manage your activities.</p>
+              </div>
+              <div className="col-3 d-flex justify-content-end pe-0">
+                <img src="/lock-icon.png" alt="Lock Icon" className="logo-image" />
+              </div>
+          </div>
           
-          <form onSubmit={handleLogin}>
+          <div className='login-form-div'>
+               <form onSubmit={handleLogin}>
+            <label className='mb-2'>Register Email Address</label>
             <FormInput
               label="Email Address*"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="Email Address*"
+              placeholder="Company name"
             />
-            
+            <label htmlFor="password" className='mb-2'>Password</label>
             <FormInput
               label="Password*"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              placeholder="Password*"
+              placeholder="Enter Password"
             />
             
             <div className="form-options">
-              <label className="checkbox-label">
+              <label className="checkbox-label mb-0">
                 <input
                   type="checkbox"
                   checked={rememberMe}
@@ -89,7 +98,7 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
             <PrimaryButton type="submit" disabled={loading} loading={loading}>
               Continue
             </PrimaryButton>
-          </form>
+          </form>   
           
           <div className="secondary-action">
             <button 
@@ -97,8 +106,9 @@ const Login: React.FC<LoginProps> = ({ onNewUser, onLogin }) => {
               onClick={onNewUser} 
               className="secondary-link"
             >
-              Don't have an Account? Sign Up
+             I don’t have Account  Create new
             </button>
+          </div>
           </div>
         </div>
       </div>

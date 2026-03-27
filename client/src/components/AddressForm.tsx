@@ -128,6 +128,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
       <div className="row g-4">
         <div className="col-md-12">
           <div className="form-group">
+            <label htmlFor="zipCode">Zip Code *</label>
             <input
               type="text"
               className="form-input"
@@ -146,6 +147,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
         </div>
         <div className="col-md-12">
           <div className="form-group">
+            <label htmlFor="state">State *</label>
             <select
               className="form-input"
               name="state"
@@ -163,6 +165,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
       </div>
       
       <div className="form-group">
+        <label htmlFor="city">City *</label>
         <input
           type="text"
           className="form-input"
@@ -175,6 +178,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
       </div>
       
       <div className="form-group">
+        <label htmlFor="address1">Address *</label>
         <input
           type="text"
           className="form-input"

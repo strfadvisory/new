@@ -144,9 +144,7 @@
   border-bottom: 1px solid #f3f4f6;
 }
 
-.company-item:last-child {
-  border-bottom: none;
-}
+ 
 
 .company-item:hover {
   background-color: #f9fafb;

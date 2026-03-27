@@ -173,11 +173,11 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect, i
               <h3>{company.name}</h3>
               <p>{company.description}</p>
             </div>
-            <div className="company-arrow">
+            {/* <div className="company-arrow">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M9 18L15 12L9 6" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-            </div>
+            </div> */}
           </div>
         ))
       )}
@@ -312,16 +312,22 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect, i
       <AuthSidebar />
       
       <div className="company-content">
-        <div style={{ background: 'white', border:'1px solid #E5E5E5', maxWidth: '800px', margin: '0 auto', borderRadius: '8px' }}> 
+        <div className='companySelectionNamediv'> 
           <div className="company-header">
-            <h2 style={{ fontSize: '20px', borderBottom: '1px solid #E3E3E3', padding: '20px' }}>
-              {isChangeCompany ? 'Change Company' : 'Choose your Company Type'}
-            </h2>
-            <p style={{ padding: '20px' }}>
-              {isChangeCompany 
-                ? 'Switch between your companies or manage pending invitations.' 
-                : 'Set up a new organisational entity to manage Users, modules, and operations efficiently.'}
-            </p>
+            <div className='row m-0 align-items-center'>
+                <div className='col-9 ps-0'>
+                <h2>
+                  {isChangeCompany ? 'Change Company' : 'Choose your Company Type'}
+                </h2>
+                <p>
+                  {isChangeCompany
+                    ? 'Switch between your companies or manage pending invitations.'
+                    : 'Set up a new organisational entity to manage Users, modules, and operations efficiently.'}
+                </p>        
+                </div>
+                <div className='col-3 pe-0 d-flex justify-content-end'>  <img src="/lock-icon.png" alt="Lock Icon" className="logo-image" /></div>
+            </div>
+            
           </div>
           
           {isChangeCompany && (
@@ -384,19 +390,19 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect, i
             </div>
           )}
           
-          <div style={{ minHeight: '300px' }}>
+          <div style={{ minHeight: '500px', maxHeight: '500px', overflowY: 'auto' }}>
             {!isChangeCompany ? renderCompanyTypes() : (
               activeTab === 'companies' ? renderUserCompanies() : renderPendingRequests()
             )}
           </div>
           
           {!isChangeCompany && (
-            <div className="company-not-listed" style={{ fontSize: '20px', padding: '20px', color:'#6b7280' }}
-                 onClick={() => handleCompanySelect('other', 'Company Type Not Listed')}>
-              <span>Company Type not listed</span>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <div className="company-not-listed" style={{  }}
+                 >
+              <span>Company Type not listed <span onClick={() => handleCompanySelect('other', 'Company Type Not Listed')}>Click here</span></span>
+              {/* <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <path d="M9 18L15 12L9 6" stroke="#3B82F6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
+              </svg> */}
             </div>
           )}
         </div>
