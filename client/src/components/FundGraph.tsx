@@ -281,10 +281,19 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey, onYearP
       // Create new item with unique ID for target year
       const newItem = {
         ...draggedItem,
-        id: isCopy ? `${draggedItem.id}-copy-${Date.now()}` : draggedItem.id,
+        id: isCopy ? `${draggedItem.id}-copy-${Date.now()}` : `${draggedItem.id}-moved-${targetYear}`,
         year: targetYear,
         inflatedCost: draggedItem.inflatedCost,
         originalCost: draggedItem.originalCost || draggedItem.replacementCost,
+        // Ensure all required fields are present
+        itemName: draggedItem.itemName,
+        expectedLife: draggedItem.expectedLife,
+        remainingLife: draggedItem.remainingLife,
+        replacementCost: draggedItem.replacementCost || draggedItem.originalCost,
+        sirsType: draggedItem.sirsType,
+        sirsTypeLabel: draggedItem.sirsTypeLabel,
+        isScheduled: false, // Moved items are not originally scheduled for this year
+        nextReplacement: draggedItem.nextReplacement,
       };
       
       const updatedTargetConfig = {
@@ -297,13 +306,29 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey, onYearP
       };
       
       console.log('[FundGraph] *** ADDING TO TARGET ***', targetYear, 'New count:', updatedTargetConfig.priorities.length);
-      console.log('[FundGraph] Target items:', updatedTargetConfig.priorities.map((p: any) => ({ id: p.id, name: p.itemName })));
+      console.log('[FundGraph] Target config details:', {
+        year: targetYear,
+        itemCount: updatedTargetConfig.priorities.length,
+        items: updatedTargetConfig.priorities.map((p: any) => ({ 
+          id: p.id, 
+          name: p.itemName, 
+          cost: Math.round(p.inflatedCost) 
+        })),
+        filterType: updatedTargetConfig.filterType,
+        searchQuery: updatedTargetConfig.searchQuery
+      });
       
       if (onYearPriorityUpdate) {
-        // Small delay to ensure source update completes first
+        console.log('[FundGraph] *** CALLING onYearPriorityUpdate for target year ***', targetYear);
+        onYearPriorityUpdate(updatedTargetConfig);
+        
+        // Force immediate refresh of any open popup for this year
         setTimeout(() => {
-          onYearPriorityUpdate(updatedTargetConfig);
-        }, sourceConfigUpdated ? 100 : 0);
+          console.log('[FundGraph] *** DISPATCHING forcePopupRefresh for year ***', targetYear);
+          window.dispatchEvent(new CustomEvent('forcePopupRefresh', {
+            detail: { year: targetYear, config: updatedTargetConfig }
+          }));
+        }, 100);
       }
       
       // Show success message

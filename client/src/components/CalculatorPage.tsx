@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import FundGraph from './FundGraph';
 import LeftPanel from './LeftPanel';
+import DragDropDebug from './DragDropDebug';
 import { viewModeEmitter } from '../utils/eventEmitter';
 import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
 import type { YearPriorityConfig } from './YearPriorityPopup';
@@ -159,6 +160,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
       itemCount: config.priorities.length,
       totalCost: Math.round(config.priorities.reduce((sum, p) => sum + p.inflatedCost, 0)),
       itemIds: config.priorities.map(p => p.id),
+      itemNames: config.priorities.map(p => p.itemName)
     });
 
     // IMMEDIATELY update the centralized state
@@ -167,20 +169,24 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
         ...prev,
         [config.selectedYear]: { ...config },
       };
+      
       console.log('[CalculatorPage] *** STATE UPDATED *** New configs:', {
         totalYears: Object.keys(updated).length,
         updatedYear: config.selectedYear,
         itemsInYear: config.priorities.length,
         allYears: Object.keys(updated).map(year => ({
           year,
-          items: updated[parseInt(year)].priorities.length
+          items: updated[parseInt(year)].priorities.length,
+          itemNames: updated[parseInt(year)].priorities.map((p: any) => p.itemName)
         }))
       });
+      
       return updated;
     });
 
     // Force immediate re-render by dispatching event
     setTimeout(() => {
+      console.log('[CalculatorPage] Broadcasting yearPriorityUpdated event');
       window.dispatchEvent(new CustomEvent('yearPriorityUpdated', { 
         detail: { 
           year: config.selectedYear,
@@ -201,6 +207,8 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
       display: 'flex',
       position: 'relative'
     }}> 
+      {/* Debug Component */}
+      <DragDropDebug />
  
       {viewMode === 'graph' && (
         <div style={{

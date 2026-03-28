@@ -129,57 +129,62 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
 
   console.log('[YearPriorityPopup] Rendering:', {
     year,
+    yearIndex,
     itemCount: priorities.length,
     filteredCount: filteredPriorities.length,
+    hasYearPriorityConfig: !!yearPriorityConfig,
+    configItemCount: yearPriorityConfig?.priorities?.length || 0,
+    isOpen,
   });
 
-  // Sync with parent state changes immediately
+  // SINGLE SOURCE OF TRUTH: Load data when popup opens or config changes
   useEffect(() => {
-    if (isOpen && yearPriorityConfig) {
-      console.log('[YearPriorityPopup] *** SYNCING WITH PARENT STATE ***');
-      console.log('[YearPriorityPopup] Parent config priorities:', yearPriorityConfig.priorities?.length || 0);
-      
-      if (yearPriorityConfig.priorities) {
-        setPriorities([...yearPriorityConfig.priorities]);
-        console.log('[YearPriorityPopup] Synced priorities:', yearPriorityConfig.priorities.length);
-      }
+    if (!isOpen || yearIndex === undefined) {
+      console.log('[YearPriorityPopup] Popup closed or no yearIndex, clearing state');
+      setPriorities([]);
+      return;
     }
-  }, [yearPriorityConfig, isOpen]);
 
-  // Load real data when popup opens or config changes
-  useEffect(() => {
-    if (!isOpen || yearIndex === undefined) return;
+    console.log('[YearPriorityPopup] *** LOADING DATA *** for year', year, 'yearIndex:', yearIndex);
+    console.log('[YearPriorityPopup] Config available:', {
+      hasConfig: !!yearPriorityConfig,
+      configYear: yearPriorityConfig?.selectedYear,
+      configItemCount: yearPriorityConfig?.priorities?.length || 0,
+    });
 
-    console.log('[YearPriorityPopup] Loading data for year', yearIndex);
-
-    const savedConfig = yearPriorityConfig;
-    
-    // ALWAYS reload data when config changes - no caching
-    if (savedConfig && savedConfig.priorities && savedConfig.priorities.length > 0) {
-      console.log('[YearPriorityPopup] ✅ Loading', savedConfig.priorities.length, 'items from saved config');
-      setPriorities([...savedConfig.priorities]); // Create new array to force re-render
-      setFilterType(savedConfig.filterType || 'all');
-      setSearchQuery(savedConfig.searchQuery || '');
-      setBudgetAllocation(savedConfig.budgetAllocation || {});
+    // PRIORITY 1: Always use saved config if available (includes dropped items)
+    if (yearPriorityConfig && yearPriorityConfig.priorities && yearPriorityConfig.priorities.length > 0) {
+      console.log('[YearPriorityPopup] ✅ Using saved config with', yearPriorityConfig.priorities.length, 'items');
+      console.log('[YearPriorityPopup] Config items:', yearPriorityConfig.priorities.map(p => ({ 
+        id: p.id, 
+        name: p.itemName, 
+        cost: Math.round(p.inflatedCost) 
+      })));
+      
+      setPriorities([...yearPriorityConfig.priorities]);
+      setFilterType(yearPriorityConfig.filterType || 'all');
+      setSearchQuery(yearPriorityConfig.searchQuery || '');
+      setBudgetAllocation(yearPriorityConfig.budgetAllocation || {});
     } 
-    // Calculate from reserve items (scheduled items for this year)
+    // PRIORITY 2: Calculate from reserve items (only if no saved config)
     else if (reserveItems && financialConfig) {
-      console.log('[YearPriorityPopup] ⚙️ Calculating from reserve items');
+      console.log('[YearPriorityPopup] ⚙️ No saved config, calculating from reserve items');
       const yearItems = getYearPriorityItems(reserveItems, financialConfig, yearIndex);
       const activePriorities: PriorityItem[] = yearItems.map((item, idx) => ({
         ...item,
         displayOrder: idx,
       }));
 
+      console.log('[YearPriorityPopup] Calculated', activePriorities.length, 'scheduled items');
       if (activePriorities.length > 0) {
-        console.log('[YearPriorityPopup] Calculated', activePriorities.length, 'scheduled items');
-        setPriorities([...activePriorities]); // Create new array
-      } else {
-        console.log('[YearPriorityPopup] No scheduled items for year', yearIndex);
-        setPriorities([]);
+        console.log('[YearPriorityPopup] Calculated items:', activePriorities.map(p => ({ 
+          id: p.id, 
+          name: p.itemName, 
+          cost: Math.round(p.inflatedCost) 
+        })));
       }
       
-      // Reset filters when loading calculated items
+      setPriorities([...activePriorities]);
       setFilterType('all');
       setSearchQuery('');
       setBudgetAllocation({});
@@ -187,7 +192,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
       console.log('[YearPriorityPopup] ❌ No data available');
       setPriorities([]);
     }
-  }, [isOpen, yearIndex, yearPriorityConfig, reserveItems, financialConfig]);
+  }, [isOpen, yearIndex, yearPriorityConfig, reserveItems, financialConfig, year]);
 
   // Set initial position once when opened
   useEffect(() => {
@@ -204,38 +209,42 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
       const customEvent = event as CustomEvent;
       const { sourceYear, targetYear, itemId } = customEvent.detail;
       
-      console.log('[YearPriorityPopup] itemDroppedToYear event received:', {
+      console.log('[YearPriorityPopup] *** DROP EVENT RECEIVED ***', {
         sourceYear,
         targetYear, 
         itemId,
         currentPopupYear: year,
-        isOpen
+        isOpen,
+        currentItemCount: priorities.length
       });
       
       // If this popup is showing the source year, remove the item immediately
       if (year === sourceYear && isOpen) {
-        console.log('[YearPriorityPopup] *** IMMEDIATE REMOVAL *** Item:', itemId, 'from year:', sourceYear);
+        console.log('[YearPriorityPopup] *** REMOVING FROM SOURCE YEAR ***', sourceYear);
         
         setPriorities(prev => {
           const itemToRemove = prev.find(p => p.id === itemId);
           const updated = prev.filter(p => p.id !== itemId);
           
-          console.log('[YearPriorityPopup] Removing item:', {
+          console.log('[YearPriorityPopup] Item removal:', {
+            itemFound: !!itemToRemove,
             itemName: itemToRemove?.itemName,
             itemCost: itemToRemove?.inflatedCost,
-            before: prev.length,
-            after: updated.length,
-            removed: prev.length - updated.length
+            beforeCount: prev.length,
+            afterCount: updated.length,
+            actuallyRemoved: prev.length - updated.length
           });
+          
+          // Trigger parent state update immediately
+          if (updated.length !== prev.length) {
+            setTimeout(() => {
+              console.log('[YearPriorityPopup] Triggering parent state update after removal');
+              setShouldApply(true);
+            }, 0);
+          }
           
           return updated;
         });
-        
-        // Trigger apply to update parent state immediately
-        setShouldApply(true);
-        
-        // Force immediate re-render
-        setForceUpdateKey(prev => prev + 1);
       }
     };
 
@@ -243,6 +252,40 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     
     return () => {
       window.removeEventListener('itemDroppedToYear', handleItemDropped);
+    };
+  }, [year, isOpen, priorities.length]);
+
+  // Listen for force refresh events (when items are dropped to this year)
+  useEffect(() => {
+    const handleForceRefresh = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { year: refreshYear, config } = customEvent.detail;
+      
+      if (refreshYear === year && isOpen) {
+        console.log('[YearPriorityPopup] *** FORCE REFRESH *** for year:', refreshYear);
+        console.log('[YearPriorityPopup] Refresh config:', {
+          hasConfig: !!config,
+          itemCount: config?.priorities?.length || 0
+        });
+        
+        // If we have the updated config, use it immediately
+        if (config && config.priorities) {
+          console.log('[YearPriorityPopup] Applying refresh config immediately');
+          setPriorities([...config.priorities]);
+          setFilterType(config.filterType || 'all');
+          setSearchQuery(config.searchQuery || '');
+          setBudgetAllocation(config.budgetAllocation || {});
+        }
+        
+        // Force re-render by incrementing the key
+        setForceUpdateKey(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener('forcePopupRefresh', handleForceRefresh);
+    
+    return () => {
+      window.removeEventListener('forcePopupRefresh', handleForceRefresh);
     };
   }, [year, isOpen]);
 
