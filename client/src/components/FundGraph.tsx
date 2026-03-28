@@ -234,38 +234,30 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey, onYearP
         console.log('[FundGraph] *** EVENT DISPATCHED ***');
       }
       
-      // STEP 1: Remove from source year config (if exists) - MUST happen first
-      let sourceConfigUpdated = false;
+      // STEP 1: Remove dragged item from source year config.
+      // Always runs for a move — uses allSourceItems from drag payload as the base list
+      // when no saved config exists yet, so the source config is ALWAYS correctly set.
       if (!isCopy) {
-        const sourceConfig = (yearPriorityConfigs || {})[sourceYear];
-        console.log('[FundGraph] *** SOURCE REMOVAL *** Before:', {
-          year: sourceYear,
-          hasConfig: !!sourceConfig,
-          prioritiesCount: sourceConfig?.priorities?.length || 0,
-          itemToRemove: draggedItem.id,
-        });
-        
-        if (sourceConfig && sourceConfig.priorities) {
-          const originalLength = sourceConfig.priorities.length;
-          const updatedPriorities = sourceConfig.priorities.filter(
-            (p: any) => p.id !== draggedItem.id
-          );
-          
-          if (updatedPriorities.length < originalLength) {
-            const updatedSourceConfig = {
-              ...sourceConfig,
-              priorities: updatedPriorities,
-              selectedYear: sourceYear,
-              filterType: sourceConfig.filterType || 'all',
-              searchQuery: sourceConfig.searchQuery || '',
-            };
-            
-            console.log('[FundGraph] *** REMOVING FROM SOURCE ***', sourceYear, 'New count:', updatedPriorities.length);
-            if (onYearPriorityUpdate) {
-              onYearPriorityUpdate(updatedSourceConfig);
-              sourceConfigUpdated = true;
-            }
-          }
+        // Prefer existing saved config; fall back to the full item list the popup sent
+        const existingSourceConfig = (yearPriorityConfigs || {})[sourceYear];
+        const baseItems: any[] = existingSourceConfig?.priorities ?? draggedData.allSourceItems ?? [];
+
+        const updatedPriorities = baseItems.filter((p: any) => p.id !== draggedItem.id);
+
+        const updatedSourceConfig = {
+          ...(existingSourceConfig || {}),
+          priorities: updatedPriorities,
+          selectedYear: sourceYear,
+          filterType: existingSourceConfig?.filterType || 'all',
+          searchQuery: existingSourceConfig?.searchQuery || '',
+          budgetAllocation: existingSourceConfig?.budgetAllocation || {},
+        };
+
+        console.log('[FundGraph] *** SOURCE REMOVAL ***', sourceYear,
+          'base:', baseItems.length, '→ after remove:', updatedPriorities.length);
+
+        if (onYearPriorityUpdate) {
+          onYearPriorityUpdate(updatedSourceConfig);
         }
       }
       
@@ -686,6 +678,10 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     const { projections, metrics } = calculateFinancialProjections(activeConfig, reserveItems, yearPriorityConfigs);
     const healthScore = calculateHealthScore(projections);
     // optimalFee already computed above — no second binary search needed
+    
+    // Expose projections to window for external checks (e.g., surplus checking in SimulatorSubheader)
+    (window as any).__fundGraphProjections = projections;
+    console.log('[FundGraph.tsx] Exposed projections to window.__fundGraphProjections, count:', projections.length);
     
     console.log('[FundGraph.tsx] Financial Metrics:', metrics);
     console.log('[FundGraph.tsx] Health Score:', healthScore.toFixed(2));

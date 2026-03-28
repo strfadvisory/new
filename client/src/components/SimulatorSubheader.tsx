@@ -8,6 +8,7 @@ import { viewModeEmitter, studySelectionEmitter, refreshReserveStudiesDropdown }
 import { useSimulatorState } from '../hooks/useSimulatorState';
 import { useAssociations } from '../hooks/queries/useAssociations';
 import type { Association } from '../utils/simulatorStateManager';
+import { calculateFinancialProjections } from '../utils/financialCalculations';
 import './SimulatorSubheader.css';
 
 interface ReserveStudy {
@@ -917,10 +918,79 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           timestamp: new Date().toISOString()
         };
 
+        // Call calculator with data (triggers graph to render)
         onShowCalculator(simulatorState.selectedAssociation, simulatorState.selectedCompany, completeData);
+        
+        // Wait for graph to render, then check the actual displayed projections
+        setTimeout(() => {
+          try {
+            // Try to access the actual projections from the rendered graph
+            const actualProjections = (window as any).__fundGraphProjections;
+            
+            console.log('[SimulatorSubheader] Checking actual graph projections:', {
+              hasProjections: !!actualProjections,
+              projectionsCount: actualProjections?.length
+            });
+            
+            if (actualProjections && actualProjections.length > 0) {
+              // Use the actual graph projections
+              const graphMinBalance = Math.min(...actualProjections.map((p: any) => p.closingBalance));
+              const graphMaxBalance = Math.max(...actualProjections.map((p: any) => p.closingBalance));
+              const allYearsInSurplus = actualProjections.every((proj: any) => proj.closingBalance >= 0);
+              
+              console.log('[SimulatorSubheader] GRAPH PROJECTIONS CHECK:', {
+                allYearsInSurplus,
+                minBalance: Math.round(graphMinBalance),
+                maxBalance: Math.round(graphMaxBalance),
+                totalYears: actualProjections.length,
+                negativeYears: actualProjections.filter((p: any) => p.closingBalance < 0).map((p: any) => ({ year: p.year, balance: p.closingBalance }))
+              });
+              
+              if (allYearsInSurplus) {
+                alert('you are done');
+              } else {
+                alert('Fix the box');
+              }
+            } else {
+              console.warn('[SimulatorSubheader] No graph projections available yet, using calculated projections');
+              // Fallback to calculated check
+              const excelData = response.data || response;
+              let allYearsInSurplus = false;
+              
+              if (excelData.metadata && excelData.reserveItems) {
+                const financialConfig = {
+                  startingBalance: excelData.metadata.startingBalance || 0,
+                  monthlyFeePerUnit: excelData.metadata.monthlyFeePerUnit || 0,
+                  totalUnits: excelData.metadata.totalUnits || 1,
+                  investmentRate: excelData.metadata.investmentRate || 0.05,
+                  inflationRate: excelData.metadata.inflationRate || 0.03,
+                  currentYear: excelData.metadata.currentYear || new Date().getFullYear(),
+                  yearsToProject: excelData.metadata.yearsToProject || 30
+                };
+
+                const { projections } = calculateFinancialProjections(financialConfig, excelData.reserveItems);
+                allYearsInSurplus = projections.every(proj => proj.closingBalance >= 0);
+                
+                console.log('[SimulatorSubheader] FALLBACK CALCULATED CHECK:', {
+                  allYearsInSurplus,
+                  minBalance: Math.round(Math.min(...projections.map(p => p.closingBalance))),
+                  negativeCount: projections.filter(p => p.closingBalance < 0).length
+                });
+              }
+              
+              if (allYearsInSurplus) {
+                alert('you are done');
+              } else {
+                alert('Fix the box');
+              }
+            }
+          } catch (error) {
+            console.error('[SimulatorSubheader] Error checking surplus:', error);
+            alert('Fix the box');
+          }
+        }, 1000);
       } catch (error) {
         console.error('[SimulatorSubheader] Error fetching Excel data:', error);
-        onShowCalculator(simulatorState.selectedAssociation, simulatorState.selectedCompany);
       } finally {
         setIsLoadingData(false);
         setFetchingStudyId('');
@@ -1014,8 +1084,7 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
       onCompanyChange(value, studyId);
     }
     if (studyId) {
-      console.log('[SimulatorSubheader] Reserve study selected, will fetch fresh data:', studyId);
-      // Always reset loading state so the effect fires a fresh fetch
+      console.log('[SimulatorSubheader] Reserve study selected:', studyId);
       setIsLoadingData(false);
       setFetchingStudyId('');
       updateCompany(value, studyId);

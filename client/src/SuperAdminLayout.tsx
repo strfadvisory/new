@@ -517,9 +517,9 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
             </div>}
             
             <div className="companies-right-panel" style={currentPage === 'companies' || currentPage === 'simulators' ? { marginLeft: 0, width: '100%', flex: 1 } : { flex: 1 }}>
-              {showCalculator && location.pathname === '/admin/simulators' ? (
-                <CalculatorPage 
-                  association={calculatorData.association} 
+              {showCalculator && calculatorData.excelData && location.pathname === '/admin/simulators' ? (
+                <CalculatorPage
+                  association={calculatorData.association}
                   reserveStudy={calculatorData.reserveStudy}
                   excelData={calculatorData.excelData}
                 />

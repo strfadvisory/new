@@ -208,52 +208,59 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     const handleItemDropped = (event: Event) => {
       const customEvent = event as CustomEvent;
       const { sourceYear, targetYear, itemId } = customEvent.detail;
-      
+
       console.log('[YearPriorityPopup] *** DROP EVENT RECEIVED ***', {
         sourceYear,
-        targetYear, 
+        targetYear,
         itemId,
         currentPopupYear: year,
         isOpen,
         currentItemCount: priorities.length
       });
-      
+
       // If this popup is showing the source year, remove the item immediately
       if (year === sourceYear && isOpen) {
         console.log('[YearPriorityPopup] *** REMOVING FROM SOURCE YEAR ***', sourceYear);
-        
-        setPriorities(prev => {
-          const itemToRemove = prev.find(p => p.id === itemId);
-          const updated = prev.filter(p => p.id !== itemId);
-          
-          console.log('[YearPriorityPopup] Item removal:', {
-            itemFound: !!itemToRemove,
-            itemName: itemToRemove?.itemName,
-            itemCost: itemToRemove?.inflatedCost,
-            beforeCount: prev.length,
-            afterCount: updated.length,
-            actuallyRemoved: prev.length - updated.length
-          });
-          
-          // Trigger parent state update immediately
-          if (updated.length !== prev.length) {
-            setTimeout(() => {
-              console.log('[YearPriorityPopup] Triggering parent state update after removal');
-              setShouldApply(true);
-            }, 0);
-          }
-          
-          return updated;
+
+        const itemToRemove = priorities.find(p => p.id === itemId);
+        const updated = priorities.filter(p => p.id !== itemId);
+
+        console.log('[YearPriorityPopup] Item removal:', {
+          itemFound: !!itemToRemove,
+          itemName: itemToRemove?.itemName,
+          itemCost: itemToRemove?.inflatedCost,
+          beforeCount: priorities.length,
+          afterCount: updated.length,
+          actuallyRemoved: priorities.length - updated.length
         });
+
+        if (updated.length !== priorities.length) {
+          setPriorities(updated);
+          // Call onApply synchronously so the source config is saved before any
+          // async yearPriorityUpdated event fires and remounts this popup.
+          // Previously used setTimeout(setShouldApply) inside a state updater which
+          // raced against CalculatorPage's own setTimeout dispatch of yearPriorityUpdated,
+          // causing the popup to remount before the config was saved and reload with
+          // the original (un-filtered) items from getYearPriorityItems.
+          if (onApply) {
+            onApply({
+              priorities: updated,
+              filterType,
+              searchQuery,
+              selectedYear: year || 0,
+              budgetAllocation,
+            });
+          }
+        }
       }
     };
 
     window.addEventListener('itemDroppedToYear', handleItemDropped);
-    
+
     return () => {
       window.removeEventListener('itemDroppedToYear', handleItemDropped);
     };
-  }, [year, isOpen, priorities.length]);
+  }, [year, isOpen, priorities, filterType, searchQuery, budgetAllocation, onApply]);
 
   // Listen for force refresh events (when items are dropped to this year)
   useEffect(() => {
@@ -652,6 +659,9 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                       sourceYear: year,
                       itemName: item.itemName,
                       cost: item.inflatedCost,
+                      // Pass full unfiltered list so FundGraph can always build the correct
+                      // source config (removing the dragged item) even when no prior config exists
+                      allSourceItems: priorities,
                     };
                     console.log('[YearPriorityPopup] Drag started:', dragPayload);
                     e.dataTransfer.setData('application/json', JSON.stringify(dragPayload));

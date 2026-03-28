@@ -106,12 +106,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
   const handleCompanyChange = (value: string, studyId?: string) => {
     console.log('[DashboardLayout] Company change:', { value, studyId });
     stateManager.setCompany(value, studyId);
-    
-    if (studyId) {
-      // When a study is selected, immediately show calculator
-      console.log('[DashboardLayout] Study selected, showing calculator');
-      handleShowCalculator(simulatorState.selectedAssociation, value);
-    }
   };
 
   const handleViewModeChange = (mode: 'graph' | 'list') => {
@@ -190,9 +184,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
             />
           )}   
          
-          {stateManager.shouldShowCalculator() && isSimulatorPage ? (
-            <CalculatorPage 
-              association={simulatorState.calculatorData.association} 
+          {stateManager.shouldShowCalculator() && isSimulatorPage && simulatorState.calculatorData.excelData ? (
+            <CalculatorPage
+              association={simulatorState.calculatorData.association}
               reserveStudy={simulatorState.calculatorData.reserveStudy}
               excelData={simulatorState.calculatorData.excelData}
               viewMode={simulatorState.viewMode}
