@@ -4,6 +4,8 @@ import { apiService } from '../services/ApiService';
 import InviteMemberModal from './InviteMemberModal';
 import AddAssociationPopup from './AddAssociationPopup';
 import AddReserveStudyPopup from './AddReserveStudyPopup';
+import GreatJobModal from './GreatJobModal';
+import NeedAdjustmentModal from './NeedAdjustmentModal';
 import { viewModeEmitter, studySelectionEmitter, refreshReserveStudiesDropdown } from '../utils/eventEmitter';
 import { useSimulatorState } from '../hooks/useSimulatorState';
 import { useAssociations } from '../hooks/queries/useAssociations';
@@ -863,6 +865,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
   const [fetchingStudyId, setFetchingStudyId] = useState<string>('');
   const [associations, setAssociations] = useState<Association[]>([]);
+  const [showGreatJobModal, setShowGreatJobModal] = useState(false);
+  const [showNeedAdjustmentModal, setShowNeedAdjustmentModal] = useState(false);
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   
@@ -947,9 +951,9 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
               });
               
               if (allYearsInSurplus) {
-                alert('you are done');
+                setShowGreatJobModal(true);
               } else {
-                alert('Fix the box');
+                setShowNeedAdjustmentModal(true);
               }
             } else {
               console.warn('[SimulatorSubheader] No graph projections available yet, using calculated projections');
@@ -979,14 +983,14 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
               }
               
               if (allYearsInSurplus) {
-                alert('you are done');
+                setShowGreatJobModal(true);
               } else {
-                alert('Fix the box');
+                setShowNeedAdjustmentModal(true);
               }
             }
           } catch (error) {
             console.error('[SimulatorSubheader] Error checking surplus:', error);
-            alert('Fix the box');
+            setShowNeedAdjustmentModal(true);
           }
         }, 1000);
       } catch (error) {
@@ -1456,6 +1460,35 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           }
         }}
         selectedAssociation={simulatorState.selectedAssociation}
+      />
+      
+      <GreatJobModal
+        isOpen={showGreatJobModal}
+        onSkip={() => setShowGreatJobModal(false)}
+        onYesShowOptions={() => {
+          console.log('[SimulatorSubheader] Great! Ready for investment options');
+          setShowGreatJobModal(false);
+        }}
+        onMaybeLater={() => setShowGreatJobModal(false)}
+        onDownloadReport={() => {
+          console.log('[SimulatorSubheader] Downloading report...');
+          // Add download logic here
+        }}
+      />
+      
+      <NeedAdjustmentModal
+        isOpen={showNeedAdjustmentModal}
+        onClose={() => setShowNeedAdjustmentModal(false)}
+        onSkip={() => setShowNeedAdjustmentModal(false)}
+        onHelpMeChoose={() => {
+          console.log('[SimulatorSubheader] Help me choose...');
+          // Don't close the modal - let the child component handle the transition
+        }}
+        onAdjustManually={() => {
+          console.log('[SimulatorSubheader] Adjust the plan manually...');
+          setShowNeedAdjustmentModal(false);
+          viewModeEmitter.emit('viewModeChange', 'list');
+        }}
       />
     </div>
   );

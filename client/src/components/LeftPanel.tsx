@@ -238,6 +238,24 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
     }
   }, [yearPriorityPopupOpen, popupYearBeingEdited, proj, propYearPriorityConfigs, configStartYear]);
 
+  // Listen for event to open first year priority popup
+  React.useEffect(() => {
+    const handleOpenFirstYear = () => {
+      console.log('[LeftPanel] Opening first year priority popup from event');
+      const firstYear = configStartYear;
+      setPopupYearBeingEdited(firstYear);
+      
+      if (yearPriorityValueRef.current) {
+        const rect = yearPriorityValueRef.current.getBoundingClientRect();
+        setYearPriorityPopupPos({ x: rect.right + 8, y: rect.top });
+      }
+      setYearPriorityPopupOpen(true);
+    };
+
+    window.addEventListener('openFirstYearPriority', handleOpenFirstYear);
+    return () => window.removeEventListener('openFirstYearPriority', handleOpenFirstYear);
+  }, [configStartYear]);
+
   const handleUnitsSave = () => {
     setIsEditingUnits(false);
   };

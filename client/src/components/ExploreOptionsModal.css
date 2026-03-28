@@ -1,0 +1,143 @@
+.eom-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.eom-modal {
+  width: 325px;
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0px 4px 60px rgba(0, 0, 0, 0.12);
+  border: 1px solid #cecece;
+  position: relative;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.eom-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 13px;
+  cursor: move;
+  user-select: none;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+.eom-drag-handle {
+  display: flex;
+  align-items: center;
+}
+
+.eom-skip-btn {
+  background: none;
+  border: none;
+  color: #0079ff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  font-family: 'DM Sans';
+}
+
+.eom-skip-btn:hover {
+  text-decoration: underline;
+}
+
+.eom-progress-bar {
+  position: absolute;
+  top: 247px;
+  left: 0;
+  width: 55px;
+  height: 6px;
+  background-color: #12bf6c;
+}
+
+.eom-image-container {
+  width: 100%;
+  height: 212px;
+  overflow: hidden;
+}
+
+.eom-screenshot {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.eom-content {
+  padding: 26px 26px 36px;
+  text-align: center;
+}
+
+.eom-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+}
+
+.eom-subtitle {
+  font-size: 14px;
+  font-weight: 400;
+  color: #000000;
+  margin: 0 0 16px 0;
+  line-height: 1.4;
+}
+
+.eom-section-title {
+  font-size: 14px;
+  font-weight: 400;
+  color: #000000;
+  margin: 0 0 12px 0;
+}
+
+.eom-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eom-btn-primary {
+  width: 100%;
+  height: 36px;
+  background: #0079ff;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'DM Sans';
+  transition: background 0.2s ease;
+}
+
+.eom-btn-primary:hover {
+  background: #0066dd;
+}
+
+.eom-btn-outline {
+  width: 100%;
+  height: 36px;
+  background: transparent;
+  color: #0079ff;
+  border: 1px solid #0079ff;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'DM Sans';
+  transition: all 0.2s ease;
+}
+
+.eom-btn-outline:hover {
+  background: #f0f8ff;
+}

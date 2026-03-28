@@ -153,20 +153,21 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     });
 
     // PRIORITY 1: Always use saved config if available (includes dropped items)
-    if (yearPriorityConfig && yearPriorityConfig.priorities && yearPriorityConfig.priorities.length > 0) {
+    // Check for Array.isArray — an empty array is a valid state meaning all items were moved out
+    if (yearPriorityConfig && Array.isArray(yearPriorityConfig.priorities)) {
       console.log('[YearPriorityPopup] ✅ Using saved config with', yearPriorityConfig.priorities.length, 'items');
-      console.log('[YearPriorityPopup] Config items:', yearPriorityConfig.priorities.map(p => ({ 
-        id: p.id, 
-        name: p.itemName, 
-        cost: Math.round(p.inflatedCost) 
+      console.log('[YearPriorityPopup] Config items:', yearPriorityConfig.priorities.map(p => ({
+        id: p.id,
+        name: p.itemName,
+        cost: Math.round(p.inflatedCost)
       })));
-      
+
       setPriorities([...yearPriorityConfig.priorities]);
       setFilterType(yearPriorityConfig.filterType || 'all');
       setSearchQuery(yearPriorityConfig.searchQuery || '');
       setBudgetAllocation(yearPriorityConfig.budgetAllocation || {});
-    } 
-    // PRIORITY 2: Calculate from reserve items (only if no saved config)
+    }
+    // PRIORITY 2: Calculate from reserve items (only if no saved config exists at all)
     else if (reserveItems && financialConfig) {
       console.log('[YearPriorityPopup] ⚙️ No saved config, calculating from reserve items');
       const yearItems = getYearPriorityItems(reserveItems, financialConfig, yearIndex);

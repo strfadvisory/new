@@ -106,6 +106,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
   const handleCompanyChange = (value: string, studyId?: string) => {
     console.log('[DashboardLayout] Company change:', { value, studyId });
     stateManager.setCompany(value, studyId);
+    if (studyId) {
+      // Clear old excelData so stale graph doesn't show while new data loads
+      stateManager.setCalculatorData({
+        association: simulatorState.selectedAssociation,
+        reserveStudy: value,
+        excelData: null
+      });
+    }
   };
 
   const handleViewModeChange = (mode: 'graph' | 'list') => {
@@ -184,14 +192,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
             />
           )}   
          
-          {stateManager.shouldShowCalculator() && isSimulatorPage && simulatorState.calculatorData.excelData ? (
-            <CalculatorPage
-              association={simulatorState.calculatorData.association}
-              reserveStudy={simulatorState.calculatorData.reserveStudy}
-              excelData={simulatorState.calculatorData.excelData}
-              viewMode={simulatorState.viewMode}
-              onViewModeChange={handleViewModeChange}
-            />
+          {stateManager.shouldShowCalculator() && isSimulatorPage ? (
+            simulatorState.calculatorData.excelData ? (
+              <CalculatorPage
+                association={simulatorState.calculatorData.association}
+                reserveStudy={simulatorState.calculatorData.reserveStudy}
+                excelData={simulatorState.calculatorData.excelData}
+                viewMode={simulatorState.viewMode}
+                onViewModeChange={handleViewModeChange}
+              />
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
+                <p>Loading data...</p>
+              </div>
+            )
           ) : (
             <Outlet />
           )}
