@@ -597,6 +597,8 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
   const [sel1, setSel1] = useState<string | null>(null);
   const [sel2, setSel2] = useState<string | null>(null);
   const [calcOpenRow, setCalcOpenRow] = useState<number | null>(null);
+  const [specialAssessments, setSpecialAssessments] = useState<Record<number, { year: number; percentage: number; amount: number }>>({});
+  const [loans, setLoans] = useState<Record<number, { year: number; percentage: number; amount: number; bank: string; terms: string; interestRate: number }>>({});
   const listTableScrollRef = useRef<HTMLDivElement>(null);
   const prevExcelDataRef = useRef<any>(null);
 
@@ -607,7 +609,8 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     console.log('[FundGraph.tsx] excelData changed, resetting selections');
     setSel1(null);
     setSel2(null);
-    // Reset list-view table scroll to first year
+    setSpecialAssessments({});
+    setLoans({});
     if (listTableScrollRef.current) {
       listTableScrollRef.current.scrollLeft = 0;
     }
@@ -695,15 +698,35 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
       const absBalance = Math.abs(proj.closingBalance);
       const percentage = maxAbsBalance > 0 ? Math.min(100, (absBalance / maxAbsBalance) * 100) : 1;
       
+      // Apply special assessment if allocated for this year
+      let adjustedClosingBalance = proj.closingBalance;
+      const assessment = specialAssessments[proj.year];
+      const loan = loans[proj.year];
+      
+      if (assessment && assessment.amount > 0) {
+        adjustedClosingBalance = proj.closingBalance + assessment.amount;
+        console.log(`[FundGraph] Year ${proj.year}: Applied special assessment $${assessment.amount.toLocaleString()} (${assessment.percentage}%)`);
+      }
+      
+      if (loan && loan.amount > 0) {
+        adjustedClosingBalance = adjustedClosingBalance + loan.amount;
+        console.log(`[FundGraph] Year ${proj.year}: Applied loan $${loan.amount.toLocaleString()} (${loan.percentage}%) from ${loan.bank} at ${loan.interestRate}%`);
+      }
+      
+      const finalIsPositive = adjustedClosingBalance >= 0;
+      const finalAbsBalance = Math.abs(adjustedClosingBalance);
+      const finalPercentage = maxAbsBalance > 0 ? Math.min(100, (finalAbsBalance / maxAbsBalance) * 100) : 1;
+      
       return {
         year: proj.year,
-        value: `${proj.closingBalance >= 0 ? '$' : '-$'}${Math.abs(proj.closingBalance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
-        pos: isPositive,
-        // warning = positive but below the cash reserve threshold
-        warning: isPositive && activeConfig.cashReserveThreshold != null && proj.closingBalance < activeConfig.cashReserveThreshold,
-        barPct: isPositive ? Math.max(1, Math.round(percentage)) : 1,
-        negPct: !isPositive ? Math.max(1, Math.round(percentage)) : 1,
-        projection: proj,
+        value: `${adjustedClosingBalance >= 0 ? '$' : '-$'}${Math.abs(adjustedClosingBalance).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+        pos: finalIsPositive,
+        warning: finalIsPositive && activeConfig.cashReserveThreshold != null && adjustedClosingBalance < activeConfig.cashReserveThreshold,
+        barPct: finalIsPositive ? Math.max(1, Math.round(finalPercentage)) : 1,
+        negPct: !finalIsPositive ? Math.max(1, Math.round(finalPercentage)) : 1,
+        projection: { ...proj, closingBalance: adjustedClosingBalance, originalClosingBalance: proj.closingBalance },
+        specialAssessment: assessment,
+        loan: loan,
         healthScore,
         optimalFee,
         metrics,
@@ -736,8 +759,12 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     console.log('[FundGraph.tsx] Generated cashflow data with analytics:', generatedCashflowData.slice(0, 3));
     console.log('[FundGraph.tsx] Generated fee data synchronized:', generatedFeeData.slice(0, 3));
     
+    // Expose cashflowData to window for external access
+    (window as any).__fundGraphCashflowData = generatedCashflowData;
+    console.log('[FundGraph.tsx] Exposed cashflowData to window.__fundGraphCashflowData, count:', generatedCashflowData.length);
+    
     return { cashflowData: generatedCashflowData, feeData: generatedFeeData };
-  }, [excelData, feeOverride, totalHousingUnits, yearPriorityConfigs]);
+  }, [excelData, feeOverride, totalHousingUnits, yearPriorityConfigs, specialAssessments, loans]);
 
   // Auto-select the first year ONLY when a new study is loaded (excelData changes).
   // Don't auto-select when yearPriorityConfigs changes - user's current selection should persist.
@@ -755,6 +782,30 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
       }
     }
   }, [excelData, cashflowData, onYearSelect]);
+
+  // Listen for special assessments applied
+  React.useEffect(() => {
+    const handleSpecialAssessments = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { allocations } = customEvent.detail;
+      console.log('[FundGraph] Special assessments applied:', allocations);
+      setSpecialAssessments(allocations);
+    };
+
+    const handleLoans = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { loans } = customEvent.detail;
+      console.log('[FundGraph] Loans applied:', loans);
+      setLoans(loans);
+    };
+
+    window.addEventListener('specialAssessmentsApplied', handleSpecialAssessments);
+    window.addEventListener('loansApplied', handleLoans);
+    return () => {
+      window.removeEventListener('specialAssessmentsApplied', handleSpecialAssessments);
+      window.removeEventListener('loansApplied', handleLoans);
+    };
+  }, []);
 
   // Listen for year priority changes and log (graph auto-recalculates via useMemo dependency)
   React.useEffect(() => {

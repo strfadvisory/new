@@ -1,5 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import './ExploreOptionsModal.css';
+import SpecialAssessmentsPopup from './SpecialAssessmentsPopup';
+import TakeLoansPopup from './TakeLoansPopup';
 
 interface ExploreOptionsModalProps {
   isOpen: boolean;
@@ -8,6 +10,7 @@ interface ExploreOptionsModalProps {
   onAdjustMonthlyFee: () => void;
   onSpecialAssessments: () => void;
   onTakeLoans: () => void;
+  cashflowData?: any[];
 }
 
 const DragHandle = () => (
@@ -26,17 +29,26 @@ const ExploreOptionsModal: React.FC<ExploreOptionsModalProps> = ({
   onSkip,
   onAdjustMonthlyFee,
   onSpecialAssessments,
-  onTakeLoans
+  onTakeLoans,
+  cashflowData = []
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [showSpecialAssessments, setShowSpecialAssessments] = useState(false);
+  const [showTakeLoans, setShowTakeLoans] = useState(false);
+
+  useEffect(() => {
+    console.log('[ExploreOptionsModal] showSpecialAssessments changed to:', showSpecialAssessments);
+  }, [showSpecialAssessments]);
 
   useEffect(() => {
     if (isOpen) {
       setPosition(null);
     }
+    // Don't reset showSpecialAssessments when parent isOpen changes
+    // Only reset when explicitly closed
   }, [isOpen]);
 
   const handleDragStart = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -65,15 +77,15 @@ const ExploreOptionsModal: React.FC<ExploreOptionsModalProps> = ({
     };
   }, []);
 
-  if (!isOpen) return null;
-
   const modalStyle: React.CSSProperties = position
     ? { position: 'fixed', left: position.x, top: position.y, transform: 'none' }
     : {};
 
   return (
-    <div className="eom-overlay">
-      <div className="eom-modal" ref={modalRef} style={modalStyle}>
+    <>
+      {isOpen && !showSpecialAssessments && !showTakeLoans && (
+      <div className="eom-overlay">
+        <div className="eom-modal" ref={modalRef} style={modalStyle}>
         <div className="eom-header" onMouseDown={handleDragStart}>
           <div className="eom-drag-handle">
             <DragHandle />
@@ -98,16 +110,58 @@ const ExploreOptionsModal: React.FC<ExploreOptionsModalProps> = ({
             <button className="eom-btn-outline" onClick={onAdjustMonthlyFee}>
               Adjust Monthly Fee
             </button>
-            <button className="eom-btn-outline" onClick={onSpecialAssessments}>
+            <button className="eom-btn-outline" onClick={(e) => {
+              e.stopPropagation();
+              console.log('[ExploreOptionsModal] Special Assessments clicked');
+              setShowSpecialAssessments(true);
+            }}>
               Special Assessments
             </button>
-            <button className="eom-btn-outline" onClick={onTakeLoans}>
+            <button className="eom-btn-outline" onClick={(e) => {
+              e.stopPropagation();
+              console.log('[ExploreOptionsModal] Take Loans clicked');
+              setShowTakeLoans(true);
+            }}>
               Take Loans
             </button>
           </div>
         </div>
       </div>
-    </div>
+      </div>
+      )}
+
+      {showSpecialAssessments && (
+        <SpecialAssessmentsPopup
+          isOpen={showSpecialAssessments}
+          onClose={() => setShowSpecialAssessments(false)}
+          onConfirm={(allocations) => {
+            console.log('[ExploreOptionsModal] Special Assessments confirmed:', allocations);
+            setShowSpecialAssessments(false);
+            onSkip(); // Close the entire modal chain
+            // Dispatch event to update graph with allocations
+            window.dispatchEvent(new CustomEvent('specialAssessmentsApplied', {
+              detail: { allocations }
+            }));
+          }}
+          cashflowData={cashflowData}
+        />
+      )}
+      {showTakeLoans && (
+        <TakeLoansPopup
+          isOpen={showTakeLoans}
+          onClose={() => setShowTakeLoans(false)}
+          onConfirm={(loans) => {
+            console.log('[ExploreOptionsModal] Loans confirmed:', loans);
+            setShowTakeLoans(false);
+            onSkip();
+            window.dispatchEvent(new CustomEvent('loansApplied', {
+              detail: { loans }
+            }));
+          }}
+          cashflowData={cashflowData}
+        />
+      )}
+    </>
   );
 };
 

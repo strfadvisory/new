@@ -245,16 +245,34 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
       const firstYear = configStartYear;
       setPopupYearBeingEdited(firstYear);
       
-      if (yearPriorityValueRef.current) {
-        const rect = yearPriorityValueRef.current.getBoundingClientRect();
-        setYearPriorityPopupPos({ x: rect.right + 8, y: rect.top });
-      }
+      // Center the popup on screen
+      const centerX = window.innerWidth / 2 - 142; // 142 is half of popup width (284px)
+      const centerY = window.innerHeight / 2 - 300; // Approximate half of popup height
+      
+      setYearPriorityPopupPos({ x: centerX, y: centerY });
       setYearPriorityPopupOpen(true);
     };
 
     window.addEventListener('openFirstYearPriority', handleOpenFirstYear);
     return () => window.removeEventListener('openFirstYearPriority', handleOpenFirstYear);
   }, [configStartYear]);
+
+  // Listen for event to open monthly fee popup
+  React.useEffect(() => {
+    const handleOpenMonthlyFee = () => {
+      console.log('[LeftPanel] Opening monthly fee popup from event');
+      
+      // Center the popup on screen
+      const centerX = window.innerWidth / 2 - 142; // 142 is half of popup width (284px)
+      const centerY = window.innerHeight / 2 - 300; // Approximate half of popup height
+      
+      setFeePopupPos({ x: centerX, y: centerY });
+      setFeePopupOpen(true);
+    };
+
+    window.addEventListener('openMonthlyFeePopup', handleOpenMonthlyFee);
+    return () => window.removeEventListener('openMonthlyFeePopup', handleOpenMonthlyFee);
+  }, []);
 
   const handleUnitsSave = () => {
     setIsEditingUnits(false);

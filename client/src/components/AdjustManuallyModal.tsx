@@ -8,6 +8,7 @@ interface AdjustManuallyModalProps {
   onSkip: () => void;
   onAllocatePriorities: () => void;
   onExploreOptions: () => void;
+  cashflowData?: any[];
 }
 
 const DragHandle = () => (
@@ -25,7 +26,8 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
   isOpen,
   onSkip,
   onAllocatePriorities,
-  onExploreOptions
+  onExploreOptions,
+  cashflowData = []
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -124,9 +126,12 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
           onSkip();
         }}
         onAdjustMonthlyFee={() => {
-          console.log('[AdjustManuallyModal] Adjust Monthly Fee clicked');
+          console.log('[AdjustManuallyModal] Adjust Monthly Fee clicked - opening monthly fee popup');
           setShowExploreOptions(false);
           onSkip();
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('openMonthlyFeePopup'));
+          }, 100);
         }}
         onSpecialAssessments={() => {
           console.log('[AdjustManuallyModal] Special Assessments clicked');
@@ -138,6 +143,7 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
           setShowExploreOptions(false);
           onSkip();
         }}
+        cashflowData={cashflowData}
       />
     </>
   );

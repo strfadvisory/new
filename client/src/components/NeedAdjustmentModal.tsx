@@ -9,6 +9,7 @@ interface NeedAdjustmentModalProps {
   onSkip: () => void;
   onHelpMeChoose: () => void;
   onAdjustManually: () => void;
+  cashflowData?: any[];
 }
 
 /* ── Drag handle (6 dots grid) ── */
@@ -32,7 +33,8 @@ const NeedAdjustmentModal: React.FC<NeedAdjustmentModalProps> = ({
   isOpen,
   onSkip,
   onHelpMeChoose,
-  onAdjustManually
+  onAdjustManually,
+  cashflowData = []
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -40,10 +42,14 @@ const NeedAdjustmentModal: React.FC<NeedAdjustmentModalProps> = ({
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [showScheduleMeeting, setShowScheduleMeeting] = useState(false);
   const [showAdjustManually, setShowAdjustManually] = useState(false);
+  const [actualCashflowData, setActualCashflowData] = useState<any[]>([]);
 
   useEffect(() => {
     if (isOpen) {
-      console.log('[NeedAdjustmentModal] Modal opened, resetting state');
+      console.log('[NeedAdjustmentModal] Modal opened, fetching cashflow data from window');
+      const windowCashflowData = (window as any).__fundGraphCashflowData || [];
+      console.log('[NeedAdjustmentModal] Cashflow data from window:', windowCashflowData.length);
+      setActualCashflowData(windowCashflowData);
       setPosition(null);
       setShowScheduleMeeting(false);
       setShowAdjustManually(false);
@@ -164,7 +170,6 @@ const NeedAdjustmentModal: React.FC<NeedAdjustmentModalProps> = ({
           console.log('[NeedAdjustmentModal] Allocate Priorities clicked - triggering first year popup');
           setShowAdjustManually(false);
           onSkip();
-          // Trigger event to open priority popup for first year
           setTimeout(() => {
             window.dispatchEvent(new CustomEvent('openFirstYearPriority'));
           }, 100);
@@ -174,6 +179,7 @@ const NeedAdjustmentModal: React.FC<NeedAdjustmentModalProps> = ({
           setShowAdjustManually(false);
           onSkip();
         }}
+        cashflowData={actualCashflowData}
       />
     </>
   );
