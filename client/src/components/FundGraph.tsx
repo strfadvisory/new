@@ -109,7 +109,12 @@ function Graph1({ sel, onSel, onYearSelect, feeData, resetKey }: { sel: string |
               }}
                 style={{ width:COL_W, flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", cursor:"pointer", background:active?"#ddd":"transparent", borderRadius:6 }}>
                 <div style={{ height:16, display:"flex", alignItems:"center", justifyContent:"center", marginTop:6 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:GREEN }}>{data.percentage}%</span>
+                  <span style={{
+                    fontSize:11, fontWeight:700,
+                    color: data.percentage > 0 ? GREEN : data.percentage < 0 ? '#ef4444' : '#aaa'
+                  }}>
+                    {data.percentage > 0 ? '+' : ''}{data.percentage}%
+                  </span>
                 </div>
                 <div style={{ height:16, display:"flex", alignItems:"center", justifyContent:"center" }}>
                   <span style={{ fontSize:11, fontWeight:700, color:GREEN }}>{data.feeValue}</span>
@@ -739,19 +744,23 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
     // so Graph 1 always matches the cashflow projection — including custom range, gradual ramp,
     // and maxAnnualPctIncrease overrides.
     const maxContribution = Math.max(...projections.map(p => p.contributions), 1);
+    // Base (original) fee per unit from the study config — used as 0% reference
+    const baseFeePerUnit = config['Average Monthly Fee per Unit'] || 1;
+    const totalUnitsForFee = activeConfig.totalUnits || 1;
     const generatedFeeData = projections.map((proj) => {
       const annualContrib = proj.contributions;               // already the inflation/range-adjusted annual total
       const monthlyTotal = annualContrib / 12;               // total monthly fee across all units
-      // Coverage %: how much of this year’s expenses are covered by contributions (capped at 999%)
-      const feePercentage = proj.expenses > 0
-        ? Math.min(999, Math.round((annualContrib / proj.expenses) * 100))
-        : 100;
+      // % change of this year’s per-unit fee vs. the original study fee per unit
+      const feePerUnit = monthlyTotal / totalUnitsForFee;
+      const feeChangePercent = baseFeePerUnit > 0
+        ? Math.round(((feePerUnit - baseFeePerUnit) / baseFeePerUnit) * 100)
+        : 0;
       const barHeight = Math.max(4, Math.round((annualContrib / maxContribution) * 60));
 
       return {
         year: proj.year,
         feeValue: `$${Math.round(monthlyTotal).toLocaleString()}`,
-        percentage: feePercentage,
+        percentage: feeChangePercent,
         height: barHeight,
       };
     });
