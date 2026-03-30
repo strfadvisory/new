@@ -4,6 +4,7 @@
   "description": "Full-stack MERN application with Docker deployment",
   "scripts": {
     "deploy:prod": "chmod +x deploy.sh && ./deploy.sh",
+    "setup:ssl": "chmod +x setup-ssl.sh && ./setup-ssl.sh",
     "stop": "docker-compose -f docker-compose.prod.yml down",
     "logs": "docker-compose -f docker-compose.prod.yml logs -f",
     "logs:server": "docker logs strf-server -f",
