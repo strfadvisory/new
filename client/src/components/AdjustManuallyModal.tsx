@@ -127,21 +127,13 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
         }}
         onAdjustMonthlyFee={() => {
           console.log('[AdjustManuallyModal] Adjust Monthly Fee clicked - opening monthly fee popup');
-          setShowExploreOptions(false);
-          onSkip();
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('openMonthlyFeePopup'));
-          }, 100);
+          window.dispatchEvent(new CustomEvent('openMonthlyFeePopup'));
         }}
         onSpecialAssessments={() => {
           console.log('[AdjustManuallyModal] Special Assessments clicked');
-          setShowExploreOptions(false);
-          onSkip();
         }}
         onTakeLoans={() => {
           console.log('[AdjustManuallyModal] Take Loans clicked');
-          setShowExploreOptions(false);
-          onSkip();
         }}
         cashflowData={cashflowData}
       />

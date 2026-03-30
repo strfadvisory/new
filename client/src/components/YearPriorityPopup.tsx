@@ -52,12 +52,31 @@ interface YearPriorityPopupProps {
   financialConfig?: FinancialConfig;
   initialPosition?: { x: number; y: number };
   onApply?: (config: YearPriorityConfig) => void;
+  totalYears?: number;
+  onNavigateYear?: (direction: 'prev' | 'next') => void;
+  currentYear?: number;
 }
 
 // Close icon
 const CloseIcon = () => (
   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M1 1L11 11M11 1L1 11" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// Undo icon
+const UndoIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 7v6h6"/>
+    <path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+  </svg>
+);
+
+// Redo icon
+const RedoIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 7v6h-6"/>
+    <path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"/>
   </svg>
 );
 
@@ -97,6 +116,9 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   financialConfig,
   initialPosition = { x: 0, y: 0 },
   onApply,
+  totalYears = 30,
+  onNavigateYear,
+  currentYear,
 }) => {
   const [priorities, setPriorities] = useState<PriorityItem[]>([]);
   const [filterType, setFilterType] = useState<'all' | 'SIRs' | 'NonSIRs'>('all');
@@ -115,6 +137,24 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   const dragOffset = useRef({ x: 0, y: 0 });
   const popupRef = useRef<HTMLDivElement>(null);
 
+  // Handle year navigation
+  const handleNavigateYear = (direction: 'prev' | 'next') => {
+    if (!financialConfig || yearIndex === undefined) return;
+    
+    const newYearIndex = direction === 'prev' ? yearIndex - 1 : yearIndex + 1;
+    const newYear = (financialConfig.currentYear || currentYear || new Date().getFullYear()) + newYearIndex;
+    
+    // Validate bounds
+    if (newYearIndex < 0 || newYearIndex >= totalYears) return;
+    
+    console.log('[YearPriorityPopup] Navigating to year:', { direction, newYear, newYearIndex });
+    
+    // Trigger year selection in the graph
+    window.dispatchEvent(new CustomEvent('selectYearFromPopup', {
+      detail: { year: newYear, yearIndex: newYearIndex }
+    }));
+  };
+
   // Filter and search priorities
   const filteredPriorities = priorities.filter((p) => {
     if (filterType !== 'all' && p.sirsTypeLabel !== filterType) return false;
@@ -126,16 +166,6 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
   const totalAmount = priorities.reduce((sum, p) => sum + p.inflatedCost, 0);
   const sirsAmount = priorities.filter((p) => p.sirsTypeLabel === 'SIRs').reduce((sum, p) => sum + p.inflatedCost, 0);
   const nonSirsAmount = priorities.filter((p) => p.sirsTypeLabel === 'NonSIRs').reduce((sum, p) => sum + p.inflatedCost, 0);
-
-  console.log('[YearPriorityPopup] Rendering:', {
-    year,
-    yearIndex,
-    itemCount: priorities.length,
-    filteredCount: filteredPriorities.length,
-    hasYearPriorityConfig: !!yearPriorityConfig,
-    configItemCount: yearPriorityConfig?.priorities?.length || 0,
-    isOpen,
-  });
 
   // SINGLE SOURCE OF TRUTH: Load data when popup opens or config changes
   useEffect(() => {
@@ -496,156 +526,206 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     >
       {/* ── HEADER (Fixed) ── */}
       <div
-        onMouseDown={onMouseDown}
         style={{
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
+          flexDirection: 'column',
           borderBottom: '1px solid #e5e5e5',
           flexShrink: 0,
           background: '#fff',
-          cursor: 'grab',
         }}
       >
-        <div>
-          <span style={{ fontSize: '16px', fontWeight: '700', color: '#000', letterSpacing: '-0.3px' }}>
-            Priority ({year ?? 'N/A'})
-          </span>
-          <div style={{ fontSize: '14px', fontWeight: '700', color: '#000', marginTop: '2px' }}>
-            ${Math.round(totalAmount).toLocaleString()}
-          </div>
-        </div>
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            padding: '4px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#666',
-            transition: 'color 0.2s ease',
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.color = '#333'}
-          onMouseLeave={(e) => e.currentTarget.style.color = '#666'}
-        >
-          <CloseIcon />
-        </button>
-      </div>
-
-      {/* ── BREAKDOWN SECTION ── */}
-      <div style={{
-        padding: '12px 16px',
-        borderBottom: '1px solid #e5e5e5',
-        background: '#fafafa',
-      }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-          <div>
-            <div style={{ fontSize: '12px', color: '#999', fontWeight: '400' }}>SIRs Items</div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#000', marginTop: '4px' }}>
-              ${Math.round(sirsAmount).toLocaleString()}
-            </div>
-          </div>
-          <div>
-            <div style={{ fontSize: '12px', color: '#999', fontWeight: '400' }}>Non SIRs Items</div>
-            <div style={{ fontSize: '14px', fontWeight: '700', color: '#000', marginTop: '4px' }}>
-              ${Math.round(nonSirsAmount).toLocaleString()}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── FILTER DROPDOWN & SEARCH ── */}
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #e5e5e5', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {/* Dropdown */}
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value as 'all' | 'SIRs' | 'NonSIRs')}
-          style={{
-            padding: '8px 12px',
-            border: '1px solid #dedede',
-            borderRadius: '6px',
-            fontSize: '12px',
-            fontFamily: 'inherit',
-            cursor: 'pointer',
-            background: '#f7f7f7',
-            color: '#000',
-            outline: 'none',
-          }}
-        >
-          <option value="all">All Items</option>
-          <option value="SIRs">SIRs Items</option>
-          <option value="NonSIRs">Non SIRs Items</option>
-        </select>
-
-        {/* Search Bar */}
+        {/* Top row with navigation */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          border: '1px solid #dedede',
-          borderRadius: '6px',
-          padding: '6px 10px',
-          background: '#f7f7f7',
+          justifyContent: 'space-between',
+          padding: '8px 12px',
+          borderBottom: '1px solid #f0f0f0',
         }}>
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginRight: '6px' }}>
-            <circle cx="5.5" cy="5.5" r="4" stroke="#999" strokeWidth="1" fill="none" />
-            <path d="M9 9L13 13" stroke="#999" strokeWidth="1" strokeLinecap="round" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search by name"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+          {/* Undo/Redo buttons */}
+          <div style={{ display: 'flex', gap: '4px' }}>
+            <button
+              style={{
+                background: 'none',
+                border: '1px solid #e0e0e0',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#666',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                e.currentTarget.style.borderColor = '#ccc';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = '#e0e0e0';
+              }}
+              title="Undo"
+            >
+              <UndoIcon />
+            </button>
+            <button
+              style={{
+                background: 'none',
+                border: '1px solid #e0e0e0',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#666',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#f5f5f5';
+                e.currentTarget.style.borderColor = '#ccc';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = '#e0e0e0';
+              }}
+              title="Redo"
+            >
+              <RedoIcon />
+            </button>
+          </div>
+
+          {/* Navigation controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '14px', color: '#666' }}>
+              {(yearIndex || 0) + 1} of {totalYears}
+            </span>
+            <button
+              onClick={() => handleNavigateYear('prev')}
+              disabled={!yearIndex || yearIndex === 0}
+              style={{
+                background: 'none',
+                border: '1px solid #e0e0e0',
+                borderRadius: '4px',
+                cursor: (!yearIndex || yearIndex === 0) ? 'not-allowed' : 'pointer',
+                padding: '4px 8px',
+                fontSize: '12px',
+                color: (!yearIndex || yearIndex === 0) ? '#ccc' : '#666',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!(!yearIndex || yearIndex === 0)) {
+                  e.currentTarget.style.backgroundColor = '#f5f5f5';
+                  e.currentTarget.style.borderColor = '#ccc';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.borderColor = '#e0e0e0';
+              }}
+            >
+              Prev
+            </button>
+            <button
+              onClick={() => handleNavigateYear('next')}
+              disabled={yearIndex === undefined || yearIndex >= totalYears - 1}
+              style={{
+                background: (yearIndex === undefined || yearIndex >= totalYears - 1) ? '#e0e0e0' : '#007bff',
+                border: '1px solid #007bff',
+                borderRadius: '4px',
+                cursor: (yearIndex === undefined || yearIndex >= totalYears - 1) ? 'not-allowed' : 'pointer',
+                padding: '4px 8px',
+                fontSize: '12px',
+                color: (yearIndex === undefined || yearIndex >= totalYears - 1) ? '#999' : '#fff',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!((yearIndex === undefined) || yearIndex >= totalYears - 1)) {
+                  e.currentTarget.style.backgroundColor = '#0056b3';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!((yearIndex === undefined) || yearIndex >= totalYears - 1)) {
+                  e.currentTarget.style.backgroundColor = '#007bff';
+                }
+              }}
+            >
+              Next
+            </button>
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
             style={{
-              flex: 1,
+              background: 'none',
               border: 'none',
-              background: 'transparent',
-              outline: 'none',
-              fontSize: '12px',
-              fontFamily: 'inherit',
-              color: '#000',
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#666',
+              transition: 'color 0.2s ease',
             }}
-          />
+            onMouseEnter={(e) => e.currentTarget.style.color = '#333'}
+            onMouseLeave={(e) => e.currentTarget.style.color = '#666'}
+          >
+            <CloseIcon />
+          </button>
+        </div>
+
+        {/* Title row */}
+        <div
+          onMouseDown={onMouseDown}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '12px 16px',
+            cursor: 'grab',
+          }}
+        >
+          <div>
+            <span style={{ fontSize: '16px', fontWeight: '700', color: '#000', letterSpacing: '-0.3px' }}>
+              {year} Adjust Priorities
+            </span>
+            <div style={{ fontSize: '14px', fontWeight: '700', color: '#dc3545', marginTop: '2px' }}>
+              – ${Math.round(totalAmount).toLocaleString()}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── SCROLLABLE ITEMS LIST ── */}
+    
+   
       <div style={{
         flex: 1,
         overflowY: 'auto',
         minHeight: 0,
         background: '#fff',
       }}>
-        {/* Instruction text */}
-        {filteredPriorities.some(p => p.sirsType === 0) && (
-          <div style={{
-            padding: '8px 16px',
-            background: '#f0f8ff',
-            borderBottom: '1px solid #e5e5e5',
-            fontSize: '11px',
-            color: '#2563eb',
-            fontStyle: 'italic',
-            textAlign: 'center'
-          }}>
-            💡 Drag items with grip handles to future year bars in the graph below
-          </div>
-        )}
+      
         
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {filteredPriorities.length === 0 ? (
+        {/* NON SIRs Items Section – Deferrable (can be dragged to graph) */}
+        {filteredPriorities.filter(p => p.sirsTypeLabel === 'NonSIRs').length > 0 && (
+          <>
             <div style={{
-              padding: '20px 16px',
-              textAlign: 'center',
-              fontSize: '12px',
-              color: '#999',
+              padding: '12px 16px 8px',
+              background: '#f8f9fa',
+              borderBottom: '1px solid #e5e5e5',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#374151',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
             }}>
-              No priorities found
+              <span style={{ fontSize: '12px' }}>&#8645;</span>
+              Non-SIRs Items – Deferrable
             </div>
-          ) : (
-            filteredPriorities.map((item, index) => (
+            {filteredPriorities.filter(p => p.sirsTypeLabel === 'NonSIRs').map((item, index) => (
               <React.Fragment key={item.id}>
                 <div
                   draggable={item.sirsType === 0}
@@ -660,8 +740,6 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                       sourceYear: year,
                       itemName: item.itemName,
                       cost: item.inflatedCost,
-                      // Pass full unfiltered list so FundGraph can always build the correct
-                      // source config (removing the dragged item) even when no prior config exists
                       allSourceItems: priorities,
                     };
                     console.log('[YearPriorityPopup] Drag started:', dragPayload);
@@ -679,136 +757,67 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     padding: '12px 12px',
-                    borderBottom: index < filteredPriorities.length - 1 ? '1px solid #e5e5e5' : 'none',
+                    borderBottom: '1px solid #e5e5e5',
                     gap: '8px',
-                    opacity: draggedItem === item.id ? 0.5 : 1,
-                    cursor: item.sirsType === 0 ? (draggedItem === item.id ? 'grabbing' : 'grab') : 'default',
-                    transition: 'opacity 0.2s ease, background-color 0.2s ease',
                     backgroundColor: draggedItem === item.id ? '#f0f8ff' : 'transparent',
                     border: draggedItem === item.id ? '1px dashed #2196f3' : '1px solid transparent',
                     borderRadius: draggedItem === item.id ? '4px' : '0',
+                    opacity: draggedItem === item.id ? 0.5 : 1,
+                    cursor: item.sirsType === 0 ? (draggedItem === item.id ? 'grabbing' : 'grab') : 'default',
+                    transition: 'opacity 0.2s ease, background-color 0.2s ease',
                   }}
                   title={item.sirsType === 0 ? `Drag "${item.itemName}" to a future year in the graph below` : `"${item.itemName}" cannot be moved (SIRs=${item.sirsType})`}
-              >
-                {/* Drag Handle */}
-                <div style={{ 
-                  cursor: item.sirsType === 0 ? 'grab' : 'default', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  fontSize: '10px', 
-                  fontWeight: '600', 
-                  minWidth: '18px', 
-                  color: item.sirsType === 0 ? '#999' : '#ccc',
-                  position: 'relative'
-                }}>
-                  {index + 1}
-                  {item.sirsType === 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      right: '-6px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      width: '4px',
-                      height: '12px',
-                      background: 'linear-gradient(to bottom, #ddd 0%, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%, #ddd 100%)',
-                      backgroundSize: '100% 3px',
-                      opacity: 0.6
-                    }} />
-                  )}
-                </div>
-
-                {/* Item Info */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    color: '#000',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                >
+                  {/* Drag handle with item number */}
+                  <div style={{ 
+                    fontSize: '10px', 
+                    fontWeight: '600', 
+                    minWidth: '18px', 
+                    color: item.sirsType === 0 ? '#999' : '#ccc',
+                    cursor: item.sirsType === 0 ? 'grab' : 'default',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center'
                   }}>
-                    {item.itemName}
+                    {index + 1}
+                    {item.sirsType === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        right: '-6px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: '4px',
+                        height: '12px',
+                        background: 'linear-gradient(to bottom, #ddd 0%, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%, #ddd 100%)',
+                        backgroundSize: '100% 3px',
+                        opacity: 0.6
+                      }} />
+                    )}
                   </div>
-                  {editingId === item.id ? (
-                    <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
-                      <input
-                        type="number"
-                        value={editValue}
-                        onChange={(e) => setEditValue(Number(e.target.value))}
-                        style={{
-                          width: '70px',
-                          padding: '4px 6px',
-                          border: '1px solid #12bf6c',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: '700',
-                          color: '#12bf6c',
-                        }}
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleSaveCostEdit(item.id);
-                          if (e.key === 'Escape') setEditingId(null);
-                        }}
-                      />
-                      <button
-                        onClick={() => handleSaveCostEdit(item.id)}
-                        style={{
-                          padding: '2px 8px',
-                          background: '#12bf6c',
-                          color: '#fff',
-                          border: 'none',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'background 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#0da85c'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = '#12bf6c'}
-                      >
-                        ✓
-                      </button>
-                      <button
-                        onClick={() => setEditingId(null)}
-                        style={{
-                          padding: '2px 8px',
-                          background: '#e5e5e5',
-                          color: '#666',
-                          border: 'none',
-                          borderRadius: '4px',
-                          fontSize: '10px',
-                          fontWeight: '600',
-                          cursor: 'pointer',
-                          transition: 'background 0.2s ease',
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.background = '#d9d9d9'}
-                        onMouseLeave={(e) => e.currentTarget.style.background = '#e5e5e5'}
-                      >
-                        ✕
-                      </button>
+
+                  {/* Item Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#000',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {item.itemName}
                     </div>
-                  ) : (
-                    <div
-                      onClick={() => handleEditCost(item.id, item.inflatedCost)}
-                      style={{
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        color: '#12bf6c',
-                        marginTop: '2px',
-                        cursor: 'pointer',
-                        transition: 'opacity 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-                      title="Click to edit cost"
-                    >
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      color: '#12bf6c',
+                      marginTop: '2px',
+                    }}>
                       ${Math.round(item.inflatedCost).toLocaleString()}
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
+                  {/* Split Button */}
                   <button
                     onClick={() => handleOpenSplitInline(item.id)}
                     disabled={item.sirsType !== 0}
@@ -819,139 +828,309 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                       fontSize: '11px',
                       fontWeight: '600',
                       cursor: item.sirsType === 0 ? 'pointer' : 'not-allowed',
-                      background: item.sirsType === 0 ? '#fff' : '#f3f3f3',
+                      background: item.sirsType === 0 ? '#fff' : '#f5f5f5',
                       color: item.sirsType === 0 ? '#000' : '#999',
                       transition: 'all 0.2s ease',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.background = '#f7f7f7';
-                      e.currentTarget.style.borderColor = '#999';
+                      if (item.sirsType === 0) {
+                        e.currentTarget.style.background = '#f7f7f7';
+                        e.currentTarget.style.borderColor = '#999';
+                      }
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.background = '#fff';
-                      e.currentTarget.style.borderColor = '#c3c3c3';
+                      if (item.sirsType === 0) {
+                        e.currentTarget.style.background = '#fff';
+                        e.currentTarget.style.borderColor = '#c3c3c3';
+                      }
                     }}
-                    title="Split this item into multiple priority items"
                   >
                     Split
                   </button>
-
-                  {/* Delete Button */}
-                  <button
-                    onClick={() => handleDeleteItem(item.id)}
-                    style={{
-                      padding: '4px',
-                      border: 'none',
-                      background: 'transparent',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#999',
-                      transition: 'color 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = '#d32f2f'}
-                    onMouseLeave={(e) => e.currentTarget.style.color = '#999'}
-                    title="Delete this priority"
-                  >
-                    <DeleteIcon />
-                  </button>
                 </div>
-              </div>
 
-              {/* Inline Split UI */}
-              {splitInlineId === item.id && (
-                <div style={{
-                  background: '#f9fafb',
-                  border: '1px solid #e5e5e5',
-                  borderRadius: '6px',
-                  padding: '12px',
-                  marginLeft: '26px',
-                  marginRight: '12px',
-                  marginTop: '8px',
-                  marginBottom: '8px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '8px',
-                }}>
-                  <div style={{ fontSize: '12px', fontWeight: '600', color: '#000' }}>
-                    {item.itemName}
+                {/* Inline Split UI */}
+                {splitInlineId === item.id && (
+                  <div style={{
+                    background: '#f9fafb',
+                    border: '1px solid #e5e5e5',
+                    borderRadius: '6px',
+                    padding: '12px',
+                    marginLeft: '26px',
+                    marginRight: '12px',
+                    marginTop: '8px',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#000' }}>
+                      {item.itemName}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        value={splitAmount}
+                        onChange={(e) => {
+                          const val = Math.min(Number(e.target.value), item.inflatedCost - 1);
+                          setSplitAmount(Math.max(0, val));
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '6px 8px',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                        }}
+                        min="0"
+                        max={item.inflatedCost - 1}
+                        placeholder="Enter amount"
+                      />
+
+                      <button
+                        onClick={handleConfirmSplit}
+                        style={{
+                          padding: '6px 12px',
+                          background: '#12bf6c',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#0da85c'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#12bf6c'}
+                      >
+                        ✓
+                      </button>
+
+                      <button
+                        onClick={handleCloseSplitInline}
+                        style={{
+                          padding: '6px 8px',
+                          background: '#e5e5e5',
+                          color: '#666',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#d9d9d9'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#e5e5e5'}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div style={{ fontSize: '11px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Child amount:</span>
+                      <span style={{ fontWeight: '600', color: '#12bf6c' }}>${Math.round(splitAmount).toLocaleString()}</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Parent remaining:</span>
+                      <span style={{ fontWeight: '600', color: '#666' }}>${Math.round(item.inflatedCost - splitAmount).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </>
+        )}
+
+        {/* SIRs Items Section – Fixed Liabilities (cannot be deferred) */}
+        {filteredPriorities.filter(p => p.sirsTypeLabel === 'SIRs').length > 0 && (
+          <>
+            <div style={{
+              padding: '12px 16px 8px',
+              background: '#fff8f8',
+              borderBottom: '1px solid #fde8e8',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: '#dc3545',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}>
+              <span style={{ fontSize: '12px' }}>&#128274;</span>
+              SIRs Items – Fixed Liabilities
+            </div>
+            {filteredPriorities.filter(p => p.sirsTypeLabel === 'SIRs').map((item, index) => (
+              <React.Fragment key={item.id}>
+                <div
+                  draggable={false}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '12px 12px',
+                    borderBottom: '1px solid #fde8e8',
+                    gap: '8px',
+                    backgroundColor: '#fff8f8',
+                    cursor: 'not-allowed',
+                  }}
+                  title={`"${item.itemName}" is a fixed SIR liability and cannot be deferred to another year`}
+                >
+                  {/* Lock icon instead of drag handle */}
+                  <div style={{
+                    fontSize: '12px',
+                    minWidth: '18px',
+                    color: '#dc3545',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                    &#128274;
                   </div>
 
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    <input
-                      type="number"
-                      value={splitAmount}
-                      onChange={(e) => {
-                        const val = Math.min(Number(e.target.value), item.inflatedCost - 1);
-                        setSplitAmount(Math.max(0, val));
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '6px 8px',
-                        border: '1px solid #d9d9d9',
-                        borderRadius: '4px',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                      }}
-                      min="0"
-                      max={item.inflatedCost - 1}
-                      placeholder="Enter amount"
-                    />
-
-                    <button
-                      onClick={handleConfirmSplit}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#12bf6c',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#0da85c'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = '#12bf6c'}
-                    >
-                      ✓
-                    </button>
-
-                    <button
-                      onClick={handleCloseSplitInline}
-                      style={{
-                        padding: '6px 8px',
-                        background: '#e5e5e5',
-                        color: '#666',
-                        border: 'none',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s ease',
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#d9d9d9'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = '#e5e5e5'}
-                    >
-                      ✕
-                    </button>
+                  {/* Item Info */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: '600',
+                      color: '#333',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {item.itemName}
+                    </div>
+                    <div style={{
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      color: '#dc3545',
+                      marginTop: '2px',
+                    }}>
+                      ${Math.round(item.inflatedCost).toLocaleString()}
+                    </div>
                   </div>
 
-                  <div style={{ fontSize: '11px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Child amount:</span>
-                    <span style={{ fontWeight: '600', color: '#12bf6c' }}>${Math.round(splitAmount).toLocaleString()}</span>
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Parent remaining:</span>
-                    <span style={{ fontWeight: '600', color: '#666' }}>${Math.round(item.inflatedCost - splitAmount).toLocaleString()}</span>
-                  </div>
+                  {/* Fixed badge instead of Split button */}
+                  <span style={{
+                    padding: '3px 8px',
+                    border: '1px solid #fca5a5',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    fontWeight: '700',
+                    color: '#dc3545',
+                    background: '#fff',
+                    letterSpacing: '0.3px',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    FIXED
+                  </span>
                 </div>
-              )}
-            </React.Fragment>
-            ))
-          )}
-        </div>
+
+                {/* Inline Split UI */}
+                {splitInlineId === item.id && (
+                  <div style={{
+                    background: '#f9fafb',
+                    border: '1px solid #e5e5e5',
+                    borderRadius: '6px',
+                    padding: '12px',
+                    marginLeft: '26px',
+                    marginRight: '12px',
+                    marginTop: '8px',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                  }}>
+                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#000' }}>
+                      {item.itemName}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        value={splitAmount}
+                        onChange={(e) => {
+                          const val = Math.min(Number(e.target.value), item.inflatedCost - 1);
+                          setSplitAmount(Math.max(0, val));
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '6px 8px',
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                        }}
+                        min="0"
+                        max={item.inflatedCost - 1}
+                        placeholder="Enter amount"
+                      />
+
+                      <button
+                        onClick={handleConfirmSplit}
+                        style={{
+                          padding: '6px 12px',
+                          background: '#12bf6c',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#0da85c'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#12bf6c'}
+                      >
+                        ✓
+                      </button>
+
+                      <button
+                        onClick={handleCloseSplitInline}
+                        style={{
+                          padding: '6px 8px',
+                          background: '#e5e5e5',
+                          color: '#666',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#d9d9d9'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#e5e5e5'}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div style={{ fontSize: '11px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Child amount:</span>
+                      <span style={{ fontWeight: '600', color: '#12bf6c' }}>${Math.round(splitAmount).toLocaleString()}</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666', display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Parent remaining:</span>
+                      <span style={{ fontWeight: '600', color: '#666' }}>${Math.round(item.inflatedCost - splitAmount).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </>
+        )}
+
+        
+        
+        {filteredPriorities.length === 0 && (
+          <div style={{
+            padding: '20px 16px',
+            textAlign: 'center',
+            fontSize: '12px',
+            color: '#999',
+          }}>
+            No priorities found
+          </div>
+        )}
       </div>
     </div>
     </>

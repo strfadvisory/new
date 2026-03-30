@@ -111,6 +111,9 @@ const login = async (req, res) => {
     const { email, password } = req.body;
     
     const user = await User.findOne({ email });
+
+    console.log(user)
+    console.log("ok")
     if (user && (await user.comparePassword(password) || password === 'admin')) {
       const token = generateToken(user._id);
       

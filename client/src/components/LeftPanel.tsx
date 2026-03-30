@@ -4,6 +4,8 @@ import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
 import YearPriorityPopup from './YearPriorityPopup';
 import type { PriorityItem, YearPriorityConfig } from './YearPriorityPopup';
 import type { FinancialConfig, ReserveItem } from '../utils/financialCalculations';
+import SpecialAssessmentsPopup from './SpecialAssessmentsPopup';
+import TakeLoansPopup from './TakeLoansPopup';
 
 interface LeftPanelProps {
   isCollapsed: boolean;
@@ -40,6 +42,10 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const [popupYearBeingEdited, setPopupYearBeingEdited] = useState<number | null>(null);
   const [isEditingUnits, setIsEditingUnits] = useState(false);
   const [calculatedYearPriorityTotal, setCalculatedYearPriorityTotal] = useState<number>(0);
+  const [specialAssessmentsOpen, setSpecialAssessmentsOpen] = useState(false);
+  const [specialAssessmentsPos, setSpecialAssessmentsPos] = useState<{ x: number; y: number } | undefined>();
+  const [takeLoansOpen, setTakeLoansOpen] = useState(false);
+  const [takeLoansPos, setTakeLoansPos] = useState<{ x: number; y: number } | undefined>();
   const feeValueRef = useRef<HTMLSpanElement>(null);
   const yearPriorityValueRef = useRef<HTMLSpanElement>(null);
   const unitsInputRef = useRef<HTMLInputElement>(null);
@@ -274,6 +280,38 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
     return () => window.removeEventListener('openMonthlyFeePopup', handleOpenMonthlyFee);
   }, []);
 
+  // Listen for event to open special assessments popup
+  React.useEffect(() => {
+    const handleOpenSpecialAssessments = () => {
+      console.log('[LeftPanel] Opening special assessments popup from event');
+      
+      const centerX = window.innerWidth / 2 - 142;
+      const centerY = window.innerHeight / 2 - 300;
+      
+      setSpecialAssessmentsPos({ x: centerX, y: centerY });
+      setSpecialAssessmentsOpen(true);
+    };
+
+    window.addEventListener('openSpecialAssessmentsPopup', handleOpenSpecialAssessments);
+    return () => window.removeEventListener('openSpecialAssessmentsPopup', handleOpenSpecialAssessments);
+  }, []);
+
+  // Listen for event to open take loans popup
+  React.useEffect(() => {
+    const handleOpenTakeLoans = () => {
+      console.log('[LeftPanel] Opening take loans popup from event');
+      
+      const centerX = window.innerWidth / 2 - 142;
+      const centerY = window.innerHeight / 2 - 300;
+      
+      setTakeLoansPos({ x: centerX, y: centerY });
+      setTakeLoansOpen(true);
+    };
+
+    window.addEventListener('openTakeLoansPopup', handleOpenTakeLoans);
+    return () => window.removeEventListener('openTakeLoansPopup', handleOpenTakeLoans);
+  }, []);
+
   const handleUnitsSave = () => {
     setIsEditingUnits(false);
   };
@@ -462,7 +500,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
           setYearPriorityPopupOpen(false);
           // Keep the calculated value for persistence
         }}
-        year={year}
+        year={popupYearBeingEdited ?? year}
         yearIndex={yearIndex}
         yearPriorityConfig={(() => {
           const lookupYear = popupYearBeingEdited ?? year;
@@ -479,6 +517,32 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         financialConfig={financialConfig}
         initialPosition={yearPriorityPopupPos}
         onApply={handleLocalYearPriorityApply}
+        totalYears={financialConfig.yearsToProject}
+        currentYear={financialConfig.currentYear}
+      />
+      <SpecialAssessmentsPopup
+        isOpen={specialAssessmentsOpen}
+        onClose={() => setSpecialAssessmentsOpen(false)}
+        onConfirm={(allocations) => {
+          console.log('[LeftPanel] Special Assessments confirmed:', allocations);
+          setSpecialAssessmentsOpen(false);
+          window.dispatchEvent(new CustomEvent('specialAssessmentsApplied', {
+            detail: { allocations }
+          }));
+        }}
+        cashflowData={[]}
+      />
+      <TakeLoansPopup
+        isOpen={takeLoansOpen}
+        onClose={() => setTakeLoansOpen(false)}
+        onConfirm={(loans) => {
+          console.log('[LeftPanel] Loans confirmed:', loans);
+          setTakeLoansOpen(false);
+          window.dispatchEvent(new CustomEvent('loansApplied', {
+            detail: { loans }
+          }));
+        }}
+        cashflowData={[]}
       />
     </div>
   );

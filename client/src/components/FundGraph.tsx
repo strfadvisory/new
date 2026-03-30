@@ -824,12 +824,33 @@ const FundGraph: React.FC<FundGraphProps> = ({ association, reserveStudy, onYear
       // This listener is just for visibility
     };
 
+    const handleSelectYearFromPopup = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { year, yearIndex } = customEvent.detail;
+      
+      console.log('[FundGraph] selectYearFromPopup event received:', { year, yearIndex });
+      
+      // Find the corresponding cashflow data for this year
+      const cashflowIndex = cashflowData.findIndex(c => c.year === year);
+      if (cashflowIndex >= 0) {
+        console.log('[FundGraph] Selecting year from popup:', { year, cashflowIndex });
+        setSel1(`f${cashflowIndex}`);
+        setSel2(`c${cashflowIndex}`);
+        
+        if (onYearSelect) {
+          onYearSelect(cashflowData[cashflowIndex]);
+        }
+      }
+    };
+
     window.addEventListener('yearPrioritiesChanged', handleYearPrioritiesChanged);
+    window.addEventListener('selectYearFromPopup', handleSelectYearFromPopup);
 
     return () => {
       window.removeEventListener('yearPrioritiesChanged', handleYearPrioritiesChanged);
+      window.removeEventListener('selectYearFromPopup', handleSelectYearFromPopup);
     };
-  }, []);
+  }, [cashflowData, onYearSelect]);
 
   const d2 = sel2 !== null ? cashflowData[parseInt(sel2.replace("c",""))] : null;
 
