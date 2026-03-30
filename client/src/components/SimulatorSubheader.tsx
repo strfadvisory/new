@@ -6,6 +6,7 @@ import AddAssociationPopup from './AddAssociationPopup';
 import AddReserveStudyPopup from './AddReserveStudyPopup';
 import GreatJobModal from './GreatJobModal';
 import NeedAdjustmentModal from './NeedAdjustmentModal';
+import ReserveStudyEditorModal from './ReserveStudyEditorModal';
 import { viewModeEmitter, studySelectionEmitter, refreshReserveStudiesDropdown } from '../utils/eventEmitter';
 import { useSimulatorState } from '../hooks/useSimulatorState';
 import { useAssociations } from '../hooks/queries/useAssociations';
@@ -867,6 +868,8 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
   const [associations, setAssociations] = useState<Association[]>([]);
   const [showGreatJobModal, setShowGreatJobModal] = useState(false);
   const [showNeedAdjustmentModal, setShowNeedAdjustmentModal] = useState(false);
+  const [showReserveStudyEditor, setShowReserveStudyEditor] = useState(false);
+  const [currentStudyData, setCurrentStudyData] = useState<any>(null);
   const viewMenuRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   
@@ -921,6 +924,9 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           data: response.data || response,
           timestamp: new Date().toISOString()
         };
+
+        // Store current study data for editor modal
+        setCurrentStudyData(completeData);
 
         // Call calculator with data (triggers graph to render)
         onShowCalculator(simulatorState.selectedAssociation, simulatorState.selectedCompany, completeData);
@@ -1374,6 +1380,29 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
         </div>
         <button 
           className={`action-button ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`}
+          onClick={() => {
+            if (simulatorState.selectedAssociation && simulatorState.selectedCompany) {
+              console.log('[SimulatorSubheader] Opening Reserve Study Editor');
+              setShowReserveStudyEditor(true);
+            }
+          }}
+          disabled={!simulatorState.selectedAssociation || !simulatorState.selectedCompany}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Report
+        </button>
+        <button 
+          className={`action-button ${(!simulatorState.selectedAssociation || !simulatorState.selectedCompany) ? 'disabled' : ''}`}
           onClick={() => (simulatorState.selectedAssociation && simulatorState.selectedCompany) && handleReset()}
           disabled={!simulatorState.selectedAssociation || !simulatorState.selectedCompany}
         >
@@ -1488,6 +1517,18 @@ const SimulatorSubheader: React.FC<SimulatorSubheaderProps> = ({
           console.log('[SimulatorSubheader] Adjust the plan manually...');
           setShowNeedAdjustmentModal(false);
           viewModeEmitter.emit('viewModeChange', 'list');
+        }}
+      />
+      
+      <ReserveStudyEditorModal
+        isOpen={showReserveStudyEditor}
+        onClose={() => setShowReserveStudyEditor(false)}
+        studyData={currentStudyData}
+        studyName={simulatorState.selectedCompany}
+        onSave={(updatedData) => {
+          console.log('[SimulatorSubheader] Study data updated:', updatedData);
+          // Handle save logic here - could update backend, refresh data, etc.
+          setShowReserveStudyEditor(false);
         }}
       />
     </div>

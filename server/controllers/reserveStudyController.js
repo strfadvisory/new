@@ -2,6 +2,8 @@ const ReserveStudy = require('../models/ReserveStudy');
 const mongoose = require('mongoose');
 const XLSX = require('xlsx');
 const { upload, uploadReserveStudyToGridFS } = require('../middleware/upload.jsx');
+const path = require('path');
+const fs = require('fs');
 
 // Create new reserve study
 const createReserveStudy = async (req, res) => {
@@ -731,6 +733,409 @@ const deleteReserveStudy = async (req, res) => {
   }
 };
 
+// Generate Excel Template for Reserve Study
+const generateTemplate = async (req, res) => {
+  try {
+    console.log('[generateTemplate] Generating reserve study template...');
+    
+    // Create a new workbook
+    const workbook = XLSX.utils.book_new();
+    
+    // Configuration section data
+    const configData = [
+      ['PLEASE FILL OUT TEMPLATE AS IS, DO NOT MOVE TABLES OR ITEMS', ''],
+      ['', ''],
+      ['Beginning Fiscal Year of the Report', new Date().getFullYear()],
+      ['Number of Years Covered in the Report', 30],
+      ['Beginning Reserve Funds (Dollar Amount)', 0],
+      ['Average Monthly Fee per Unit', 0],
+      ['Total Number of Housing Units', 0],
+      ['Inflation Rate Used in the Report', 0.03],
+      ['Suggested Rate of Return on Investments', 0.05],
+      ['Safety Net', 0],
+      ['Cash Reserve Threshold', 0],
+      ['Max Annual Pct Increase', 0.10],
+      ['', ''],
+      ['', ''],
+      ['Item Name', 'Expected Life', 'Remaining Life', 'Replacement Cost', 'SIRS Type (0 or 1)'],
+      ['Asphalt Mill and Overlay (Resurface)', 25, 25, 15072, 0],
+      ['Balcony, Seal/Repair Conc., Resecure Railing', 15, 15, 5072, 0],
+      ['Ceramic and/or Porcelain Tile Flooring', 25, 25, 31040, 0],
+      ['Concrete, Flatwork Repairs', 10, 10, 6318, 0],
+      ['Cooling Tower, Galvanized, Blow Through', 20, 20, 5000, 0]
+    ];
+    
+    // Create worksheet from data
+    const worksheet = XLSX.utils.aoa_to_sheet(configData);
+    
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 50 },  // Item Name
+      { wch: 15 },  // Expected Life
+      { wch: 15 },  // Remaining Life
+      { wch: 18 },  // Replacement Cost
+      { wch: 20 }   // SIRS Type
+    ];
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Manual entry');
+    
+    // Generate buffer
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    // Set response headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="Reserve_Study_Template.xlsx"');
+    res.setHeader('Content-Length', buffer.length);
+    
+    console.log('[generateTemplate] Template generated successfully');
+    res.send(buffer);
+    
+  } catch (error) {
+    console.error('[generateTemplate] Error generating template:', error);
+    res.status(500).json({ 
+      message: 'Failed to generate template',
+      error: error.message
+    });
+  }
+};
+
+// Update Reserve Study Data (items and config)
+const updateReserveStudyData = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { studyName, items, config } = req.body;
+    
+    console.log(`[updateReserveStudyData] Updating study ${id}`);
+    console.log(`[updateReserveStudyData] Items count: ${items?.length || 0}`);
+    console.log(`[updateReserveStudyData] Config keys: ${Object.keys(config || {}).length}`);
+    
+    // Validate input
+    if (!items || !Array.isArray(items)) {
+      return res.status(400).json({ 
+        message: 'Invalid data format',
+        error: 'Items must be an array'
+      });
+    }
+    
+    // Find the study
+    const study = await ReserveStudy.findById(id);
+    if (!study) {
+      return res.status(404).json({ message: 'Reserve study not found' });
+    }
+    
+    // Create new Excel file with updated data
+    const workbook = XLSX.utils.book_new();
+    
+    // Prepare data array
+    const data = [];
+    
+    // Add header instruction
+    data.push(['PLEASE FILL OUT TEMPLATE AS IS, DO NOT MOVE TABLES OR ITEMS', '']);
+    data.push(['', '']);
+    
+    // Add configuration data
+    if (config && typeof config === 'object') {
+      Object.entries(config).forEach(([key, value]) => {
+        data.push([key, value]);
+      });
+    }
+    
+    // Add spacing
+    data.push(['', '']);
+    data.push(['', '']);
+    
+    // Add items header
+    data.push(['Item Name', 'Expected Life', 'Remaining Life', 'Replacement Cost', 'SIRS Type (0 or 1)']);
+    
+    // Add items data
+    items.forEach(item => {
+      data.push([
+        item.itemName || item.name || '',
+        Number(item.expectedLife) || 0,
+        Number(item.remainingLife) || 0,
+        Number(item.replacementCost) || 0,
+        Number(item.sirsType) || 0
+      ]);
+    });
+    
+    // Create worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+    
+    // Set column widths
+    worksheet['!cols'] = [
+      { wch: 50 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 18 },
+      { wch: 20 }
+    ];
+    
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Manual entry');
+    
+    // Generate buffer
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    
+    // Upload new file to GridFS
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { 
+      bucketName: 'reserve-studies' 
+    });
+    
+    // Delete old file
+    try {
+      await bucket.delete(study.fileId);
+      console.log(`[updateReserveStudyData] Deleted old file: ${study.fileId}`);
+    } catch (deleteError) {
+      console.warn(`[updateReserveStudyData] Could not delete old file: ${deleteError.message}`);
+    }
+    
+    // Upload new file
+    const uploadStream = bucket.openUploadStream(study.fileName, {
+      contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      metadata: {
+        studyId: study._id,
+        uploadedBy: req.user._id,
+        updatedAt: new Date()
+      }
+    });
+    
+    // Write buffer to stream
+    uploadStream.end(buffer);
+    
+    // Wait for upload to complete
+    await new Promise((resolve, reject) => {
+      uploadStream.on('finish', resolve);
+      uploadStream.on('error', reject);
+    });
+    
+    const newFileId = uploadStream.id;
+    console.log(`[updateReserveStudyData] Uploaded new file: ${newFileId}`);
+    
+    // Update study record
+    const updateData = {
+      fileId: newFileId,
+      fileSize: buffer.length,
+      updatedAt: new Date()
+    };
+    
+    if (studyName && studyName.trim()) {
+      updateData.studyName = studyName.trim();
+    }
+    
+    const updatedStudy = await ReserveStudy.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true }
+    )
+    .populate('uploadedBy', 'firstName lastName email')
+    .populate('createdBy', 'firstName lastName email');
+    
+    console.log(`[updateReserveStudyData] Study updated successfully: ${updatedStudy.studyName}`);
+    
+    res.json({
+      message: 'Reserve study updated successfully',
+      data: {
+        id: updatedStudy._id,
+        studyName: updatedStudy.studyName,
+        fileName: updatedStudy.fileName,
+        fileSize: updatedStudy.fileSize,
+        itemsCount: items.length,
+        updatedAt: updatedStudy.updatedAt
+      }
+    });
+    
+  } catch (error) {
+    console.error('[updateReserveStudyData] Error:', error);
+    res.status(500).json({ 
+      message: 'Failed to update reserve study data',
+      error: error.message
+    });
+  }
+};
+
+// Upload additional document to reserve study
+const uploadDocument = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const file = req.file;
+    
+    if (!file || !file.gridfsId) {
+      return res.status(400).json({ message: 'File upload failed' });
+    }
+    
+    console.log(`[uploadDocument] Uploading document for study ${id}`);
+    console.log(`[uploadDocument] File: ${file.originalname} (${file.size} bytes)`);
+    
+    // Find the study
+    const study = await ReserveStudy.findById(id);
+    if (!study) {
+      return res.status(404).json({ message: 'Reserve study not found' });
+    }
+    
+    // Initialize documents array if it doesn't exist
+    if (!study.documents) {
+      study.documents = [];
+    }
+    
+    // Add document reference
+    study.documents.push({
+      fileName: file.originalname,
+      fileId: file.gridfsId,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+      uploadedBy: req.user._id,
+      uploadedAt: new Date()
+    });
+    
+    await study.save();
+    
+    res.json({
+      message: 'Document uploaded successfully',
+      data: {
+        fileName: file.originalname,
+        fileSize: file.size,
+        uploadedAt: new Date()
+      }
+    });
+    
+  } catch (error) {
+    console.error('[uploadDocument] Error:', error);
+    res.status(500).json({ 
+      message: 'Failed to upload document',
+      error: error.message
+    });
+  }
+};
+
+// Get all documents for a reserve study
+const getStudyDocuments = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const study = await ReserveStudy.findById(id)
+      .populate('documents.uploadedBy', 'firstName lastName email');
+    
+    if (!study) {
+      return res.status(404).json({ message: 'Reserve study not found' });
+    }
+    
+    res.json({
+      message: 'Documents retrieved successfully',
+      data: study.documents || []
+    });
+    
+  } catch (error) {
+    console.error('[getStudyDocuments] Error:', error);
+    res.status(500).json({ 
+      message: 'Failed to retrieve documents',
+      error: error.message
+    });
+  }
+};
+
+// Download a specific document
+const downloadDocument = async (req, res) => {
+  try {
+    const { id, documentId } = req.params;
+    
+    const study = await ReserveStudy.findById(id);
+    if (!study) {
+      return res.status(404).json({ message: 'Reserve study not found' });
+    }
+    
+    const document = study.documents?.find(doc => doc._id.toString() === documentId);
+    if (!document) {
+      return res.status(404).json({ message: 'Document not found' });
+    }
+    
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { 
+      bucketName: 'reserve-studies' 
+    });
+    
+    const downloadStream = bucket.openDownloadStream(document.fileId);
+    
+    res.set({
+      'Content-Type': document.mimeType,
+      'Content-Disposition': `attachment; filename="${document.fileName}"`
+    });
+    
+    downloadStream.pipe(res);
+    
+    downloadStream.on('error', (error) => {
+      console.error('[downloadDocument] Error:', error);
+      if (!res.headersSent) {
+        res.status(404).json({ message: 'File not found' });
+      }
+    });
+    
+  } catch (error) {
+    console.error('[downloadDocument] Error:', error);
+    res.status(500).json({ 
+      message: 'Failed to download document',
+      error: error.message
+    });
+  }
+};
+
+// Duplicate reserve study items
+const duplicateItem = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { itemIndex } = req.body;
+    
+    console.log(`[duplicateItem] Duplicating item ${itemIndex} in study ${id}`);
+    
+    // Get current study data
+    const study = await ReserveStudy.findById(id);
+    if (!study) {
+      return res.status(404).json({ message: 'Reserve study not found' });
+    }
+    
+    // Download and parse current file
+    const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { 
+      bucketName: 'reserve-studies' 
+    });
+    
+    const downloadStream = bucket.openDownloadStream(study.fileId);
+    const chunks = [];
+    
+    downloadStream.on('data', chunk => chunks.push(chunk));
+    
+    await new Promise((resolve, reject) => {
+      downloadStream.on('end', resolve);
+      downloadStream.on('error', reject);
+    });
+    
+    const buffer = Buffer.concat(chunks);
+    const parsedData = parseReserveStudyFromBuffer(buffer);
+    
+    // Duplicate the item
+    if (itemIndex >= 0 && itemIndex < parsedData.items.length) {
+      const itemToDuplicate = parsedData.items[itemIndex];
+      const duplicatedItem = { ...itemToDuplicate };
+      parsedData.items.splice(itemIndex + 1, 0, duplicatedItem);
+      
+      // Update the study with new data
+      const updateResult = await updateReserveStudyData(
+        { params: { id }, body: { items: parsedData.items, config: parsedData.config }, user: req.user },
+        res
+      );
+      
+      // Response is handled by updateReserveStudyData
+    } else {
+      res.status(400).json({ message: 'Invalid item index' });
+    }
+    
+  } catch (error) {
+    console.error('[duplicateItem] Error:', error);
+    res.status(500).json({ 
+      message: 'Failed to duplicate item',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   upload,
   uploadReserveStudyToGridFS,
@@ -741,5 +1146,11 @@ module.exports = {
   getReserveStudyData,
   downloadReserveStudy,
   updateReserveStudy,
-  deleteReserveStudy
+  deleteReserveStudy,
+  generateTemplate,
+  updateReserveStudyData,
+  uploadDocument,
+  getStudyDocuments,
+  downloadDocument,
+  duplicateItem
 };

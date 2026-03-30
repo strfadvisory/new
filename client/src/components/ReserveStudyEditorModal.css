@@ -1,0 +1,406 @@
+/* Reserve Study Editor Modal */
+.reserve-study-editor-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.reserve-study-editor-modal {
+  background: white;
+  border-radius: 12px;
+  width: 95vw;
+  max-width: 1400px;
+  height: 90vh;
+  max-height: 900px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Header */
+.rse-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: white;
+  flex-shrink: 0;
+}
+
+.rse-document-name {
+  width: 360px;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.rse-document-name:focus {
+  border-color: #3b82f6;
+}
+
+.rse-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.rse-divider {
+  font-size: 14px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* Buttons */
+.rse-btn {
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  white-space: nowrap;
+}
+
+.rse-btn-primary {
+  background: #3b82f6;
+  color: white;
+  border: 1px solid #3b82f6;
+}
+
+.rse-btn-primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.rse-btn-secondary {
+  background: white;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.rse-btn-secondary:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.rse-btn-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: white;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rse-btn-icon:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.rse-btn-save {
+  background: #3b82f6;
+  color: white;
+  border: 1px solid #3b82f6;
+  font-weight: 600;
+}
+
+.rse-btn-save:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Table Container */
+.rse-table-container {
+  flex: 1;
+  overflow: auto;
+  background: #fafafa;
+}
+
+/* Table */
+.rse-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.rse-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+}
+
+.rse-table thead tr {
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.rse-table th {
+  padding: 16px 12px;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  background: white;
+}
+
+.rse-table tbody tr {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s;
+}
+
+.rse-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.rse-table td {
+  padding: 12px;
+  font-size: 14px;
+  color: #111827;
+  vertical-align: middle;
+}
+
+/* Cell Specific Styles */
+.rse-cell-no {
+  text-align: center;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.rse-cell-type {
+  padding: 8px 12px;
+}
+
+.rse-cell-name {
+  padding: 8px 12px;
+}
+
+.rse-cell-number {
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.rse-cell-cost {
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.rse-cell-comment {
+  padding: 8px 12px;
+}
+
+.rse-cell-menu {
+  padding: 8px 12px;
+  text-align: center;
+}
+
+/* Input Fields */
+.rse-input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #111827;
+  background: transparent;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.rse-input:hover {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.rse-input:focus {
+  background: white;
+  border-color: #3b82f6;
+}
+
+.rse-input-center {
+  text-align: center;
+}
+
+/* Select Dropdown */
+.rse-select {
+  width: 100%;
+  height: 36px;
+  padding: 0 32px 0 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 14px;
+  color: #111827;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.rse-select:hover {
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+}
+
+.rse-select:focus {
+  background-color: white;
+  border-color: #3b82f6;
+}
+
+/* Menu Button */
+.rse-menu-btn {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  line-height: 1;
+  padding: 0;
+}
+
+.rse-menu-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Menu Dropdown */
+.rse-menu-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.rse-menu-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.rse-menu-item:hover {
+  background: #f9fafb;
+}
+
+.rse-menu-item-danger {
+  color: #ef4444;
+}
+
+.rse-menu-item-danger:hover {
+  background: #fef2f2;
+}
+
+/* Close Button */
+.rse-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: white;
+  color: #6b7280;
+  font-size: 28px;
+  font-weight: 300;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 1000;
+  line-height: 1;
+  padding: 0;
+}
+
+.rse-close-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* Scrollbar Styling */
+.rse-table-container::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.rse-table-container::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.rse-table-container::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 4px;
+}
+
+.rse-table-container::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .reserve-study-editor-modal {
+    width: 98vw;
+    height: 95vh;
+  }
+  
+  .rse-header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .rse-document-name {
+    width: 100%;
+  }
+  
+  .rse-header-actions {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+}

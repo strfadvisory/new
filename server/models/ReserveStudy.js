@@ -40,6 +40,20 @@ const reserveStudySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Association'
   },
+  documents: [{
+    fileName: String,
+    fileId: mongoose.Schema.Types.ObjectId,
+    fileSize: Number,
+    mimeType: String,
+    uploadedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   status: {
     type: String,
     enum: ['active', 'inactive', 'archived'],

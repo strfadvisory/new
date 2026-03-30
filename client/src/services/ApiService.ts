@@ -4,6 +4,7 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: any;
   headers?: Record<string, string>;
+  responseType?: 'json' | 'blob';
 }
 
 class ApiService {
@@ -27,25 +28,41 @@ class ApiService {
   }
 
   private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    const { method = 'GET', body, headers = {} } = options;
+    const { method = 'GET', body, headers = {}, responseType = 'json' } = options;
     
+    let requestHeaders: Record<string, string> = {
+      ...this.getAuthHeaders(),
+      ...headers
+    };
+
+    // Remove Content-Type for FormData (browser will set it with boundary)
+    if (body instanceof FormData) {
+      delete requestHeaders['Content-Type'];
+    }
+
     const config: RequestInit = {
       method,
-      headers: {
-        ...this.getAuthHeaders(),
-        ...headers
-      }
+      headers: requestHeaders
     };
 
     if (body && method !== 'GET') {
-      config.body = JSON.stringify(body);
+      if (body instanceof FormData) {
+        config.body = body;
+      } else {
+        config.body = JSON.stringify(body);
+      }
     }
 
     try {
       const response = await fetch(`${this.baseURL}${endpoint}`, config);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+      
+      if (responseType === 'blob') {
+        return (await response.blob()) as unknown as T;
       }
       
       return await response.json();
@@ -56,18 +73,18 @@ class ApiService {
   }
 
   // GET request
-  async get<T>(endpoint: string): Promise<T> {
-    return this.request<T>(endpoint, { method: 'GET' });
+  async get<T>(endpoint: string, options?: { responseType?: 'json' | 'blob' }): Promise<T> {
+    return this.request<T>(endpoint, { method: 'GET', responseType: options?.responseType });
   }
 
   // POST request
-  async post<T>(endpoint: string, data?: any): Promise<T> {
-    return this.request<T>(endpoint, { method: 'POST', body: data });
+  async post<T>(endpoint: string, data?: any, options?: { headers?: Record<string, string> }): Promise<T> {
+    return this.request<T>(endpoint, { method: 'POST', body: data, headers: options?.headers });
   }
 
   // PUT request
-  async put<T>(endpoint: string, data?: any): Promise<T> {
-    return this.request<T>(endpoint, { method: 'PUT', body: data });
+  async put<T>(endpoint: string, data?: any, options?: { headers?: Record<string, string> }): Promise<T> {
+    return this.request<T>(endpoint, { method: 'PUT', body: data, headers: options?.headers });
   }
 
   // DELETE request
@@ -75,31 +92,9 @@ class ApiService {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
 
-  // File upload
+  // File upload (legacy method, kept for backward compatibility)
   async uploadFile<T>(endpoint: string, formData: FormData): Promise<T> {
-    const token = sessionStorage.getItem('token');
-    const headers: Record<string, string> = {};
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}${endpoint}`, {
-        method: 'POST',
-        headers,
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error(`File upload failed: ${endpoint}`, error);
-      throw error;
-    }
+    return this.post<T>(endpoint, formData);
   }
 }
 
