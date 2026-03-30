@@ -1,0 +1,121 @@
+/* ── Overlay ── */
+.investment-options-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 10001;
+}
+
+/* ── Modal ── */
+.investment-options-modal {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 12px 44px rgba(0,0,0,0.18);
+  width: 284px;
+  overflow: hidden;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10002;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ── Header: white, no bg, no border ── */
+.iom-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px 10px;
+  cursor: grab;
+  user-select: none;
+  background: transparent;
+}
+.iom-header:active { cursor: grabbing; }
+
+.iom-drag-handle {
+  display: flex;
+  align-items: center;
+  width: 20px;
+  height: 20px;
+}
+
+.iom-skip-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+.iom-skip-btn:hover { opacity: 0.7; }
+
+/* ── Photo ── */
+.iom-image {
+  width: 100%;
+  height: 188px;
+  overflow: hidden;
+  display: block;
+  background: #d8cfc8;
+}
+.iom-image svg,
+.iom-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Green accent bar (thin, below photo) ── */
+.iom-accent-bar {
+  width: 100%;
+  height: 4px;
+  background: #22c55e;
+}
+
+/* ── Content ── */
+.iom-content {
+  padding: 18px 18px 18px;
+  text-align: center;
+}
+
+.iom-title {
+  margin: 0 0 10px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1.4;
+}
+
+.iom-description {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.65;
+  text-align: center;
+}
+
+/* ── Button ── */
+.iom-button-container {
+  display: flex;
+}
+
+.iom-btn-start {
+  flex: 1;
+  height: 48px;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.1px;
+  transition: background 0.15s, transform 0.1s;
+}
+.iom-btn-start:hover  { background: #1d4ed8; }
+.iom-btn-start:active { transform: scale(0.99); }

@@ -46,6 +46,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
   const [specialAssessmentsPos, setSpecialAssessmentsPos] = useState<{ x: number; y: number } | undefined>();
   const [takeLoansOpen, setTakeLoansOpen] = useState(false);
   const [takeLoansPos, setTakeLoansPos] = useState<{ x: number; y: number } | undefined>();
+  const [popupCashflowData, setPopupCashflowData] = useState<any[]>([]);
   const feeValueRef = useRef<HTMLSpanElement>(null);
   const yearPriorityValueRef = useRef<HTMLSpanElement>(null);
   const unitsInputRef = useRef<HTMLInputElement>(null);
@@ -282,12 +283,11 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
 
   // Listen for event to open special assessments popup
   React.useEffect(() => {
-    const handleOpenSpecialAssessments = () => {
-      console.log('[LeftPanel] Opening special assessments popup from event');
-      
+    const handleOpenSpecialAssessments = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
       const centerX = window.innerWidth / 2 - 142;
       const centerY = window.innerHeight / 2 - 300;
-      
+      setPopupCashflowData(detail?.cashflowData || (window as any).__fundGraphCashflowData || []);
       setSpecialAssessmentsPos({ x: centerX, y: centerY });
       setSpecialAssessmentsOpen(true);
     };
@@ -298,12 +298,11 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
 
   // Listen for event to open take loans popup
   React.useEffect(() => {
-    const handleOpenTakeLoans = () => {
-      console.log('[LeftPanel] Opening take loans popup from event');
-      
+    const handleOpenTakeLoans = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
       const centerX = window.innerWidth / 2 - 142;
       const centerY = window.innerHeight / 2 - 300;
-      
+      setPopupCashflowData(detail?.cashflowData || (window as any).__fundGraphCashflowData || []);
       setTakeLoansPos({ x: centerX, y: centerY });
       setTakeLoansOpen(true);
     };
@@ -530,7 +529,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
             detail: { allocations }
           }));
         }}
-        cashflowData={[]}
+        cashflowData={popupCashflowData}
       />
       <TakeLoansPopup
         isOpen={takeLoansOpen}
@@ -542,7 +541,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
             detail: { loans }
           }));
         }}
-        cashflowData={[]}
+        cashflowData={popupCashflowData}
       />
     </div>
   );

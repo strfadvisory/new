@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import './GreatJobModal.css';
+import InvestmentOptionsModal from './InvestmentOptionsModal';
 
 interface GreatJobModalProps {
   isOpen: boolean;
@@ -111,10 +112,14 @@ const GreatJobModal: React.FC<GreatJobModalProps> = ({
   const dragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
+  const [showInvestmentOptions, setShowInvestmentOptions] = useState(false);
 
-  // Center on open
+  // Center on open; reset investment options only when modal freshly opens
   useEffect(() => {
-    if (isOpen) setPosition(null);
+    if (isOpen) {
+      setPosition(null);
+      setShowInvestmentOptions(false);
+    }
   }, [isOpen]);
 
   const handleDragStart = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -143,56 +148,66 @@ const GreatJobModal: React.FC<GreatJobModalProps> = ({
     };
   }, []);
 
-  if (!isOpen) return null;
+  if (!isOpen && !showInvestmentOptions) return null;
 
   const modalStyle: React.CSSProperties = position
     ? { position: 'fixed', left: position.x, top: position.y, transform: 'none' }
     : {};
 
   return (
-    <div className="great-job-overlay">
-      <div className="great-job-modal" ref={modalRef} style={modalStyle}>
-        {/* Header: drag handle + skip */}
-        <div className="gjm-header" onMouseDown={handleDragStart}>
-          <div className="gjm-drag-handle">
-            <DragHandle />
+    <>
+      {isOpen && !showInvestmentOptions && (
+        <div className="great-job-overlay">
+          <div className="great-job-modal" ref={modalRef} style={modalStyle}>
+            {/* Header: drag handle + skip */}
+            <div className="gjm-header" onMouseDown={handleDragStart}>
+              <div className="gjm-drag-handle">
+                <DragHandle />
+              </div>
+              <button className="gjm-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>
+                Skip
+              </button>
+            </div>
+
+            {/* Celebration Illustration */}
+            <div className="gjm-illustration">
+              <CelebrationIllustration />
+            </div>
+
+            {/* Content */}
+            <div className="gjm-content">
+              <h2 className="gjm-title">Great job</h2>
+              <p className="gjm-subtitle">your reserve goal has been achieved.</p>
+
+              <p className="gjm-message">
+                It looks like you may have extra funds
+                that could be invested. Would you like to
+                review investment opportunities?
+              </p>
+
+              {/* Action Buttons */}
+              <div className="gjm-buttons">
+                <button className="gjm-btn-primary" onClick={() => { setShowInvestmentOptions(true); onYesShowOptions(); }}>
+                  Yes, Show Options
+                </button>
+                <button className="gjm-btn-secondary" onClick={onMaybeLater}>
+                  Maybe Later
+                </button>
+                <button className="gjm-btn-download" onClick={onDownloadReport}>
+                  Download Report
+                </button>
+              </div>
+            </div>
           </div>
-          <button className="gjm-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>
-            Skip
-          </button>
         </div>
+      )}
 
-        {/* Celebration Illustration */}
-        <div className="gjm-illustration">
-          <CelebrationIllustration />
-        </div>
-
-        {/* Content */}
-        <div className="gjm-content">
-          <h2 className="gjm-title">Great job</h2>
-          <p className="gjm-subtitle">your reserve goal has been achieved.</p>
-
-          <p className="gjm-message">
-            It looks like you may have extra funds
-            that could be invested. Would you like to
-            review investment opportunities?
-          </p>
-
-          {/* Action Buttons */}
-          <div className="gjm-buttons">
-            <button className="gjm-btn-primary" onClick={onYesShowOptions}>
-              Yes, Show Options
-            </button>
-            <button className="gjm-btn-secondary" onClick={onMaybeLater}>
-              Maybe Later
-            </button>
-            <button className="gjm-btn-download" onClick={onDownloadReport}>
-              Download Report
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+      <InvestmentOptionsModal 
+        isOpen={showInvestmentOptions}
+        onSkip={() => setShowInvestmentOptions(false)}
+        onStart={() => { setShowInvestmentOptions(false); }}
+      />
+    </>
   );
 };
 
