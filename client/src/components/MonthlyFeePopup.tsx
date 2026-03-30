@@ -18,6 +18,8 @@ interface MonthlyFeePopupProps {
   initialPosition?: { x: number; y: number };
   onApply?: (config: FeeAdjustmentConfig) => void;
   computedFee?: number; // effective fee when optimizeAll is active (passed from parent)
+  dataYearStart?: number; // first year in the loaded study
+  dataYearEnd?: number;   // last year in the loaded study
 }
 
 // X icon close button
@@ -86,23 +88,29 @@ const YearRangeInputs: React.FC<{
   onStartChange: (v: string) => void; onEndChange: (v: string) => void;
   onBlur?: () => void;
   disabled?: boolean;
-}> = ({ startYear, endYear, onStartChange, onEndChange, onBlur, disabled }) => {
+  minYear?: number;
+  maxYear?: number;
+}> = ({ startYear, endYear, onStartChange, onEndChange, onBlur, disabled, minYear, maxYear }) => {
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     e.currentTarget.style.borderColor = '#e6e6e6';
     onBlur?.();
   };
 
+  const fields = [
+    { placeholder: minYear ? `${minYear}` : 'Start Year', value: startYear, onChange: onStartChange },
+    { placeholder: maxYear ? `${maxYear}` : 'End Year', value: endYear, onChange: onEndChange },
+  ];
+
   return (
-    <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', opacity: disabled ? 0.5 : 1 }}>
-      {[
-        { placeholder: 'Start Year', value: startYear, onChange: onStartChange },
-        { placeholder: 'End Year', value: endYear, onChange: onEndChange },
-      ].map((f) => (
+    <div style={{ display: 'flex', gap: '10px', marginBottom: '4px', opacity: disabled ? 0.5 : 1 }}>
+      {fields.map((f) => (
         <div key={f.placeholder} style={{ flex: 1, position: 'relative' }}>
           <input
             type="number"
             placeholder={f.placeholder}
             value={f.value}
+            min={minYear}
+            max={maxYear}
             onChange={(e) => f.onChange(e.target.value)}
             onFocus={(e) => { e.currentTarget.style.borderColor = '#12bf6c'; }}
             onBlur={handleBlur}
@@ -135,6 +143,8 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
   initialPosition,
   onApply,
   computedFee,
+  dataYearStart,
+  dataYearEnd,
 }) => {
   const [activeTab, setActiveTab] = useState<'manual' | 'advanced'>('manual');
   const [focusedField, setFocusedField] = useState<string | null>(null);
@@ -173,10 +183,13 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
     // Parse and validate custom range years
     const csY = parseInt(customStartYear);
     const ceY = parseInt(customEndYear);
+    const minY = dataYearStart ?? 2000;
+    const maxY = dataYearEnd ?? 9999;
     const hasValidCustom =
       customRangeEnabled &&
       !isNaN(csY) && !isNaN(ceY) &&
-      csY >= 2000 && ceY > csY;
+      csY >= minY && csY <= maxY &&
+      ceY > csY && ceY <= maxY;
 
     // Parse and validate gradual range years
     const gsY = parseInt(gradualStartYear);
@@ -184,7 +197,8 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
     const hasValidGradual =
       gradualRangeEnabled &&
       !isNaN(gsY) && !isNaN(geY) &&
-      gsY >= 2000 && geY > gsY;
+      gsY >= minY && gsY <= maxY &&
+      geY > gsY && geY <= maxY;
 
     onApply({
       monthlyFeePerUnit: sliderValue,
@@ -582,23 +596,64 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
 
           {/* ── Custom Range ── */}
           <div style={{ borderTop: '1px solid #e5e5e5', padding: '14px 16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', gap: '8px' }}>
               <div style={{ flex: 1 }}>
                 <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Custom Range</span>
+                {dataYearStart && dataYearEnd && (
+                  <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                    Data years: {dataYearStart} – {dataYearEnd}
+                  </div>
+                )}
               </div>
-              <Toggle value={customRangeEnabled} onChange={(v) => { setCustomRangeEnabled(v); triggerApply(); }} />
+              <Toggle
+                value={customRangeEnabled}
+                onChange={(v) => {
+                  setCustomRangeEnabled(v);
+                  if (v && dataYearStart && !customStartYear) setCustomStartYear(String(dataYearStart));
+                  if (v && dataYearEnd && !customEndYear) setCustomEndYear(String(dataYearEnd));
+                  triggerApply();
+                }}
+              />
             </div>
             <YearRangeInputs
               startYear={customStartYear} endYear={customEndYear}
               onStartChange={setCustomStartYear} onEndChange={setCustomEndYear}
               onBlur={triggerApply}
               disabled={!customRangeEnabled}
+              minYear={dataYearStart}
+              maxYear={dataYearEnd}
             />
             {customRangeEnabled && customStartYear && customEndYear &&
               parseInt(customEndYear) <= parseInt(customStartYear) && (
               <div style={{ fontSize: '11px', color: '#dc2626', padding: '0 0 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span>⚠</span> End year must be after start year
               </div>
+            )}
+            {customRangeEnabled && dataYearStart && dataYearEnd && customStartYear && (
+              (() => {
+                const v = parseInt(customStartYear);
+                if (!isNaN(v) && (v < dataYearStart || v > dataYearEnd)) {
+                  return (
+                    <div style={{ fontSize: '11px', color: '#dc2626', padding: '0 0 4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>⚠</span> Start year must be between {dataYearStart} and {dataYearEnd}
+                    </div>
+                  );
+                }
+                return null;
+              })()
+            )}
+            {customRangeEnabled && dataYearStart && dataYearEnd && customEndYear && (
+              (() => {
+                const v = parseInt(customEndYear);
+                if (!isNaN(v) && (v < dataYearStart || v > dataYearEnd)) {
+                  return (
+                    <div style={{ fontSize: '11px', color: '#dc2626', padding: '0 0 4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>⚠</span> End year must be between {dataYearStart} and {dataYearEnd}
+                    </div>
+                  );
+                }
+                return null;
+              })()
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', opacity: customRangeEnabled ? 1 : 0.4 }}>
               <span style={{ fontSize: '12px', color: '#000', fontWeight: '600' }}>Current Monthly Fees:</span>
@@ -616,9 +671,14 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
 
           {/* ── Gradual Custom Range ── */}
           <div style={{ borderTop: '1px solid #e5e5e5', padding: '14px 16px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', gap: '8px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px', gap: '8px' }}>
               <div style={{ flex: 1 }}>
                 <span style={{ fontSize: '14px', fontWeight: '700', color: '#000' }}>Gradual Custom Range</span>
+                {dataYearStart && dataYearEnd && (
+                  <div style={{ fontSize: '11px', color: '#888', marginTop: '2px' }}>
+                    Data years: {dataYearStart} – {dataYearEnd}
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 {gradualRangeEnabled && (
@@ -634,7 +694,15 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
                     ON
                   </div>
                 )}
-                <Toggle value={gradualRangeEnabled} onChange={(v) => { setGradualRangeEnabled(v); triggerApply(); }} />
+                <Toggle
+                  value={gradualRangeEnabled}
+                  onChange={(v) => {
+                    setGradualRangeEnabled(v);
+                    if (v && dataYearStart && !gradualStartYear) setGradualStartYear(String(dataYearStart));
+                    if (v && dataYearEnd && !gradualEndYear) setGradualEndYear(String(dataYearEnd));
+                    triggerApply();
+                  }}
+                />
               </div>
             </div>
             <YearRangeInputs
@@ -642,12 +710,40 @@ const MonthlyFeePopup: React.FC<MonthlyFeePopupProps> = ({
               onStartChange={setGradualStartYear} onEndChange={setGradualEndYear}
               onBlur={triggerApply}
               disabled={!gradualRangeEnabled}
+              minYear={dataYearStart}
+              maxYear={dataYearEnd}
             />
             {gradualRangeEnabled && gradualStartYear && gradualEndYear &&
               parseInt(gradualEndYear) <= parseInt(gradualStartYear) && (
               <div style={{ fontSize: '11px', color: '#dc2626', padding: '0 0 8px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <span>⚠</span> End year must be after start year
               </div>
+            )}
+            {gradualRangeEnabled && dataYearStart && dataYearEnd && gradualStartYear && (
+              (() => {
+                const v = parseInt(gradualStartYear);
+                if (!isNaN(v) && (v < dataYearStart || v > dataYearEnd)) {
+                  return (
+                    <div style={{ fontSize: '11px', color: '#dc2626', padding: '0 0 4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>⚠</span> Start year must be between {dataYearStart} and {dataYearEnd}
+                    </div>
+                  );
+                }
+                return null;
+              })()
+            )}
+            {gradualRangeEnabled && dataYearStart && dataYearEnd && gradualEndYear && (
+              (() => {
+                const v = parseInt(gradualEndYear);
+                if (!isNaN(v) && (v < dataYearStart || v > dataYearEnd)) {
+                  return (
+                    <div style={{ fontSize: '11px', color: '#dc2626', padding: '0 0 4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>⚠</span> End year must be between {dataYearStart} and {dataYearEnd}
+                    </div>
+                  );
+                }
+                return null;
+              })()
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', opacity: gradualRangeEnabled ? 1 : 0.4 }}>
               <span style={{ fontSize: '12px', color: '#000', fontWeight: '600' }}>Current Monthly Fees:</span>

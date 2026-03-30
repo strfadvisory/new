@@ -126,7 +126,7 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
 
         {/* Featured Image */}
         <div className="iom-image">
-          <FeaturedImage />
+           <img src='/expert-photo.png' alt='Expert' className='iom-featured-image' />
         </div>
 
         {/* Green accent bar */}

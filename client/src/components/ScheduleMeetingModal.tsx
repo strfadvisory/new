@@ -112,6 +112,7 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
           <div className="smm-buttons">
             <button className="smm-btn-primary" onClick={() => {
               console.log('[ScheduleMeetingModal] Book a Calendar clicked');
+              window.open('https://calendly.com/smaaspro/30min', '_blank');
               onBookCalendar();
             }}>
               Book a Callender

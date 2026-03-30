@@ -490,6 +490,8 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
         initialPosition={feePopupPos}
         onApply={onFeeApply}
         computedFee={effectiveMonthlyFee !== monthlyFeePerUnit ? effectiveMonthlyFee : undefined}
+        dataYearStart={configStartYear}
+        dataYearEnd={configStartYear + ((config['Number of Years Covered in the Report'] as number) || 30) - 1}
       />
       <YearPriorityPopup
         key={`${popupYearBeingEdited ?? year}`}
