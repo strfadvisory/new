@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from './config';
 import SimulatorSubheader from './components/SimulatorSubheader';
 import DashboardHeader from './components/DashboardHeader';
 import CalculatorPage from './components/CalculatorPage';
+import LoadingSpinner from './components/LoadingSpinner';
 import { studySelectionEmitter } from './utils/eventEmitter';
 import SimulatorStateManager from './utils/simulatorStateManager';
 import type { SimulatorState } from './utils/simulatorStateManager';
@@ -105,14 +106,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
 
   const handleCompanyChange = (value: string, studyId?: string) => {
     console.log('[DashboardLayout] Company change:', { value, studyId });
-    stateManager.setCompany(value, studyId);
     if (studyId) {
-      // Clear old excelData so stale graph doesn't show while new data loads
-      stateManager.setCalculatorData({
-        association: simulatorState.selectedAssociation,
-        reserveStudy: value,
-        excelData: null
+      // Clear old excelData immediately so loading spinner shows
+      stateManager.updateState({
+        selectedCompany: value,
+        selectedStudyId: studyId,
+        showCalculator: true,
+        calculatorData: {
+          association: simulatorState.selectedAssociation,
+          reserveStudy: value,
+          excelData: null
+        }
       });
+    } else {
+      stateManager.setCompany(value, studyId);
     }
   };
 
@@ -203,7 +210,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, onUse
               />
             ) : (
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}>
-                <p>Loading data...</p>
+                <LoadingSpinner size="large" />
               </div>
             )
           ) : (

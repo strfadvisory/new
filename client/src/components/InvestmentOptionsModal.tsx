@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import './InvestmentOptionsModal.css';
 import InvestmentAllocationModal from './InvestmentAllocationModal';
+import VideoPlayer from './VideoPlayer';
 
 interface InvestmentOptionsModalProps {
   isOpen: boolean;
@@ -111,7 +112,14 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
             <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '12px 14px 10px', borderBottom: '1px solid #e7e7e7' }}>
               <button className="iom-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>Skip</button>
             </div>
-            <div className="iom-image"><img src='/expert-photo.png' alt='Expert' className='iom-featured-image' /></div>
+            <div className="iom-image">
+              <VideoPlayer 
+                videoSrc="/user.mp4" 
+                fallbackImage="/expert-photo.png"
+                showSkipButton={true}
+                className="iom-featured-image"
+              />
+            </div>
             <div className="iom-accent-bar"></div>
             <div className="iom-content">
               <h2 className="iom-title">Smart Investment Options<br/>for Stable Returns</h2>
@@ -155,7 +163,12 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
 
             {/* Featured Image */}
             <div className="iom-image">
-               <img src='/expert-photo.png' alt='Expert' className='iom-featured-image' />
+              <VideoPlayer 
+                videoSrc="/user.mp4" 
+                fallbackImage="/expert-photo.png"
+                showSkipButton={true}
+                className="iom-featured-image"
+              />
             </div>
 
             {/* Green accent bar */}

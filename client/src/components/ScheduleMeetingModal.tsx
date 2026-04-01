@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import './ScheduleMeetingModal.css';
+import VideoPlayer from './VideoPlayer';
 
 interface ScheduleMeetingModalProps {
   isOpen: boolean;
@@ -78,7 +79,12 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
           <button className="smm-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>Skip</button>
         </div>
         <div className="smm-photo-wrapper">
-          <img className="smm-photo" src="/expert-photo.png" alt="Expert" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <VideoPlayer 
+            videoSrc="/user.mp4" 
+            fallbackImage="/expert-photo.png"
+            showSkipButton={true}
+            className="smm-photo"
+          />
           <div className="smm-photo-accent" />
         </div>
         <div className="smm-content">
@@ -112,13 +118,11 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
 
         {/* Expert Photo */}
         <div className="smm-photo-wrapper">
-          <img
+          <VideoPlayer 
+            videoSrc="/user.mp4" 
+            fallbackImage="/expert-photo.png"
+            showSkipButton={true}
             className="smm-photo"
-            src="/expert-photo.png"
-            alt="Expert"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
           />
           <div className="smm-photo-accent" />
         </div>

@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import './AdjustManuallyModal.css';
 import ExploreOptionsModal from './ExploreOptionsModal';
+import VideoPlayer from './VideoPlayer';
 
 interface AdjustManuallyModalProps {
   isOpen: boolean;
@@ -81,7 +82,12 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
             </div>
             <div className="amm-progress-bar" />
             <div className="amm-image-container">
-              <img src="/expert-photo.png" alt="Solution illustration" className="amm-screenshot" />
+              <VideoPlayer 
+                videoSrc="/user.mp4" 
+                fallbackImage="/expert-photo.png"
+                showSkipButton={true}
+                className="amm-screenshot"
+              />
             </div>
             <div className="amm-content">
               <h2 className="amm-title">First Solutions is<br />Shift your priorities</h2>
@@ -119,7 +125,12 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
             <div className="amm-progress-bar" />
 
             <div className="amm-image-container">
-              <img src="/expert-photo.png" alt="Solution illustration" className="amm-screenshot" />
+              <VideoPlayer 
+                videoSrc="/user.mp4" 
+                fallbackImage="/expert-photo.png"
+                showSkipButton={true}
+                className="amm-screenshot"
+              />
             </div>
 
             <div className="amm-content">

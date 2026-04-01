@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import './ExploreOptionsModal.css';
+import VideoPlayer from './VideoPlayer';
 
 interface ExploreOptionsModalProps {
   isOpen: boolean;
@@ -81,7 +82,12 @@ const ExploreOptionsModal: React.FC<ExploreOptionsModalProps> = ({
         </div>
         <div className="eom-progress-bar" />
         <div className="eom-image-container">
-          <img src="/expert-photo.png" alt="Strategy options" className="eom-screenshot" />
+          <VideoPlayer 
+            videoSrc="/user.mp4" 
+            fallbackImage="/expert-photo.png"
+            showSkipButton={true}
+            className="eom-screenshot"
+          />
         </div>
         <div className="eom-content">
           <h2 className="eom-title">Great! Based on your selections, here are the recommended actions:</h2>
@@ -115,7 +121,12 @@ const ExploreOptionsModal: React.FC<ExploreOptionsModalProps> = ({
         <div className="eom-progress-bar" />
 
         <div className="eom-image-container">
-          <img src="/expert-photo.png" alt="Strategy options" className="eom-screenshot" />
+          <VideoPlayer 
+            videoSrc="/user.mp4" 
+            fallbackImage="/expert-photo.png"
+            showSkipButton={true}
+            className="eom-screenshot"
+          />
         </div>
 
         <div className="eom-content">
