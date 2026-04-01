@@ -9,6 +9,7 @@ interface AdjustManuallyModalProps {
   onAllocatePriorities: () => void;
   onExploreOptions: () => void;
   cashflowData?: any[];
+  inLeftPanel?: boolean;
 }
 
 const DragHandle = () => (
@@ -27,7 +28,8 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
   onSkip,
   onAllocatePriorities,
   onExploreOptions,
-  cashflowData = []
+  cashflowData = [],
+  inLeftPanel,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -68,6 +70,34 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
     };
   }, []);
 
+  if (inLeftPanel) {
+    if (!isOpen) return null;
+    return (
+      <>
+        {isOpen && !showExploreOptions && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '8px 13px', borderBottom: '1px solid #e7e7e7' }}>
+              <button className="amm-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>Skip</button>
+            </div>
+            <div className="amm-progress-bar" />
+            <div className="amm-image-container">
+              <img src="/expert-photo.png" alt="Solution illustration" className="amm-screenshot" />
+            </div>
+            <div className="amm-content">
+              <h2 className="amm-title">First Solutions is<br />Shift your priorities</h2>
+              <p className="amm-message">A shortfall can often be resolved by adjusting reserve plan items.<br />Check if costs are accurate and whether any items can be moved to a later date.</p>
+              <div className="amm-buttons">
+                <button className="amm-btn-primary" onClick={onAllocatePriorities}>Allocate Priorities</button>
+                <button className="amm-btn-outline" onClick={() => { setShowExploreOptions(true); }}>Explore Other Options</button>
+              </div>
+            </div>
+          </div>
+        )}
+        <ExploreOptionsModal isOpen={showExploreOptions} onClose={() => setShowExploreOptions(false)} onSkip={() => { setShowExploreOptions(false); onSkip(); }} onAdjustMonthlyFee={() => { window.dispatchEvent(new CustomEvent('openMonthlyFeePopup')); }} onSpecialAssessments={() => {}} onTakeLoans={() => {}} cashflowData={cashflowData} inLeftPanel={true} />
+      </>
+    );
+  }
+
   if (!isOpen) return null;
 
   const modalStyle: React.CSSProperties = position
@@ -80,9 +110,7 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
         <div className="amm-overlay">
           <div className="amm-modal" ref={modalRef} style={modalStyle}>
             <div className="amm-header" onMouseDown={handleDragStart}>
-              <div className="amm-drag-handle">
-                <DragHandle />
-              </div>
+              <div className="amm-drag-handle"><DragHandle /></div>
               <button className="amm-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>
                 Skip
               </button>
@@ -136,6 +164,7 @@ const AdjustManuallyModal: React.FC<AdjustManuallyModalProps> = ({
           console.log('[AdjustManuallyModal] Take Loans clicked');
         }}
         cashflowData={cashflowData}
+        inLeftPanel={inLeftPanel}
       />
     </>
   );

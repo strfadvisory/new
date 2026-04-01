@@ -10,6 +10,7 @@ interface NeedAdjustmentModalProps {
   onHelpMeChoose: () => void;
   onAdjustManually: () => void;
   cashflowData?: any[];
+  inLeftPanel?: boolean;
 }
 
 /* ── Drag handle (6 dots grid) ── */
@@ -34,7 +35,8 @@ const NeedAdjustmentModal: React.FC<NeedAdjustmentModalProps> = ({
   onSkip,
   onHelpMeChoose,
   onAdjustManually,
-  cashflowData = []
+  cashflowData = [],
+  inLeftPanel,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -86,6 +88,33 @@ const NeedAdjustmentModal: React.FC<NeedAdjustmentModalProps> = ({
     };
   }, []);
 
+  if (inLeftPanel) {
+    if (!isOpen) return null;
+    return (
+      <>
+        {isOpen && !showScheduleMeeting && !showAdjustManually && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '8px 13px', borderBottom: '1px solid #e7e7e7' }}>
+              <button className="nam-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>Skip</button>
+            </div>
+            <div className="nam-illustration"><PiggyBankIllustration /></div>
+            <div className="nam-content">
+              <h2 className="nam-title">Reserve Model Not Fully Funded</h2>
+              <p className="nam-message">Your current reserve funding model is not fully funded, which means there may be a future funding shortfall.</p>
+              <p className="nam-question">How would you like to proceed?</p>
+              <div className="nam-buttons">
+                <button className="nam-btn-primary" onClick={() => { setShowScheduleMeeting(true); onHelpMeChoose(); }}>Help me Choose</button>
+                <button className="nam-btn-outline" onClick={() => { setShowAdjustManually(true); }}>Adjust the plan manually</button>
+              </div>
+            </div>
+          </div>
+        )}
+        <ScheduleMeetingModal isOpen={showScheduleMeeting} inLeftPanel={true} onSkip={() => { setShowScheduleMeeting(false); onSkip(); }} onBookCalendar={() => { setShowScheduleMeeting(false); onSkip(); }} onBackToOption={() => setShowScheduleMeeting(false)} />
+        <AdjustManuallyModal isOpen={showAdjustManually} inLeftPanel={true} onClose={() => setShowAdjustManually(false)} onSkip={() => { setShowAdjustManually(false); onSkip(); }} onAllocatePriorities={() => { setShowAdjustManually(false); onSkip(); setTimeout(() => window.dispatchEvent(new CustomEvent('openFirstYearPriority')), 100); }} onExploreOptions={() => { setShowAdjustManually(false); onSkip(); }} cashflowData={actualCashflowData} />
+      </>
+    );
+  }
+
   if (!isOpen) return null;
 
   const modalStyle: React.CSSProperties = position
@@ -99,9 +128,7 @@ const NeedAdjustmentModal: React.FC<NeedAdjustmentModalProps> = ({
           <div className="nam-modal" ref={modalRef} style={modalStyle}>
             {/* Header: drag handle + skip */}
             <div className="nam-header" onMouseDown={handleDragStart}>
-              <div className="nam-drag-handle">
-                <DragHandle />
-              </div>
+              <div className="nam-drag-handle"><DragHandle /></div>
               <button className="nam-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>
                 Skip
               </button>
@@ -157,6 +184,7 @@ const NeedAdjustmentModal: React.FC<NeedAdjustmentModalProps> = ({
         onBackToOption={() => {
           setShowScheduleMeeting(false);
         }}
+        inLeftPanel={inLeftPanel}
       />
 
       <AdjustManuallyModal
@@ -180,6 +208,7 @@ const NeedAdjustmentModal: React.FC<NeedAdjustmentModalProps> = ({
           onSkip();
         }}
         cashflowData={actualCashflowData}
+        inLeftPanel={inLeftPanel}
       />
     </>
   );

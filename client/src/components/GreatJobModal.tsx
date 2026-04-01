@@ -8,6 +8,7 @@ interface GreatJobModalProps {
   onYesShowOptions: () => void;
   onMaybeLater: () => void;
   onDownloadReport: () => void;
+  inLeftPanel?: boolean;
 }
 
 /* ── Celebration SVG illustration (person with confetti) ── */
@@ -106,7 +107,8 @@ const GreatJobModal: React.FC<GreatJobModalProps> = ({
   onSkip,
   onYesShowOptions,
   onMaybeLater,
-  onDownloadReport
+  onDownloadReport,
+  inLeftPanel,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -148,6 +150,33 @@ const GreatJobModal: React.FC<GreatJobModalProps> = ({
     };
   }, []);
 
+  if (inLeftPanel) {
+    if (!isOpen && !showInvestmentOptions) return null;
+    return (
+      <>
+        {isOpen && !showInvestmentOptions && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '8px 13px', borderBottom: '1px solid #e7e7e7' }}>
+              <button className="gjm-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>Skip</button>
+            </div>
+            <div className="gjm-illustration"><CelebrationIllustration /></div>
+            <div className="gjm-content">
+              <h2 className="gjm-title">Great job</h2>
+              <p className="gjm-subtitle">your reserve goal has been achieved.</p>
+              <p className="gjm-message">It looks like you may have extra funds that could be invested. Would you like to review investment opportunities?</p>
+              <div className="gjm-buttons">
+                <button className="gjm-btn-primary" onClick={() => { setShowInvestmentOptions(true); onYesShowOptions(); }}>Yes, Show Options</button>
+                <button className="gjm-btn-secondary" onClick={onMaybeLater}>Maybe Later</button>
+                <button className="gjm-btn-download" onClick={onDownloadReport}>Download Report</button>
+              </div>
+            </div>
+          </div>
+        )}
+        <InvestmentOptionsModal isOpen={showInvestmentOptions} inLeftPanel={true} onSkip={() => setShowInvestmentOptions(false)} onStart={() => setShowInvestmentOptions(false)} />
+      </>
+    );
+  }
+
   if (!isOpen && !showInvestmentOptions) return null;
 
   const modalStyle: React.CSSProperties = position
@@ -161,9 +190,7 @@ const GreatJobModal: React.FC<GreatJobModalProps> = ({
           <div className="great-job-modal" ref={modalRef} style={modalStyle}>
             {/* Header: drag handle + skip */}
             <div className="gjm-header" onMouseDown={handleDragStart}>
-              <div className="gjm-drag-handle">
-                <DragHandle />
-              </div>
+              <div className="gjm-drag-handle"><DragHandle /></div>
               <button className="gjm-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>
                 Skip
               </button>
@@ -202,10 +229,11 @@ const GreatJobModal: React.FC<GreatJobModalProps> = ({
         </div>
       )}
 
-      <InvestmentOptionsModal 
+      <InvestmentOptionsModal
         isOpen={showInvestmentOptions}
         onSkip={() => setShowInvestmentOptions(false)}
         onStart={() => { setShowInvestmentOptions(false); }}
+        inLeftPanel={inLeftPanel}
       />
     </>
   );

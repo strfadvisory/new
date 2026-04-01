@@ -9,6 +9,7 @@ interface ExploreOptionsModalProps {
   onSpecialAssessments: () => void;
   onTakeLoans: () => void;
   cashflowData?: any[];
+  inLeftPanel?: boolean;
 }
 
 const DragHandle = () => (
@@ -28,7 +29,8 @@ const ExploreOptionsModal: React.FC<ExploreOptionsModalProps> = ({
   onAdjustMonthlyFee,
   onSpecialAssessments,
   onTakeLoans,
-  cashflowData = []
+  cashflowData = [],
+  inLeftPanel,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -70,6 +72,30 @@ const ExploreOptionsModal: React.FC<ExploreOptionsModalProps> = ({
     };
   }, []);
 
+  if (inLeftPanel) {
+    if (!isOpen) return null;
+    return (
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '8px 13px', borderBottom: '1px solid #e7e7e7' }}>
+          <button className="eom-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>Skip</button>
+        </div>
+        <div className="eom-progress-bar" />
+        <div className="eom-image-container">
+          <img src="/expert-photo.png" alt="Strategy options" className="eom-screenshot" />
+        </div>
+        <div className="eom-content">
+          <h2 className="eom-title">Great! Based on your selections, here are the recommended actions:</h2>
+          <p className="eom-section-title">Your Strategy Options</p>
+          <div className="eom-buttons">
+            <button className="eom-btn-outline" onClick={onAdjustMonthlyFee}>Adjust Monthly Fee</button>
+            <button className="eom-btn-outline" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('openSpecialAssessmentsPopup', { detail: { cashflowData } })); }}>Special Assessments</button>
+            <button className="eom-btn-outline" onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('openTakeLoansPopup', { detail: { cashflowData } })); }}>Take Loans</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const modalStyle: React.CSSProperties = position
     ? { position: 'fixed', left: position.x, top: position.y, transform: 'none' }
     : {};
@@ -77,12 +103,10 @@ const ExploreOptionsModal: React.FC<ExploreOptionsModalProps> = ({
   return (
     <>
       {isOpen && (
-      <div className="eom-overlay" onClick={(e) => e.stopPropagation()}>
+      <div className="eom-overlay" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <div className="eom-modal" ref={modalRef} style={modalStyle}>
         <div className="eom-header" onMouseDown={handleDragStart}>
-          <div className="eom-drag-handle">
-            <DragHandle />
-          </div>
+          <div className="eom-drag-handle"><DragHandle /></div>
           <button className="eom-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>
             Skip
           </button>

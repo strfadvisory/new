@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import MasterData from './MasterData';
 import MonthlyFeePopup from './MonthlyFeePopup';
 import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
 import YearPriorityPopup from './YearPriorityPopup';
@@ -6,6 +7,9 @@ import type { PriorityItem, YearPriorityConfig } from './YearPriorityPopup';
 import type { FinancialConfig, ReserveItem } from '../utils/financialCalculations';
 import SpecialAssessmentsPopup from './SpecialAssessmentsPopup';
 import TakeLoansPopup from './TakeLoansPopup';
+import GreatJobModal from './GreatJobModal';
+import NeedAdjustmentModal from './NeedAdjustmentModal';
+import { viewModeEmitter } from '../utils/eventEmitter';
 
 interface LeftPanelProps {
   isCollapsed: boolean;
@@ -35,6 +39,8 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
     });
   }, [propYearPriorityConfigs]);
 
+  const [showGreatJobModal, setShowGreatJobModal] = useState(false);
+  const [showNeedAdjustmentModal, setShowNeedAdjustmentModal] = useState(false);
   const [feePopupOpen, setFeePopupOpen] = useState(false);
   const [feePopupPos, setFeePopupPos] = useState<{ x: number; y: number } | undefined>();
   const [yearPriorityPopupOpen, setYearPriorityPopupOpen] = useState(false);
@@ -311,6 +317,18 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
     return () => window.removeEventListener('openTakeLoansPopup', handleOpenTakeLoans);
   }, []);
 
+  React.useEffect(() => {
+    const handleOpenGreatJob = () => setShowGreatJobModal(true);
+    window.addEventListener('openGreatJobModal', handleOpenGreatJob);
+    return () => window.removeEventListener('openGreatJobModal', handleOpenGreatJob);
+  }, []);
+
+  React.useEffect(() => {
+    const handleOpenNeedAdjustment = () => setShowNeedAdjustmentModal(true);
+    window.addEventListener('openNeedAdjustmentModal', handleOpenNeedAdjustment);
+    return () => window.removeEventListener('openNeedAdjustmentModal', handleOpenNeedAdjustment);
+  }, []);
+
   const handleUnitsSave = () => {
     setIsEditingUnits(false);
   };
@@ -339,150 +357,57 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ isCollapsed, onToggle, selectedYe
       position: 'relative',
       borderRight: '1px solid #EBEBEB'
     }}>
-      {/* Header */}
-      <div style={{ 
-        padding: '20px', 
-        borderBottom: '1px solid #f0f0f0',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#1f2937', margin: '0' }}>{year}</h2>
-        <button
-          onClick={onToggle}
-          style={{
-            width: '30px',
-            height: '30px',
-            backgroundColor: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          <img src='/expend.png' alt="toggle" />
-        </button>
-      </div>
+      {/* Show MasterData when no modal is active */}
+      {!showGreatJobModal && !showNeedAdjustmentModal && (
+        <MasterData
+          year={year}
+          value={value}
+          isPositive={isPositive}
+          displayUnits={displayUnits}
+          displayMonthlyFee={displayMonthlyFee}
+          displayOpeningBalance={displayOpeningBalance}
+          displayContributions={displayContributions}
+          displayInterest={displayInterest}
+          displayExpenses={displayExpenses}
+          displayFundingRatio={displayFundingRatio}
+          displayCumContrib={displayCumContrib}
+          startingBalance={startingBalance}
+          isEditingUnits={isEditingUnits}
+          calculatedYearPriorityTotal={calculatedYearPriorityTotal}
+          popupYearBeingEdited={popupYearBeingEdited}
+          onToggle={onToggle}
+          onUnitsEdit={handleUnitsEdit}
+          onUnitsSave={handleUnitsSave}
+          onUnitsChange={handleUnitsChange}
+          onUnitsKeyDown={handleUnitsKeyDown}
+          onFeeClick={handleFeeClick}
+          onYearPriorityClick={handleYearPriorityClick}
+          feeValueRef={feeValueRef}
+          yearPriorityValueRef={yearPriorityValueRef}
+          unitsInputRef={unitsInputRef}
+        />
+      )}
 
-      {/* Main Value Section */}
-      <div style={{ padding: '20px', borderBottom: '1px solid #f0f0f0' }}>
-        <div style={{ fontSize: '14px', color: '#6b7280', marginBottom: '8px' }}>
-          {isPositive ? 'Remaining Surplus' : 'Deficit Amount'}
-        </div>
-        <div style={{ fontSize: '32px', fontWeight: '700', color: isPositive ? '#10b981' : '#dc3545', marginBottom: '20px' }}>
-          {value}
-        </div>
-        
-        {/* Quick Stats */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <span style={{ fontSize: '14px', color: '#374151' }}>Total Housing Units</span>
-          {isEditingUnits ? (
-            <input
-              ref={unitsInputRef}
-              type="number"
-              value={displayUnits}
-              onChange={handleUnitsChange}
-              onBlur={handleUnitsSave}
-              onKeyDown={handleUnitsKeyDown}
-              style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#10b981',
-                border: '1px solid #10b981',
-                borderRadius: '4px',
-                padding: '4px 8px',
-                width: '80px',
-                textAlign: 'right',
-              }}
-            />
-          ) : (
-            <span
-              onClick={handleUnitsEdit}
-              style={{
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#10b981',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                textDecorationStyle: 'dashed',
-                textUnderlineOffset: '3px',
-              }}
-              title="Click to edit Total Housing Units"
-            >
-              {displayUnits}
-            </span>
-          )}
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <span style={{ fontSize: '14px', color: '#374151' }}>Monthly Fee</span>
-          <span
-            ref={feeValueRef}
-            onClick={handleFeeClick}
-            style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#10b981',
-              cursor: 'pointer',
-              textDecoration: 'underline',
-              textDecorationStyle: 'dashed',
-              textUnderlineOffset: '3px',
-            }}
-            title="Click to adjust Monthly Fee"
-          >
-            ${displayMonthlyFee}
-          </span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-          <span style={{ fontSize: '14px', color: '#374151' }}>Year Priority</span>
-          <span
-            ref={yearPriorityValueRef}
-            onClick={handleYearPriorityClick}
-            style={{
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#10b981',
-              cursor: 'pointer',
-              textDecoration: 'underline',
-              textDecorationStyle: 'dashed',
-              textUnderlineOffset: '3px',
-            }}
-            title="Click to manage priorities"
-          >
-            {popupYearBeingEdited === year && calculatedYearPriorityTotal > 0 ? `$${calculatedYearPriorityTotal.toLocaleString()}` : displayExpenses}
-          </span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: '14px', color: '#374151' }}>Loans & Assessments</span>
-          <span style={{ fontSize: '14px', fontWeight: '500', color: '#10b981', textDecoration: 'underline' }}>0.0</span>
-        </div>
-      </div>
-
-      {/* Others Details Section */}
-      <div style={{ padding: '20px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', color: '#1f2937', marginBottom: '16px' }}>Others Details</h3>
-        
-        {[
-          { label: 'Opening Balance',        value: displayOpeningBalance },
-          { label: 'Annual Contributions',   value: displayContributions },
-          { label: 'Investment Return',       value: displayInterest },
-          { label: 'Expenses This Year',      value: displayExpenses },
-          { label: 'Funding Ratio',           value: displayFundingRatio },
-          { label: 'Cumulative Contributions',value: displayCumContrib },
-          { label: 'Total Housing Units',    value: displayUnits || '0' },
-          { label: 'Starting Balance (Config)', value: `$${startingBalance.toLocaleString()}` },
-        ].map((item, index) => (
-          <div key={index} style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'center', 
-            marginBottom: '12px'
-          }}>
-            <span style={{ fontSize: '14px', color: '#374151' }}>{item.label}</span>
-            <span style={{ fontSize: '14px', fontWeight: '500', color: '#1f2937' }}>{item.value}</span>
-          </div>
-        ))}
-      </div>
+      {/* Modal content renders inline (static, no overlay) */}
+      <GreatJobModal
+        isOpen={showGreatJobModal}
+        inLeftPanel={true}
+        onSkip={() => setShowGreatJobModal(false)}
+        onYesShowOptions={() => {}}
+        onMaybeLater={() => setShowGreatJobModal(false)}
+        onDownloadReport={() => { console.log('[LeftPanel] Downloading report...'); }}
+      />
+      <NeedAdjustmentModal
+        isOpen={showNeedAdjustmentModal}
+        inLeftPanel={true}
+        onClose={() => setShowNeedAdjustmentModal(false)}
+        onSkip={() => setShowNeedAdjustmentModal(false)}
+        onHelpMeChoose={() => {}}
+        onAdjustManually={() => {
+          setShowNeedAdjustmentModal(false);
+          viewModeEmitter.emit('viewModeChange', 'list');
+        }}
+      />
       <MonthlyFeePopup
         isOpen={feePopupOpen}
         onClose={() => setFeePopupOpen(false)}

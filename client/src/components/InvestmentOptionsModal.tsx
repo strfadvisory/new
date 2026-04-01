@@ -6,6 +6,7 @@ interface InvestmentOptionsModalProps {
   isOpen: boolean;
   onSkip: () => void;
   onStart: () => void;
+  inLeftPanel?: boolean;
 }
 
 /* ── Drag handle (6 dots grid) ── */
@@ -57,7 +58,8 @@ const FeaturedImage = () => (
 const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
   isOpen,
   onSkip,
-  onStart
+  onStart,
+  inLeftPanel,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -99,6 +101,31 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
     };
   }, []);
 
+  if (inLeftPanel) {
+    if (!isOpen && !showAllocation) return null;
+    return (
+      <>
+        <InvestmentAllocationModal isOpen={showAllocation} inLeftPanel={true} onClose={() => { setShowAllocation(false); onStart(); }} />
+        {isOpen && !showAllocation && (
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '12px 14px 10px', borderBottom: '1px solid #e7e7e7' }}>
+              <button className="iom-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>Skip</button>
+            </div>
+            <div className="iom-image"><img src='/expert-photo.png' alt='Expert' className='iom-featured-image' /></div>
+            <div className="iom-accent-bar"></div>
+            <div className="iom-content">
+              <h2 className="iom-title">Smart Investment Options<br/>for Stable Returns</h2>
+              <p className="iom-description">The three best investment options include CDs (Certificates of Deposit), Treasury Bills, and Treasury Notes. You can also allocate funds through an LTM allocation budget, which automatically distributes investments across all available yearly funds for better financial planning and consistent growth.</p>
+              <div className="iom-button-container">
+                <button className="iom-btn-start" onClick={() => setShowAllocation(true)}>Start</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
   if (!isOpen && !showAllocation) return null;
 
   const modalStyle: React.CSSProperties = position
@@ -110,48 +137,51 @@ const InvestmentOptionsModal: React.FC<InvestmentOptionsModalProps> = ({
       <InvestmentAllocationModal
         isOpen={showAllocation}
         onClose={() => { setShowAllocation(false); onStart(); }}
+        inLeftPanel={inLeftPanel}
       />
       {isOpen && !showAllocation && (
-      <><div className="investment-options-overlay" />
-      <div className="investment-options-modal" ref={modalRef} style={modalStyle}>
-        {/* Header: drag handle + skip */}
-        <div className="iom-header" onMouseDown={handleDragStart}>
-          <div className="iom-drag-handle">
-            <DragHandle />
+        <>
+          <div className="investment-options-overlay" />
+          <div className="investment-options-modal" ref={modalRef} style={modalStyle}>
+            {/* Header: drag handle + skip */}
+            <div className="iom-header" onMouseDown={handleDragStart}>
+              <div className="iom-drag-handle">
+                <DragHandle />
+              </div>
+              <button className="iom-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>
+                Skip
+              </button>
+            </div>
+
+            {/* Featured Image */}
+            <div className="iom-image">
+               <img src='/expert-photo.png' alt='Expert' className='iom-featured-image' />
+            </div>
+
+            {/* Green accent bar */}
+            <div className="iom-accent-bar"></div>
+
+            {/* Content */}
+            <div className="iom-content">
+              <h2 className="iom-title">Smart Investment Options<br />for Stable Returns</h2>
+
+              <p className="iom-description">
+                The three best investment options include CDs (Certificates of Deposit),
+                Treasury Bills, and Treasury Notes. You can also allocate funds through an LTM
+                allocation budget, which automatically distributes investments across all
+                available yearly funds for better financial planning and consistent growth.
+              </p>
+
+              {/* Action Button */}
+              <div className="iom-button-container">
+                <button className="iom-btn-start" onClick={() => setShowAllocation(true)}>
+                  Start
+                </button>
+              </div>
+            </div>
           </div>
-          <button className="iom-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>
-            Skip
-          </button>
-        </div>
-
-        {/* Featured Image */}
-        <div className="iom-image">
-           <img src='/expert-photo.png' alt='Expert' className='iom-featured-image' />
-        </div>
-
-        {/* Green accent bar */}
-        <div className="iom-accent-bar"></div>
-
-        {/* Content */}
-        <div className="iom-content">
-          <h2 className="iom-title">Smart Investment Options<br />for Stable Returns</h2>
-
-          <p className="iom-description">
-            The three best investment options include CDs (Certificates of Deposit), 
-            Treasury Bills, and Treasury Notes. You can also allocate funds through an LTM 
-            allocation budget, which automatically distributes investments across all 
-            available yearly funds for better financial planning and consistent growth.
-          </p>
-
-          {/* Action Button */}
-          <div className="iom-button-container">
-            <button className="iom-btn-start" onClick={() => setShowAllocation(true)}>
-              Start
-            </button>
-          </div>
-        </div>
-      </div>
-      </>)}
+        </>
+      )}
     </>
   );
 };

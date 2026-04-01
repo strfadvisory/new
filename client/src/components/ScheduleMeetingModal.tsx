@@ -6,6 +6,7 @@ interface ScheduleMeetingModalProps {
   onSkip: () => void;
   onBookCalendar: () => void;
   onBackToOption: () => void;
+  inLeftPanel?: boolean;
 }
 
 /* ── Drag handle (6 dots grid) ── */
@@ -25,6 +26,7 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
   onSkip,
   onBookCalendar,
   onBackToOption,
+  inLeftPanel,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -68,6 +70,29 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
     };
   }, []);
 
+  if (inLeftPanel) {
+    if (!isOpen) return null;
+    return (
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', padding: '8px 13px', borderBottom: '1px solid #e7e7e7' }}>
+          <button className="smm-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>Skip</button>
+        </div>
+        <div className="smm-photo-wrapper">
+          <img className="smm-photo" src="/expert-photo.png" alt="Expert" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          <div className="smm-photo-accent" />
+        </div>
+        <div className="smm-content">
+          <h2 className="smm-title">Schedule meeting with expert</h2>
+          <p className="smm-message">Mr. Orloff supported an idea I proposed to allow associations to invest reserves with proper planning, financial advisors, and strict oversight.</p>
+          <div className="smm-buttons">
+            <button className="smm-btn-primary" onClick={() => { window.open('https://calendly.com/smaaspro/30min', '_blank'); onBookCalendar(); }}>Book a Callender</button>
+            <button className="smm-btn-outline" onClick={onBackToOption}>Back To Option</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!isOpen) return null;
 
   const modalStyle: React.CSSProperties = position
@@ -79,9 +104,7 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
       <div className="smm-modal" ref={modalRef} style={modalStyle}>
         {/* Header: drag handle + skip */}
         <div className="smm-header" onMouseDown={handleDragStart}>
-          <div className="smm-drag-handle">
-            <DragHandle />
-          </div>
+          <div className="smm-drag-handle"><DragHandle /></div>
           <button className="smm-skip-btn" onClick={(e) => { e.stopPropagation(); onSkip(); }}>
             Skip
           </button>

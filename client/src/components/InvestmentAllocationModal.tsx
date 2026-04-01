@@ -4,6 +4,7 @@ import './InvestmentAllocationModal.css';
 interface InvestmentAllocationModalProps {
   isOpen: boolean;
   onClose: () => void;
+  inLeftPanel?: boolean;
 }
 
 // ── Data ─────────────────────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ const Chevron = () => (
 );
 
 // ── Component ─────────────────────────────────────────────────────────────────
-const InvestmentAllocationModal: React.FC<InvestmentAllocationModalProps> = ({ isOpen, onClose }) => {
+const InvestmentAllocationModal: React.FC<InvestmentAllocationModalProps> = ({ isOpen, onClose, inLeftPanel }) => {
   const modalRef   = useRef<HTMLDivElement>(null);
   const dragging   = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
@@ -92,8 +93,6 @@ const InvestmentAllocationModal: React.FC<InvestmentAllocationModalProps> = ({ i
     window.addEventListener('mouseup', up);
     return () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); };
   }, []);
-
-  if (!isOpen) return null;
 
   const isSummary = step === 3;
   const isFirst   = step === 0;
@@ -217,6 +216,51 @@ const InvestmentAllocationModal: React.FC<InvestmentAllocationModalProps> = ({ i
       </div>
     );
   };
+
+  if (inLeftPanel) {
+    if (!isOpen) return null;
+    return (
+      <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto' }}>
+        <div className="iam-header" style={{ width: '100%' }}>
+          <div className="iam-nav">
+            <button
+              className={`iam-nav-btn${isFirst ? ' iam-nav-muted' : ''}`}
+              disabled={isFirst}
+              onClick={() => setStep(s => s - 1)}
+            >Prev</button>
+            <button
+              className="iam-nav-btn iam-nav-blue"
+              onClick={() => isLast ? onClose() : setStep(s => s + 1)}
+            >{isLast ? 'Finish' : 'Next'}</button>
+          </div>
+        </div>
+
+        <div className="iam-progress" style={{ width: '100%' }}>
+          <div className="iam-progress-fill" style={{ width: `${progressPct}%` }}/>
+        </div>
+
+        <div className="iam-budget" style={{ width: '100%' }}>
+          <div className="iam-budget-row">
+            <span className="iam-budget-label">Budget Allocation</span>
+            {step === 0 && <span className="iam-budget-total">100%</span>}
+          </div>
+          <BudgetBar/>
+        </div>
+
+        <div className="iam-divider" style={{ width: '100%' }}/>
+
+        <div className="iam-body" style={{ width: '100%' }}>{renderStep()}</div>
+
+        <div className="iam-footer" style={{ width: '100%' }}>
+          <button className="iam-btn" onClick={() => isLast ? onClose() : setStep(s => s + 1)}>
+            {isSummary ? 'Apply' : 'Next'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isOpen) return null;
 
   return (
     <>
