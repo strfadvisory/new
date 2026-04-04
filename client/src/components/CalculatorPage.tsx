@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import FundGraph from './FundGraph';
 import LeftPanel from './LeftPanel';
-import DragDropDebug from './DragDropDebug';
 import { viewModeEmitter } from '../utils/eventEmitter';
 import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
 import type { YearPriorityConfig } from './YearPriorityPopup';
@@ -206,10 +205,7 @@ const CalculatorPage: React.FC<CalculatorPageProps> = ({ association, reserveStu
       backgroundColor: '#f3f4f6',
       display: 'flex',
       position: 'relative'
-    }}> 
-      {/* Debug Component */}
-      <DragDropDebug />
- 
+    }}>
       {viewMode === 'graph' && (
         <div style={{
           width: isLeftPanelCollapsed ? '0px' : '300px',
