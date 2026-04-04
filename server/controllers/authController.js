@@ -700,29 +700,29 @@ const completeMember = async (req, res) => {
     user.verificationTokenExpiry = undefined;
     
     // Ensure memberfor array is properly structured with correct role IDs
+    // Only set a default role for entries missing a role — preserve roles assigned during invitation
     if (user.memberfor && user.memberfor.length > 0) {
-      // Get the parent company to find the correct role structure
-      const parentCompany = await User.findById(user.parentcompany).populate('roleId');
-      
-      // Update existing memberfor entries to ensure proper structure
-      user.memberfor = user.memberfor.map(member => {
-        let roleId = member.role || 'Administrator';
-        
-        // If parent company has role with subRoles, find appropriate role ID
+      const hasEmptyRole = user.memberfor.some(member => !member.role);
+
+      if (hasEmptyRole) {
+        // Get the parent company to find a default role for entries missing one
+        const parentCompany = await User.findById(user.parentcompany).populate('roleId');
+
+        let defaultRoleId = 'Administrator';
         if (parentCompany && parentCompany.roleId && parentCompany.roleId.subRoles) {
-          const adminSubRole = parentCompany.roleId.subRoles.find(subRole => 
+          const adminSubRole = parentCompany.roleId.subRoles.find(subRole =>
             subRole.role && subRole.role.toLowerCase().includes('administrator')
           );
           if (adminSubRole) {
-            roleId = adminSubRole.id; // Use the proper ID like "BO_004"
+            defaultRoleId = adminSubRole.id;
           }
         }
-        
-        return {
+
+        user.memberfor = user.memberfor.map(member => ({
           company: member.company,
-          role: roleId
-        };
-      });
+          role: member.role || defaultRoleId
+        }));
+      }
     }
     
     await user.save();
