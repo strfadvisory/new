@@ -331,7 +331,7 @@ function App() {
         </Routes>
         
         {/* Development API Monitor */}
-        <ApiMonitor />
+        {/* <ApiMonitor /> */}
         <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       </div>
     </QueryProvider>

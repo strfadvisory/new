@@ -1,7 +1,7 @@
 {
   "name": "strf",
   "version": "1.0.0",
-  "description": "Full-stack MERN application with Docker deployment",
+  "description": "STRF - Reserve Fund Advisory Platform. A comprehensive MERN application for reserve fund advisory services with role-based access control, document library management, and multi-tenant architecture.",
   "scripts": {
     "deploy:prod": "chmod +x deploy.sh && ./deploy.sh",
     "setup:ssl": "chmod +x setup-ssl.sh && ./setup-ssl.sh",
