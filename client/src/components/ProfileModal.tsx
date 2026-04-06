@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-toastify';
+import { validateImageFile, validateImageResolution } from '../utils/imageValidation';
 import './ProfileModal.css';
 import './Modal.css';
 
@@ -25,6 +27,18 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onCh
     const file = event.target.files?.[0];
     if (!file) return;
 
+    const fileError = validateImageFile(file, 'profile');
+    if (fileError) {
+      toast.error(fileError);
+      return;
+    }
+
+    const resolutionError = await validateImageResolution(file, 'profile');
+    if (resolutionError) {
+      toast.error(resolutionError);
+      return;
+    }
+
     const formData = new FormData();
     formData.append('profileImage', file);
 
@@ -39,10 +53,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onCh
       });
 
       if (response.ok) {
-        fetchUserProfile(); // Refresh profile data
+        toast.success('Profile image updated successfully');
+        fetchUserProfile();
+      } else {
+        const data = await response.json();
+        toast.error(data.message || 'Failed to upload profile image');
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
+      toast.error('Failed to upload profile image. Please try again.');
     }
   };
 
@@ -58,7 +76,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onCh
       const data = await response.json();
       setProfileData(data);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      toast.error('Failed to load profile. Showing cached data.');
       setProfileData(user);
     } finally {
       setLoading(false);

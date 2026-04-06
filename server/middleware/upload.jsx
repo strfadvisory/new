@@ -4,16 +4,16 @@ const { Readable } = require('stream');
 
 const storage = multer.memoryStorage();
 
+const IMAGE_FIELDS = ['logo', 'profileImage'];
+
 const fileFilter = (req, file, cb) => {
-  // Allow image files only for logo uploads
-  if (file.fieldname === 'logo') {
+  if (IMAGE_FIELDS.includes(file.fieldname)) {
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed for logo upload'), false);
+      cb(new Error(`Only image files are allowed for ${file.fieldname} upload`), false);
     }
   } else {
-    // Allow all file types for other uploads
     cb(null, true);
   }
 };

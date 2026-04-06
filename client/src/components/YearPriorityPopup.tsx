@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { getYearPriorityItems, debugYearPriorityFlow } from '../utils/yearPriorityCalculations';
 import type { YearPriorityItemDetail } from '../utils/yearPriorityCalculations';
 import type { ReserveItem, FinancialConfig } from '../utils/financialCalculations';
@@ -426,7 +427,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
 
   const handleSaveCostEdit = (id: string) => {
     if (editValue <= 0) {
-      alert('Cost must be greater than 0');
+      toast.error('Cost must be greater than 0');
       return;
     }
     console.log('[YearPriorityPopup] Editing cost for item:', { id, newCost: editValue });
@@ -441,7 +442,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
     const item = priorities.find((p) => p.id === id);
     if (!item) return;
     if (item.sirsType !== 0) {
-      alert('Only SIRs=0 items can be split.');
+      toast.error('Only SIRs=0 items can be split.');
       return;
     }
     setSplitInlineId(id);
@@ -461,12 +462,12 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
 
     // Validate amount
     if (splitAmount <= 0) {
-      alert('Split amount must be greater than 0');
+      toast.error('Split amount must be greater than 0');
       return;
     }
     
     if (splitAmount >= originalItem.inflatedCost) {
-      alert(`Split amount must be less than parent cost (${Math.round(originalItem.inflatedCost)})`);
+      toast.error(`Split amount must be less than parent cost (${Math.round(originalItem.inflatedCost)})`);
       return;
     }
 
@@ -732,7 +733,7 @@ const YearPriorityPopup: React.FC<YearPriorityPopupProps> = ({
                   onDragStart={(e) => {
                     if (item.sirsType !== 0) {
                       e.preventDefault();
-                      alert('Only SIRs=0 items can be moved.');
+                      toast.error('Only SIRs=0 items can be moved.');
                       return;
                     }
                     const dragPayload = {

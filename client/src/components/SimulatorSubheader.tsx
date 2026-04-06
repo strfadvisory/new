@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { toast } from 'react-toastify';
 import { API_ENDPOINTS } from '../config';
 import { apiService } from '../services/ApiService';
 import InviteMemberModal from './InviteMemberModal';
@@ -315,8 +316,7 @@ const Dropdown: React.FC<DropdownProps> = ({
       // Trigger dropdown refresh after delete
       refreshReserveStudiesDropdown();
     } catch (error) {
-      console.error('Error deleting reserve study:', error);
-      alert('Failed to delete reserve study');
+      toast.error('Failed to delete reserve study. Please try again.');
     }
   };
 

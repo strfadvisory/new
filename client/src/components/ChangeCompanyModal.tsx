@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { getUserCompanies, getPendingRequests } from '../services/userApi';
 import { useHandleOrgRequest } from '../hooks/queries/useAuth';
 import { API_BASE_URL } from '../config';
@@ -94,7 +95,7 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
       setUserCompanies(companiesData);
       setPendingRequests(requestsData);
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      toast.error('Failed to load companies. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -149,7 +150,7 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
         }, 100);
       }
     } catch (error) {
-      console.error('Error switching company:', error);
+      toast.error('Failed to switch company. Please try again.');
     }
   };
 
@@ -171,7 +172,7 @@ const ChangeCompanyModal: React.FC<ChangeCompanyModalProps> = ({
         setUserCompanies(companiesData);
       }
     } catch (error) {
-      console.error(`Error ${action}ing request:`, error);
+      toast.error(`Failed to ${action} request. Please try again.`);
     } finally {
       setProcessingRequest(null);
     }

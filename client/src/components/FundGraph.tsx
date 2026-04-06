@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import React from "react";
+import { toast } from 'react-toastify';
 import { calculateFinancialProjections, calculateHealthScore, calculateOptimalFee, FinancialConfig, ReserveItem } from '../utils/financialCalculations';
 import type { FeeAdjustmentConfig } from './MonthlyFeePopup';
 
@@ -213,13 +214,13 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey, onYearP
       });
 
       if (draggedItem?.sirsType !== 0) {
-        alert('Only items with SIRs=0 can be moved.');
+        toast.error('Only items with SIRs=0 can be moved.');
         return;
       }
 
       // Only allow drops to years strictly after the source year
       if (targetYear <= sourceYear) {
-        alert(`Cannot drop on current or past years. Drop year (${targetYear}) must be after the source year (${sourceYear}).`);
+        toast.error(`Cannot drop on current or past years. Drop year (${targetYear}) must be after the source year (${sourceYear}).`);
         return;
       }
       
@@ -383,7 +384,7 @@ function Graph2({ sel, onSel, onYearSelect, cashflowData = [], resetKey, onYearP
       console.log('[FundGraph] ========== DROP OPERATION COMPLETE ==========');
     } catch (error) {
       console.error('[FundGraph] Drop error:', error);
-      alert('Error processing drag-drop. Please try again.');
+      toast.error('Error processing drag-drop. Please try again.');
     }
   };
 

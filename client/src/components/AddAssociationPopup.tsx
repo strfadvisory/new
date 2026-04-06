@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { API_ENDPOINTS } from '../api/config';
 import apiClient from '../api/client';
+import { validateImageFile, validateImageResolution } from '../utils/imageValidation';
 import '../pages/AssociationControl.css';
 
 interface AddAssociationPopupProps {
@@ -67,16 +69,18 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
     { code: 'WI', name: 'Wisconsin' }, { code: 'WY', name: 'Wyoming' }
   ];
 
-  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file');
+      const fileError = validateImageFile(file, 'icon');
+      if (fileError) {
+        toast.error(fileError);
         return;
       }
-      
-      if (file.size > 2 * 1024 * 1024) {
-        alert('File size must be less than 2MB');
+
+      const resolutionError = await validateImageResolution(file, 'icon');
+      if (resolutionError) {
+        toast.error(resolutionError);
         return;
       }
 
@@ -184,14 +188,14 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
       }
       
       if (response.status >= 200 && response.status < 300) {
+        toast.success(isEditMode ? 'Association updated successfully' : 'Association created successfully');
         onSuccess();
         onClose();
       } else {
-        alert(`Error: Failed to save association`);
+        toast.error('Failed to save association. Please check your input and try again.');
       }
-    } catch (error) {
-      console.error('Error saving:', error);
-      alert('Failed to save. Check console for details.');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to save association. Please try again.');
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import './DeleteAccountModal.css';
 import './Modal.css';
 
@@ -38,11 +39,10 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
         window.location.href = '/login';
       } else {
         const data = await response.json();
-        alert(data.message || 'Failed to delete account');
+        toast.error(data.message || 'Failed to delete account');
       }
     } catch (error) {
-      console.error('Error deleting account:', error);
-      alert('Failed to delete account');
+      toast.error('Failed to delete account. Please try again.');
     } finally {
       setIsDeleting(false);
     }

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { API_BASE_URL } from '../config'; 
+import { toast } from 'react-toastify';
+import { API_BASE_URL } from '../config';
+import { validateImageFile, validateImageResolution } from '../utils/imageValidation';
 import '../Dashboard.css';
 import './superadmin/AllCompanies.css';
 
@@ -75,16 +77,18 @@ const UserRoleManagerLayout: React.FC = () => {
     }
   };
 
-  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file');
+      const fileError = validateImageFile(file, 'icon');
+      if (fileError) {
+        toast.error(fileError);
         return;
       }
-      
-      if (file.size > 2 * 1024 * 1024) {
-        alert('File size must be less than 2MB');
+
+      const resolutionError = await validateImageResolution(file, 'icon');
+      if (resolutionError) {
+        toast.error(resolutionError);
         return;
       }
 
@@ -152,10 +156,10 @@ const UserRoleManagerLayout: React.FC = () => {
           fetchRoles();
         } else {
           const errorData = await response.json();
-          alert(`Error: ${errorData.message || 'Failed to delete role'}`);
+          toast.error(errorData.message || 'Failed to delete role');
         }
       } catch (error) {
-        console.error('Error deleting role:', error);
+        toast.error('Failed to delete role. Please try again.');
       }
     }
     setShowDeleteConfirm(false);
@@ -208,12 +212,10 @@ const UserRoleManagerLayout: React.FC = () => {
         }
         await fetchRoles();
       } else {
-        const errorData = await response.json();
-        alert(`Error: ${errorData.message || 'Failed to save role'}`);
+        toast.error('Failed to save role. Please check your input and try again.');
       }
     } catch (error) {
-      console.error('Error saving:', error);
-      alert('Failed to save. Check console for details.');
+      toast.error('Failed to save role. Please try again.');
     }
   };
 

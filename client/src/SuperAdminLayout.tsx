@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { validateImageFile, validateImageResolution } from './utils/imageValidation';
 import './Dashboard.css';
 import './pages/superadmin/AllCompanies.css';
 import SuperAdminDashboard from './pages/superadmin/SuperAdminDashboard';
@@ -161,16 +163,18 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
     }
   };
 
-  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert('Please upload an image file');
+      const fileError = validateImageFile(file, 'icon');
+      if (fileError) {
+        toast.error(fileError);
         return;
       }
-      
-      if (file.size > 2 * 1024 * 1024) {
-        alert('File size must be less than 2MB');
+
+      const resolutionError = await validateImageResolution(file, 'icon');
+      if (resolutionError) {
+        toast.error(resolutionError);
         return;
       }
 
@@ -347,7 +351,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
           }
           fetchLibraryItems();
         } else {
-          alert(`Error: ${result.message || 'Failed to save library item'}`);
+          toast.error(result.message || 'Failed to save library item');
         }
         return;
       }
@@ -388,11 +392,10 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ user, onLogout }) =
         }
         await fetchRoles();
       } else {
-        alert(`Error: ${result.message || 'Failed to save role'}`);
+        toast.error(result.message || 'Failed to save role');
       }
     } catch (error) {
-      console.error('Error saving:', error);
-      alert('Failed to save. Check console for details.');
+      toast.error('Failed to save. Please try again.');
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import './ChangePasswordModal.css';
 import './Modal.css';
 
@@ -13,10 +14,10 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
   const handleSubmit = async () => {
     if (newPassword !== rePassword) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
-    
+
     try {
       const token = sessionStorage.getItem('token');
       const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5000/api'}/user/change-password`, {
@@ -29,17 +30,16 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
       });
 
       if (response.ok) {
-        alert('Password changed successfully');
+        toast.success('Password changed successfully');
         onClose();
         setNewPassword('');
         setRePassword('');
       } else {
         const data = await response.json();
-        alert(data.message || 'Failed to change password');
+        toast.error(data.message || 'Failed to change password');
       }
     } catch (error) {
-      console.error('Error changing password:', error);
-      alert('Failed to change password');
+      toast.error('Failed to change password. Please try again.');
     }
   };
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'react-toastify';
 import '../Dashboard.css';
 import './superadmin/AllCompanies.css';
 import AddAssociationPopup from '../components/AddAssociationPopup';
@@ -97,8 +98,7 @@ const AssociationControl: React.FC<AssociationControlProps> = ({ user, onLogout 
         await deleteAssociationMutation.mutateAsync(associationToDelete);
         setSelectedAssociationId(null);
       } catch (error) {
-        console.error('Error deleting association:', error);
-        alert('Failed to delete association');
+        toast.error('Failed to delete association. Please try again.');
       }
     }
     setShowDeleteConfirm(false);

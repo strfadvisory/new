@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { apiService } from '../services/ApiService';
 import './ReserveStudyEditorModal.css';
 
@@ -59,8 +60,7 @@ const ReserveStudyEditorModal: React.FC<ReserveStudyEditorModalProps> = ({
 
   const handleSave = async () => {
     if (!studyData?.studyId) {
-      console.error('[ReserveStudyEditor] No study ID available');
-      alert('Cannot save: Study ID not found');
+      toast.error('Cannot save: Study ID not found');
       return;
     }
 
@@ -95,8 +95,7 @@ const ReserveStudyEditorModal: React.FC<ReserveStudyEditorModalProps> = ({
 
       console.log('[ReserveStudyEditor] Study saved successfully');
       
-      // Show success message
-      alert('Reserve study saved successfully!');
+      toast.success('Reserve study saved successfully');
 
       if (onSave) {
         const updatedData = {
@@ -113,7 +112,7 @@ const ReserveStudyEditorModal: React.FC<ReserveStudyEditorModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error('[ReserveStudyEditor] Save error:', error);
-      alert(`Failed to save study: ${error.response?.data?.message || error.message}`);
+      toast.error(`Failed to save study: ${error.response?.data?.message || error.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -138,13 +137,13 @@ const ReserveStudyEditorModal: React.FC<ReserveStudyEditorModalProps> = ({
           const response = await apiService.post('/reserve-studies', formData);
           
           console.log('[ReserveStudyEditor] Upload successful:', response);
-          alert('Study uploaded successfully!');
+          toast.success('Study uploaded successfully');
           
           // Refresh the page or reload data
           window.location.reload();
         } catch (error: any) {
           console.error('[ReserveStudyEditor] Upload error:', error);
-          alert(`Failed to upload study: ${error.response?.data?.message || error.message}`);
+          toast.error(`Failed to upload study: ${error.response?.data?.message || error.message}`);
         } finally {
           setIsUploading(false);
         }
@@ -174,13 +173,13 @@ const ReserveStudyEditorModal: React.FC<ReserveStudyEditorModalProps> = ({
       console.log('[ReserveStudyEditor] Template downloaded');
     } catch (error: any) {
       console.error('[ReserveStudyEditor] Download template error:', error);
-      alert(`Failed to download template: ${error.message}`);
+      toast.error(`Failed to download template: ${error.message}`);
     }
   };
 
   const handleUploadDocument = () => {
     if (!studyData?.studyId) {
-      alert('Cannot upload document: Study ID not found');
+      toast.error('Cannot upload document: Study ID not found');
       return;
     }
 
@@ -200,10 +199,10 @@ const ReserveStudyEditorModal: React.FC<ReserveStudyEditorModalProps> = ({
           await apiService.post(`/reserve-studies/${studyData.studyId}/documents`, formData);
           
           console.log('[ReserveStudyEditor] Document uploaded successfully');
-          alert('Document uploaded successfully!');
+          toast.success('Document uploaded successfully');
         } catch (error: any) {
           console.error('[ReserveStudyEditor] Upload document error:', error);
-          alert(`Failed to upload document: ${error.response?.data?.message || error.message}`);
+          toast.error(`Failed to upload document: ${error.response?.data?.message || error.message}`);
         } finally {
           setIsUploading(false);
         }

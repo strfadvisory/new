@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import './CompanySelection.css';
 import { API_ENDPOINTS } from './config';
 import { updateSignupState } from './utils/signupState';
@@ -138,10 +139,9 @@ const CompanySelection: React.FC<CompanySelectionProps> = ({ onBack, onSelect, i
       }
       
       // Show success message
-      alert(`Request ${action}ed successfully!`);
+      toast.success(`Request ${action}ed successfully`);
     } catch (error) {
-      console.error(`Error ${action}ing request:`, error);
-      alert(`Failed to ${action} request. Please try again.`);
+      toast.error(`Failed to ${action} request. Please try again.`);
     } finally {
       setProcessingRequest(null);
     }

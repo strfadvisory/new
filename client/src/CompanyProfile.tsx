@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import { validateImageFile, validateImageResolution } from './utils/imageValidation';
 import './CreateProfile.css';
 import { API_ENDPOINTS } from './config';
 import { updateSignupState, getSignupState, getCompanyFormData, updateCompanyFormData, CompanyFormData, clearSignupState } from './utils/signupState';
@@ -59,22 +60,21 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
     updateCompanyFormData(newFormData);
   };
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file for the logo');
+      const fileError = validateImageFile(file, 'logo');
+      if (fileError) {
+        toast.error(fileError);
         return;
       }
-      
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Logo file size must be less than 5MB');
+
+      const resolutionError = await validateImageResolution(file, 'logo');
+      if (resolutionError) {
+        toast.error(resolutionError);
         return;
       }
-      
-      console.log('Logo selected:', file.name, file.type, file.size);
+
       setLogo(file);
       setLogoPreview(URL.createObjectURL(file));
     }
