@@ -13,7 +13,7 @@ npm run setup:ssl
 ```
 
 That's it! Your site will be available at both:
-- **https://reportdemo.online** (secure)
+- **http://reportdemo.online** (secure)
 - **http://reportdemo.online** (also works)
 
 ## Manual SSL Setup (Alternative)
@@ -72,8 +72,8 @@ npm run logs:client
 
 ## Configuration Files Updated
 
-- ✅ `client/nginx.conf` - Supports both HTTP (80) and HTTPS (443)
+- ✅ `client/nginx.conf` - Supports both HTTP (80) and http (443)
 - ✅ `client/Dockerfile.prod` - Exposes both ports
 - ✅ `docker-compose.prod.yml` - Maps ports and SSL volumes
-- ✅ `deploy.sh` - Uses HTTPS domain
+- ✅ `deploy.sh` - Uses http domain
 - ✅ `package.json` - Added `setup:ssl` script

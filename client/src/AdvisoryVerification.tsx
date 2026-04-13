@@ -149,7 +149,7 @@ const AdvisoryVerification: React.FC = () => {
             <div className="form-group phone-group">
               <div className="phone-input">
                 <span className="country-code">
-                  <img src="https://flagcdn.com/w20/us.png" alt="US" />
+                  <img src="http://flagcdn.com/w20/us.png" alt="US" />
                   +1
                 </span>
                 <input

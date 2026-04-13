@@ -358,7 +358,7 @@ const CompanyProfile: React.FC<CompanyProfileProps> = ({ onComplete, onNavigate 
                     minWidth: '80px',
                     cursor: 'pointer'
                   }}>
-                    <img src="https://flagcdn.com/w20/us.png" alt="US" style={{width: '16px', height: 'auto'}} />
+                    <img src="http://flagcdn.com/w20/us.png" alt="US" style={{width: '16px', height: 'auto'}} />
                     +1
                   </span>
                   <input

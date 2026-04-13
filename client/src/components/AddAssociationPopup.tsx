@@ -120,7 +120,7 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
     
     setLoadingZip(true);
     try {
-      const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+      const response = await fetch(`http://api.zippopotam.us/us/${zipCode}`);
       if (response.ok) {
         const data = await response.json();
         const place = data.places[0];
@@ -389,7 +389,7 @@ const AddAssociationPopup: React.FC<AddAssociationPopupProps> = ({
             <div className="form-group">
               <div className="phone-input">
                 <div className="country-code" onClick={() => document.getElementById('country-select-association')?.click()}>
-                  <img src={`https://flagcdn.com/w20/${currentCountry.flag}.png`} alt={currentCountry.name} />
+                  <img src={`http://flagcdn.com/w20/${currentCountry.flag}.png`} alt={currentCountry.name} />
                   {currentCountry.dialCode}
                 </div>
                 <select 

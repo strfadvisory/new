@@ -91,7 +91,7 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
           <h2 className="smm-title">Schedule meeting with expert</h2>
           <p className="smm-message">Mr. Orloff supported an idea I proposed to allow associations to invest reserves with proper planning, financial advisors, and strict oversight.</p>
           <div className="smm-buttons">
-            <button className="smm-btn-primary" onClick={() => { window.open('https://calendly.com/smaaspro/30min', '_blank'); onBookCalendar(); }}>Book a Callender</button>
+            <button className="smm-btn-primary" onClick={() => { window.open('http://calendly.com/smaaspro/30min', '_blank'); onBookCalendar(); }}>Book a Callender</button>
             <button className="smm-btn-outline" onClick={onBackToOption}>Back To Option</button>
           </div>
         </div>
@@ -139,7 +139,7 @@ const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
           <div className="smm-buttons">
             <button className="smm-btn-primary" onClick={() => {
               console.log('[ScheduleMeetingModal] Book a Calendar clicked');
-              window.open('https://calendly.com/smaaspro/30min', '_blank');
+              window.open('http://calendly.com/smaaspro/30min', '_blank');
               onBookCalendar();
             }}>
               Book a Callender

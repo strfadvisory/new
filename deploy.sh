@@ -12,7 +12,7 @@ MONGO_URI=mongodb+srv://anupamurl:Espl%40123@strf.liiptbb.mongodb.net/simulator
 JWT_SECRET=9f8c2d4a6e7b8c1d3f5a7b9c2d4e6f8a9b1c3d5e7f9a2b4c6d8e0f1a3b5c7d9e
 
 # Client Configuration
-CLIENT_URL=https://reportdemo.online
+CLIENT_URL=http://reportdemo.online
 REACT_APP_API_URL=
 
 # Email Configuration
@@ -69,8 +69,8 @@ docker-compose -f docker-compose.prod.yml ps
 
 echo ""
 echo "🎉 Deployment complete!"
-echo "📱 Frontend: https://reportdemo.online (HTTP also available)"
-echo "🔌 Backend API: https://reportdemo.online/api"
+echo "📱 Frontend: http://reportdemo.online (HTTP also available)"
+echo "🔌 Backend API: http://reportdemo.online/api"
 echo "🗄️  Database: MongoDB Atlas (simulator)"
 echo "🔒 SSL: Configure with Certbot after deployment"
 echo ""

@@ -6,7 +6,7 @@ const extractYouTubeVideoId = (url) => {
 
 const generateYouTubeThumbnail = (videoUrl) => {
   const videoId = extractYouTubeVideoId(videoUrl);
-  return videoId ? `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : '';
+  return videoId ? `http://img.youtube.com/vi/${videoId}/maxresdefault.jpg` : '';
 };
 
 module.exports = {

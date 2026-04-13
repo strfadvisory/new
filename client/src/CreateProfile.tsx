@@ -183,7 +183,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
   const fetchLocationByZip = async (zipCode: string) => {
     setLoadingZip(true);
     try {
-      const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+      const response = await fetch(`http://api.zippopotam.us/us/${zipCode}`);
       if (response.ok) {
         const data = await response.json();
         if (data.places && data.places.length > 0) {
@@ -399,7 +399,7 @@ const CreateProfile: React.FC<CreateProfileProps> = ({ onBack, onRegister, onNav
               <div className="form-group">
                 <div className="phone-input">
                   <span className="country-code" onClick={() => document.getElementById('country-select')?.click()}>
-                    <img src={`https://flagcdn.com/w20/${currentCountry.flag}.png`} alt={currentCountry.name} />
+                    <img src={`http://flagcdn.com/w20/${currentCountry.flag}.png`} alt={currentCountry.name} />
                     {currentCountry.dialCode}
                   </span>
                   <select 

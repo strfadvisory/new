@@ -791,7 +791,7 @@ const addMemberWithRoleValidation = async (req, res) => {
       // Add user to associations and reserve studies
       await addUserToResources(newUser._id, associationIds, reserveStudyIds);
 
-      const verificationLink = `${process.env.CLIENT_URL || 'https://208.109.39.222:5000'}/verify-member/${verificationToken}`;
+      const verificationLink = `${process.env.CLIENT_URL || 'http://208.109.39.222:5000'}/verify-member/${verificationToken}`;
       
       try {
         await sendMemberInvitationEmail(

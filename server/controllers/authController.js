@@ -357,7 +357,7 @@ const addMember = async (req, res) => {
       // Add user to associations and reserve studies
       await addUserToResources(newUser._id, associationIds, reserveStudyIds);
 
-      const verificationLink = `${process.env.CLIENT_URL || 'https://208.109.39.222:5000'}/verify-member/${verificationToken}`;
+      const verificationLink = `${process.env.CLIENT_URL || 'http://208.109.39.222:5000'}/verify-member/${verificationToken}`;
       
       try {
         await sendMemberInvitationEmail(
@@ -479,7 +479,7 @@ const inviteAdvisory = async (req, res) => {
       createdBy: currentUser._id
     });
 
-    const verificationLink = `${process.env.CLIENT_URL || 'https://208.109.39.222:5000'}/verify-advisory/${verificationToken}`;
+    const verificationLink = `${process.env.CLIENT_URL || 'http://208.109.39.222:5000'}/verify-advisory/${verificationToken}`;
     
     try {
       await sendVerificationEmail(adminEmail, verificationLink, firstName);
@@ -577,7 +577,7 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     // Create reset URL
-    const resetUrl = `${process.env.CLIENT_URL || 'https://208.109.39.222:5000'}/reset-password/${resetToken}`;
+    const resetUrl = `${process.env.CLIENT_URL || 'http://208.109.39.222:5000'}/reset-password/${resetToken}`;
     
     try {
       await sendPasswordResetEmail(email, resetUrl, user.firstName);
@@ -764,7 +764,7 @@ const resendMemberInvitation = async (req, res) => {
     user.verificationTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await user.save();
 
-    const verificationLink = `${process.env.CLIENT_URL || 'https://208.109.39.222:5000'}/verify-member/${verificationToken}`;
+    const verificationLink = `${process.env.CLIENT_URL || 'http://208.109.39.222:5000'}/verify-member/${verificationToken}`;
 
     console.log('\n========== RESEND INVITATION ==========');
     console.log('To:', user.email);
@@ -865,7 +865,7 @@ const inviteMemberWithValidation = async (req, res) => {
       // Add user to associations and reserve studies
       await addUserToResources(newUser._id, associationIds, reserveStudyIds);
 
-      const verificationLink = `${process.env.CLIENT_URL || 'https://208.109.39.222:5000'}/verify-member/${verificationToken}`;
+      const verificationLink = `${process.env.CLIENT_URL || 'http://208.109.39.222:5000'}/verify-member/${verificationToken}`;
       
       try {
         await sendMemberInvitationEmail(

@@ -50,7 +50,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
     setLoadingZip(true);
     setZipError('');
     try {
-      const response = await fetch(`https://api.zippopotam.us/us/${zipCode}`);
+      const response = await fetch(`http://api.zippopotam.us/us/${zipCode}`);
       if (response.ok) {
         const data = await response.json();
         if (data.places && data.places.length > 0) {
