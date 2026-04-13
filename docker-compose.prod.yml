@@ -8,7 +8,7 @@ services:
     container_name: strf-server
     restart: always
     ports:
-      - "5000:5000"
+      - "5001:5001"
     env_file:
       - .env
     environment:
@@ -25,15 +25,11 @@ services:
     container_name: strf-client
     restart: always
     ports:
-      - "80:80"
-      - "443:443"
+      - "5000:5000"
     depends_on:
       - server
     networks:
       - app-network
-    volumes:
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-      - /etc/nginx/ssl:/etc/nginx/ssl:ro
 
 networks:
   app-network:
