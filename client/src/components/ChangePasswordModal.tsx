@@ -20,7 +20,7 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
 
     try {
       const token = sessionStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://208.109.39.222:5001/api'}/user/change-password`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || '/api'}/user/change-password`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

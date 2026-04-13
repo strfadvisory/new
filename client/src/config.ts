@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://208.109.39.222:5001/api'
+export const API_BASE_URL = process.env.REACT_APP_API_URL || '/api'
 
 export const API_ENDPOINTS = {
   // Auth endpoints

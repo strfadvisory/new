@@ -23,7 +23,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ isOpen, onClose
     setIsDeleting(true);
     try {
       const token = sessionStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://208.109.39.222:5001/api'}/user/delete-account`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL || '/api'}/user/delete-account`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
