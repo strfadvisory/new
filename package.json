@@ -5,12 +5,12 @@
   "scripts": {
     "deploy:prod": "chmod +x deploy.sh && ./deploy.sh",
     "setup:ssl": "chmod +x setup-ssl.sh && ./setup-ssl.sh",
-    "stop": "docker-compose -f docker-compose.prod.yml down",
-    "logs": "docker-compose -f docker-compose.prod.yml logs -f",
+    "stop": "docker compose -f docker-compose.prod.yml down",
+    "logs": "docker compose -f docker-compose.prod.yml logs -f",
     "logs:server": "docker logs strf-server -f",
     "logs:client": "docker logs strf-client -f",
-    "restart": "docker-compose -f docker-compose.prod.yml restart",
-    "status": "docker-compose -f docker-compose.prod.yml ps",
+    "restart": "docker compose -f docker-compose.prod.yml restart",
+    "status": "docker compose -f docker-compose.prod.yml ps",
     "check": "chmod +x check-backend.sh && ./check-backend.sh"
   },
   "keywords": ["react", "express", "mongodb", "docker"],

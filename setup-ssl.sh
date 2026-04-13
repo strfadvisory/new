@@ -4,9 +4,7 @@ echo "🔒 Setting up SSL for reportdemo.online..."
 
 # Stop containers
 echo "🛑 Stopping containers..."
-docker-compose -f docker-compose.prod.yml down
-
-# Install Certbot
+docker compose -f docker-compose.prod.yml down
 echo "📦 Installing Certbot..."
 sudo apt update
 sudo apt install certbot -y
@@ -35,11 +33,11 @@ sudo chmod 755 /etc/letsencrypt/archive
 
 # Restart containers
 echo "🚀 Restarting containers..."
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml up -d
 
 # Setup auto-renewal
 echo "⏰ Setting up auto-renewal..."
-(sudo crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --post-hook 'docker-compose -f $(pwd)/docker-compose.prod.yml restart client'") | sudo crontab -
+(sudo crontab -l 2>/dev/null; echo "0 3 * * * certbot renew --quiet --post-hook 'docker compose -f $(pwd)/docker-compose.prod.yml restart client'") | sudo crontab -
 
 echo ""
 echo "✅ SSL setup complete!"

@@ -51,14 +51,14 @@ cd client && npm install && cd ..
 
 # Stop existing containers
 echo "🛑 Stopping existing containers..."
-docker-compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml down
 
 # Remove any orphaned containers
 docker container prune -f
 
 # Build and start containers
 echo "🔨 Building and starting containers..."
-docker-compose -f docker-compose.prod.yml up -d --build --force-recreate
+docker compose -f docker-compose.prod.yml up -d --build --force-recreate
 docker builder prune -f
 
 # Wait for containers to start
@@ -67,7 +67,7 @@ sleep 10
 
 # Check status
 echo "✅ Checking container status..."
-docker-compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 echo ""
 echo "🎉 Deployment complete!"
