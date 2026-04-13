@@ -58,7 +58,8 @@ docker container prune -f
 
 # Build and start containers
 echo "🔨 Building and starting containers..."
-docker-compose -f docker-compose.prod.yml up -d --build
+docker-compose -f docker-compose.prod.yml up -d --build --force-recreate
+docker builder prune -f
 
 # Wait for containers to start
 echo "⏳ Waiting for containers to start..."
