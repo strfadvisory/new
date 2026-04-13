@@ -37,9 +37,10 @@ echo "🛑 Stopping nginx service..."
 systemctl stop nginx 2>/dev/null || true
 systemctl disable nginx 2>/dev/null || true
 
-# Kill any process using port 80
-echo "🔍 Checking for processes on port 80..."
+# Kill any process using port 80 or 443
+echo "🔍 Checking for processes on port 80 and 443..."
 fuser -k 80/tcp 2>/dev/null || true
+fuser -k 443/tcp 2>/dev/null || true
 
 # Install dependencies
 echo "📦 Installing server dependencies..."
