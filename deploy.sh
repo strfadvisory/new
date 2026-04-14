@@ -27,7 +27,7 @@ MAIL_FROM_ADDRESS=strfadvisory@gmail.com
 MAIL_FROM_NAME="Reserve Fund Advisors"
 
 # Server Configuration
-PORT=5000
+PORT=5002
 NODE_ENV=production
 EOF
 echo "✅ .env file created with MongoDB Atlas URI"

@@ -7,12 +7,13 @@ services:
       dockerfile: Dockerfile.prod
     container_name: strf-server
     restart: always
-    ports:
-      - "5001:5001"
+    expose:
+      - "5002"
     env_file:
       - .env
     environment:
       - NODE_ENV=production
+      - PORT=5002
     networks:
       - app-network
     volumes:
@@ -25,7 +26,7 @@ services:
     container_name: strf-client
     restart: always
     ports:
-      - "5000:5000"
+      - "5001:5001"
     depends_on:
       - server
     networks:
